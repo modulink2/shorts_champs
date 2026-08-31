@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Target, Activity, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area } from 'recharts';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
+import { downloadTrainingReport } from './reportPdf';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
@@ -13,31 +14,20 @@ type Mood = 1 | 2 | 3 | 4 | 5;
 export interface TimeRecord { distance: number; time: string; seconds: number; }
 export interface DryItem { id: string; type: string; value: number; unit: string; }
 export interface TrainingLog {
-  id: string; date: string; type: TrainingType; minutes: number; condition: number; rpe: number; laps?: number; km?: number;
+  id: string; date: string; type: TrainingType; minutes?: number; condition: number; rpe?: number; laps?: number; km?: number;
   timeRecords?: TimeRecord[]; dryItems?: DryItem[]; pain: boolean; note: string; focus?: number; sleepHours?: number;
   youtubeUrl?: string; instaUrl?: string;
 }
-interface BodyRecord { date: string; height: number; weight: number; }
 export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
-interface Mental { subject:string; value:number; fullMark:number; }
 
-const TRACK = 111.12;
 const GOLD = '#D4AF37';
 const GOLD_BRIGHT = '#FFD700';
 const GOLD_GRAD = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%)';
 
-// Short-track record distances — add/remove here to change what's trackable everywhere.
+// Short-track record distances — still used to display historical PB data.
 const DISTANCES = [111, 222, 333, 500, 1000, 1500] as const;
-// Dry-land (육상) training item types and their valid units — add/remove here to change the picker.
-const DRY_ITEM_TYPES: { type: string; units: string[] }[] = [
-  { type: '러닝', units: ['분', '바퀴'] },
-  { type: '점프', units: ['셋트', '회'] },
-  { type: '코어', units: ['분', '셋트'] },
-  { type: '웨이트', units: ['분', '셋트'] },
-  { type: '스트레칭', units: ['분'] },
-  { type: '스프린트', units: ['회', '바퀴'] },
-  { type: '밸런스', units: ['분', '셋트'] },
-];
+// Dry-land (육상) training item labels — add/remove here to change the quick-insert picker.
+const DRY_ITEM_LABELS = ['러닝', '점프', '코어', '웨이트', '스트레칭', '스프린트', '밸런스'];
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -85,6 +75,13 @@ function truncateUrl(url: string, max = 42): string {
   if (url.length <= max) return url;
   return url.slice(0, max) + '…';
 }
+function parseTimeInput(raw: string): { sec: number; display: string } | null {
+  raw = raw.trim(); if (!raw) return null;
+  let sec = 0;
+  if (raw.includes(':')) { const [mm, ss] = raw.split(':'); sec = parseInt(mm) * 60 + parseFloat(ss); } else sec = parseFloat(raw) || 0;
+  if (sec <= 0) return null;
+  return { sec, display: raw.includes(':') ? raw : sec.toFixed(2) };
+}
 
 const MOODS: { id: Mood; emoji: string; label: string }[] = [
   { id: 1, emoji: '👑', label: '최고' },
@@ -99,34 +96,16 @@ const TYPE_META: Record<TrainingType, { label: string; emoji: string; color: str
   rest: { label: '리커버리', emoji: '🌑', color: '#4A4A4E' },
 };
 
-const mockBody: BodyRecord[] = [
-  { date: '07월', height: 147.1, weight: 37.8 },
-  { date: '08월', height: 148.2, weight: 38.5 },
-  { date: '09월', height: 149.0, weight: 39.1 },
-  { date: '10월', height: 149.8, weight: 39.8 },
-  { date: '11월', height: 150.5, weight: 40.2 },
-  { date: '12월', height: 151.2, weight: 40.8 },
-];
-const mockMental: Mental[] = [
-  { subject: '집중력', value: 88, fullMark: 100 },
-  { subject: '지구력', value: 82, fullMark: 100 },
-  { subject: '스피드', value: 91, fullMark: 100 },
-  { subject: '유연성', value: 76, fullMark: 100 },
-  { subject: '멘탈', value: 84, fullMark: 100 },
-  { subject: '코너링', value: 90, fullMark: 100 },
-];
-function TimeInputsEditor({ timeInputs, onChange, compact }: { timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void; compact?:boolean }) {
+function TimeInputsEditor({ timeInputs, onChange }: { timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void }) {
   return (
-    <div className={compact ? 'grid grid-cols-2 gap-3' : 'grid sm:grid-cols-3 gap-4'}>
+    <div className="grid sm:grid-cols-3 gap-3">
       {DISTANCES.map(d=>(
-        <div key={d} className={compact ? 'card !p-4' : 'rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5'}>
-          <div className="label-caps">{d}m {compact ? 'Time' : '기록'}</div>
+        <div key={d} className="rounded-[14px] bg-[#101012] border border-[#1E1E22] p-4">
+          <div className="label-caps">{d}m</div>
           <input
             value={timeInputs[d]||''} onChange={e=>onChange(d, e.target.value)}
             placeholder={d>=1000 ? 'm:ss.ss' : 'ss.ss'} inputMode="decimal"
-            className={compact
-              ? 'mt-3 w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-3 text-[14px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]'
-              : 'mt-4 w-full h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] px-4 text-[18px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]'}
+            className="mt-3 w-full h-11 rounded-[10px] bg-[#0E0E10] border border-[#1E1E22] px-3 text-[14px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"
           />
         </div>
       ))}
@@ -134,36 +113,15 @@ function TimeInputsEditor({ timeInputs, onChange, compact }: { timeInputs: Recor
   );
 }
 
-function DryItemsEditor({ items, onAdd, onRemove, compact }: { items: DryItem[]; onAdd:(item:Omit<DryItem,'id'>)=>void; onRemove:(id:string)=>void; compact?:boolean }) {
-  const [type, setType] = useState(DRY_ITEM_TYPES[0].type);
-  const [unit, setUnit] = useState(DRY_ITEM_TYPES[0].units[0]);
-  const [value, setValue] = useState(10);
-  const units = DRY_ITEM_TYPES.find(t=>t.type===type)?.units || [];
+function QuickNoteInsert({ onInsert, compact }: { onInsert:(label:string)=>void; compact?:boolean }) {
   return (
     <div className={compact ? 'card !p-4' : 'rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5'}>
-      <div className="label-caps mb-3">훈련 항목 추가</div>
+      <div className="label-caps mb-3">항목 선택 · 클릭하면 노트에 추가돼요</div>
       <div className="flex flex-wrap gap-2">
-        {DRY_ITEM_TYPES.map(t=>(
-          <button key={t.type} type="button" onClick={()=>{ setType(t.type); setUnit(t.units[0]); }} className={`h-9 px-3.5 rounded-full border text-[12px] font-[700] transition-all ${type===t.type? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520]'}`}>{t.type}</button>
+        {DRY_ITEM_LABELS.map(label=>(
+          <button key={label} type="button" onClick={()=>onInsert(label)} className="h-9 px-3.5 rounded-full border text-[12px] font-[700] transition-all bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]">{label}</button>
         ))}
       </div>
-      <div className="mt-3 flex items-center gap-2">
-        <input type="number" value={value} onChange={e=>setValue(parseInt(e.target.value)||0)} className="w-20 h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center font-[700] outline-none"/>
-        <select value={unit} onChange={e=>setUnit(e.target.value)} className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-2 text-[12px] font-[700] outline-none">
-          {units.map(u=><option key={u} value={u}>{u}</option>)}
-        </select>
-        <button type="button" onClick={()=>onAdd({type, value, unit})} className="ml-auto h-10 px-4 rounded-full gold-gradient text-[#060608] font-[800] text-[12px]">+ 추가</button>
-      </div>
-      {items.length>0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {items.map(it=>(
-            <span key={it.id} className="h-8 pl-3 pr-1.5 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#CFCFC8] inline-flex items-center gap-1.5">
-              {it.type} {it.value}{it.unit}
-              <button type="button" onClick={()=>onRemove(it.id)} className="w-5 h-5 rounded-full bg-[#232326] hover:bg-[#3A3520] flex items-center justify-center text-[10px] leading-none">×</button>
-            </span>
-          ))}
-        </div>
-      )}
     </div>
   );
 }
@@ -176,28 +134,38 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10));
   const [showModal, setShowModal] = useState(false);
   const [diaryEditMode, setDiaryEditMode] = useState(false);
-  const [editing, setEditing] = useState<Partial<TrainingLog> & { mood?: Mood }>({});
+  const [editing, setEditing] = useState<Partial<TrainingLog> & { mood?: Mood; noteIce?: string; noteDry?: string }>({});
   const [toast, setToast] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [timeInputs, setTimeInputs] = useState<Record<number,string>>({});
   const [searchType, setSearchType] = useState<'all'|'ice'|'dry'|'rest'>('all');
   const [goalForm, setGoalForm] = useState<Goal | null>(null);
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [recordDate, setRecordDate] = useState(()=> new Date().toISOString().slice(0,10));
+  const [recordLaps, setRecordLaps] = useState(0);
+  const [recordTimeInputs, setRecordTimeInputs] = useState<Record<number,string>>({});
 
   useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t);} },[toast]);
   // Switch to edit mode automatically when changing to diary view? keep false initially
   useEffect(()=>{ if(view!=='diary') setDiaryEditMode(false); },[view]);
 
+  useEffect(()=>{
+    // Only reload when the date picker changes, never on every `logs` update —
+    // otherwise Firestore's post-write resync would wipe out unsaved typing.
+    const existing = logs.find(l=>l.date===recordDate);
+    setRecordLaps(existing?.laps || 0);
+    const inputs: Record<number,string> = {};
+    DISTANCES.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
+    setRecordTimeInputs(inputs);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recordDate]);
+
   const todayStr = new Date().toISOString().slice(0,10);
 
   const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=>l.type===searchType), [logs, searchType]);
-  const thisMonthLogs = useMemo(()=> logs.filter(l=>{ const d=new Date(l.date); const n=new Date(); return d.getMonth()===n.getMonth() && d.getFullYear()===n.getFullYear(); }),[logs]);
   const thisWeekLogs = useMemo(()=>{
     const now=new Date(); const start=new Date(now); const dayIdx=(now.getDay()+6)%7; start.setDate(now.getDate()-dayIdx);
     return logs.filter(l=>{ const d=new Date(l.date); return d>=start; });
   },[logs]);
-  const totalLapsMonth = useMemo(()=> thisMonthLogs.reduce((a,b)=>a+(b.laps||0),0),[thisMonthLogs]);
-  const totalKmMonth = useMemo(()=> thisMonthLogs.reduce((a,b)=>a+(b.km||0),0),[thisMonthLogs]);
-  const totalLapsWeek = useMemo(()=> thisWeekLogs.reduce((a,b)=>a+(b.laps||0),0),[thisWeekLogs]);
 
   const bestByDistance = useMemo(()=>{
     const map: Record<number, { time:string; sec:number }> = {};
@@ -211,17 +179,6 @@ export default function App() {
     const arr: { date:string; seconds:number; time:string }[]=[];
     logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===500) arr.push({date:l.date, seconds:r.seconds, time:r.time}); }));
     return arr.sort((a,b)=> a.date.localeCompare(b.date)).slice(-12);
-  },[logs]);
-
-  const weeklyVolume = useMemo(()=>{
-    const days: { name:string; laps:number; date:string }[] = [];
-    for(let i=6;i>=0;i--){
-      const d=new Date(); d.setDate(d.getDate()-i);
-      const ds=d.toISOString().slice(0,10);
-      const log=logs.find(l=>l.date===ds);
-      days.push({ name: ['월','화','수','목','금','토','일'][(d.getDay()+6)%7], laps: log?.laps||0, date: ds });
-    }
-    return days;
   },[logs]);
 
   const conditionTrend = useMemo(()=>{
@@ -261,14 +218,12 @@ export default function App() {
 
  const openLog = (dateStr:string)=>{
    const existing = logs.find(l=>l.date===dateStr);
-   const inputs: Record<number,string> = {};
-   DISTANCES.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
    if(existing){
-      setEditing({ ...existing, mood: (existing.condition as Mood)||2, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
+      const draftNote = existing.type==='ice' ? { noteIce: existing.note } : existing.type==='dry' ? { noteDry: existing.note } : {};
+      setEditing({ ...existing, mood: (existing.condition as Mood)||2, ...draftNote, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
     }else{
-      setEditing({ date:dateStr, type:'ice', minutes:70, mood:2 as Mood, laps:55, rpe:5, dryItems:[], note:'', condition:2, focus:4, sleepHours:8, youtubeUrl:'', instaUrl:'' });
+      setEditing({ date:dateStr, type:'ice', mood:2 as Mood, dryItems:[], note:'', noteIce:'', noteDry:'', condition:2, sleepHours:8, youtubeUrl:'', instaUrl:'' });
     }
-    setTimeInputs(inputs);
     setSelectedDate(dateStr);
     if(view==='diary'){
       setDiaryEditMode(true);
@@ -279,29 +234,22 @@ export default function App() {
 
   const saveLog = ()=>{
     if(!editing.date) return;
-    const laps = editing.type==='ice' ? (editing.laps||0) : undefined;
-    const km = laps ? +(laps*TRACK/1000).toFixed(2) : undefined;
-    const parseTime = (raw:string)=>{
-      raw=raw.trim(); if(!raw) return null;
-      let sec=0;
-      if(raw.includes(':')){ const [mm, ss]=raw.split(':'); sec=parseInt(mm)*60+parseFloat(ss); } else sec=parseFloat(raw)||0;
-      if(sec<=0) return null;
-      return { sec, display: raw.includes(':')? raw : sec.toFixed(2) };
-    };
-    const timeRecs: TimeRecord[] = DISTANCES.map(d=>{
-      const p = parseTime(timeInputs[d]||'');
-      return p ? { distance:d, time:p.display, seconds:p.sec } : null;
-    }).filter((r): r is TimeRecord => r !== null);
+    // Laps/RPE/minutes/focus/time records no longer have input UI — carry over
+    // whatever the log already had (nothing for a brand-new entry) unchanged.
+    const prevLog = logs.find(l=>l.date===editing.date);
 
     const cleanYt = (editing.youtubeUrl||'').trim();
     const cleanInsta = (editing.instaUrl||'').trim();
+    // Ice and dry keep separate note drafts while editing (so switching the type
+    // toggle doesn't lose or mix text); only the active type's note gets saved.
+    const activeNote = editing.type==='ice' ? (editing.noteIce||'') : editing.type==='dry' ? (editing.noteDry||'') : (editing.note||'');
     const newLog: TrainingLog = {
       id: editing.date!, date: editing.date!, type: (editing.type as TrainingType)||'ice',
-      minutes: editing.type==='rest'?0: (editing.minutes||0),
+      minutes: editing.type==='rest' ? 0 : prevLog?.minutes,
       condition: (editing.mood as number)||2,
-      rpe: editing.rpe||5, laps, km, timeRecords: timeRecs,
-      dryItems: editing.dryItems||[], pain: (editing.mood===5), note: editing.note||'',
-      focus: editing.focus||4, sleepHours: editing.sleepHours||8,
+      rpe: prevLog?.rpe, laps: prevLog?.laps, km: prevLog?.km, timeRecords: prevLog?.timeRecords||[],
+      dryItems: editing.dryItems||[], pain: (editing.mood===5), note: activeNote,
+      focus: prevLog?.focus, sleepHours: editing.sleepHours||8,
       youtubeUrl: cleanYt || undefined,
       instaUrl: cleanInsta || undefined
     };
@@ -313,6 +261,45 @@ export default function App() {
     deleteLogRemote(dateStr);
     setDiaryEditMode(false);
     setToast('기록이 삭제되었어요');
+  };
+
+  const insertNoteItem = (label:string)=>{
+    setEditing({...editing, noteDry: (editing.noteDry ? editing.noteDry.trimEnd()+' ' : '') + label + ' '});
+  };
+
+  const activeNote = editing.type==='ice' ? (editing.noteIce||'') : editing.type==='dry' ? (editing.noteDry||'') : (editing.note||'');
+  const setActiveNote = (v:string)=>{
+    if(editing.type==='ice') setEditing({...editing, noteIce:v});
+    else if(editing.type==='dry') setEditing({...editing, noteDry:v});
+    else setEditing({...editing, note:v});
+  };
+
+  const saveRecordEntry = ()=>{
+    const prevLog = logs.find(l=>l.date===recordDate);
+    const timeRecs: TimeRecord[] = DISTANCES.map(d=>{
+      const p = parseTimeInput(recordTimeInputs[d]||'');
+      return p ? { distance:d, time:p.display, seconds:p.sec } : null;
+    }).filter((r): r is TimeRecord => r !== null);
+    const laps = recordLaps || undefined;
+    const km = laps ? +(laps*111.12/1000).toFixed(2) : undefined;
+    const merged: TrainingLog = prevLog
+      ? { ...prevLog, laps, km, timeRecords: timeRecs }
+      : { id: recordDate, date: recordDate, type: 'ice', condition: 2, pain: false, note: '', laps, km, timeRecords: timeRecs };
+    saveLogRemote(merged);
+    setToast('기록이 저장됐어요 · 분석에 반영됩니다');
+  };
+
+  const exportReport = async (log: TrainingLog) => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    try {
+      await downloadTrainingReport(log, user?.displayName || '챔피언');
+    } catch (err) {
+      console.error('PDF export failed:', err);
+      setToast('보고서 생성에 실패했어요');
+    } finally {
+      setPdfBusy(false);
+    }
   };
 
   return (
@@ -337,7 +324,7 @@ export default function App() {
             {[
               { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
               { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
-              { id:'records', label:'기록분석', icon:Trophy, desc:'RECORDS' },
+              { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
               { id:'growth', label:'성장리포트', icon:TrendingUp, desc:'GROWTH' },
             ].map(tab=>{
               const active=view===tab.id;
@@ -395,7 +382,7 @@ export default function App() {
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">
                       {view==='dashboard' && '대시보드'}
                       {view==='diary' && '훈련일지'}
-                      {view==='records' && '기록분석'}
+                      {view==='records' && '기록입력/분석'}
                       {view==='growth' && '성장리포트'}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[#1A1912] border border-[#3A3520] text-[10px] font-[700] tracking-[0.1em] text-[#D4AF37] items-center">BLACK & GOLD</span>
@@ -426,7 +413,7 @@ export default function App() {
               {[
                 { id:'dashboard', label:'대시보드' },
                 { id:'diary', label:'훈련일지' },
-                { id:'records', label:'기록분석' },
+                { id:'records', label:'기록입력/분석' },
                 { id:'growth', label:'성장리포트' },
               ].map(tab=>{
                 const active=view===tab.id;
@@ -440,7 +427,7 @@ export default function App() {
           <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px] mx-auto">
             {view==='dashboard' && (
               <>
-                {/* KPI 4 */}
+                {/* KPI */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
                   <div className="card p-4 lg:p-5">
                     <div className="flex items-start justify-between">
@@ -453,62 +440,9 @@ export default function App() {
                       <span className="text-[10px] font-[700] text-[#9A9A93]">목표 5일</span>
                     </div>
                   </div>
-                  <div className="card p-4 lg:p-5">
-                    <div className="flex items-start justify-between">
-                      <span className="label-caps">Total Laps</span>
-                      <div className="w-7 h-7 rounded-full bg-[#18181B] border border-[#2A2A2E] flex items-center justify-center"><Activity size={14} className="text-[#D4AF37]"/></div>
-                    </div>
-                    <div className="mt-3 big-num text-[32px] lg:text-[38px] text-[#F5F1E8]">{totalLapsMonth.toLocaleString()}<span className="text-[14px] text-[#9A9A93] ml-1 font-[600]">바퀴</span></div>
-                    <div className="mt-2 text-[11px] font-[500] text-[#9A9A93]">이번달 · <span className="text-[#D4AF37] font-[700]">+{totalLapsWeek} 이번주</span></div>
-                  </div>
-                  <div className="card p-4 lg:p-5">
-                    <div className="flex items-start justify-between">
-                      <span className="label-caps">Distance</span>
-                      <div className="w-7 h-7 rounded-full bg-[#18181B] border border-[#2A2A2E] flex items-center justify-center"><Target size={14} className="text-[#D4AF37]"/></div>
-                    </div>
-                    <div className="mt-3 big-num text-[32px] lg:text-[38px] text-[#F5F1E8]">{totalKmMonth.toFixed(1)}<span className="text-[14px] text-[#9A9A93] ml-1 font-[600]">km</span></div>
-                    <div className="mt-2 text-[11px] font-[500] text-[#9A9A93]">트랙 111.12m 기준</div>
-                  </div>
-                  <div className="card p-4 lg:p-5 bg-[#101012] border-[#3A3520] relative overflow-hidden">
-                    <div className="absolute inset-0 bg-[radial-gradient(120%_80%_at_100%_0%,rgba(212,175,55,0.15),transparent_60%)]" />
-                    <div className="relative">
-                      <div className="flex items-start justify-between">
-                        <span className="label-caps text-[#D4AF37]">Best 500m</span>
-                        <div className="w-7 h-7 rounded-full gold-gradient flex items-center justify-center"><Trophy size={14} className="text-[#060608]"/></div>
-                      </div>
-                      <div className="mt-3 big-num text-[30px] lg:text-[34px] gold-text">{best500.time==='-'?'--':best500.time}</div>
-                      <div className="mt-2 text-[11px] font-[600] text-[#C9A86A]">Personal Best · 상위 8% 진입</div>
-                    </div>
-                  </div>
                 </div>
 
                 <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
-                  {/* Weekly volume */}
-                  <div className="card p-5 lg:p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="font-[700] text-[14px] tracking-[-0.01em]">주간 볼륨 · 바퀴수</div>
-                      <div className="flex items-center gap-1.5 text-[10px] font-[700] tracking-[0.08em] text-[#9A9A93]"><span className="w-2 h-2 rounded-full bg-[#D4AF37] shadow-[0_0_6px_#D4AF37]"/>LAPS</div>
-                    </div>
-                    <div className="mt-5 h-[168px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={weeklyVolume} barCategoryGap="32%">
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#9A9A93', fontWeight:600 }} />
-                          <YAxis hide />
-                          <Tooltip cursor={{ fill:'rgba(212,175,55,0.04)' }} contentStyle={{ background:'#121214', border:'1px solid #2C2A20', borderRadius:12, fontSize:12 }} labelStyle={{ color:'#9A9A93' }}/>
-                          <Bar dataKey="laps" radius={[8,8,4,4]}>
-                            {weeklyVolume.map((_,i)=> <Cell key={i} fill={weeklyVolume[i].laps>0 ? '#D4AF37' : '#232326'} />)}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 grid grid-cols-7 gap-1">
-                      {weeklyVolume.map((d,i)=>(
-                        <div key={i} className="text-center">
-                          <div className={`text-[10px] font-[700] ${d.laps>60?'text-[#D4AF37]':'text-[#6A6A66]'}`}>{d.laps>0? `${d.laps}`:'-'}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
                   {/* Condition & RPE */}
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
@@ -531,7 +465,7 @@ export default function App() {
                     </div>
                     <div className="mt-3 p-3 rounded-[12px] bg-[#0E0E10] border border-[#1E1C14] flex items-center justify-between">
                       <span className="text-[11px] font-[600] text-[#9A9A93]">평균 RPE</span>
-                      <span className="text-[13px] font-[800] text-[#F5F1E8]">{(conditionTrend.reduce((a,b)=>a+b.rpe,0)/conditionTrend.length||0).toFixed(1)} / 10</span>
+                      <span className="text-[13px] font-[800] text-[#F5F1E8]">{(()=>{ const withRpe=conditionTrend.filter(c=>typeof c.rpe==='number'); return withRpe.length ? (withRpe.reduce((a,b)=>a+(b.rpe as number),0)/withRpe.length).toFixed(1) : '-'; })()} / 10</span>
                     </div>
                   </div>
                 </div>
@@ -563,7 +497,7 @@ export default function App() {
                             </div>
                             <div className="text-right">
                               <div className="text-[12px] font-[800] text-[#F5F1E8]">{log.timeRecords?.[0]?.time || '-'}</div>
-                              <div className="text-[10px] font-[600] text-[#6A6A66]">RPE {log.rpe}</div>
+                              <div className="text-[10px] font-[600] text-[#6A6A66]">{log.rpe!=null ? `RPE ${log.rpe}` : ''}</div>
                             </div>
                           </div>
                         );
@@ -655,11 +589,6 @@ export default function App() {
                           <span className="text-[13px] font-[800]">{TYPE_META[selectedLog.type].label}</span>
                           <span className="ml-auto text-[12px]">{MOODS.find(m=>m.id===selectedLog.condition)?.emoji}</span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-center">
-                          <div className="rounded-[10px] bg-[#121214] border border-[#1E1E22] py-2"><div className="text-[10px] font-[700] text-[#6A6A66]">바퀴</div><div className="text-[13px] font-[800] mt-0.5 text-[#F5F1E8]">{selectedLog.laps ?? '-'}</div></div>
-                          <div className="rounded-[10px] bg-[#121214] border border-[#1E1E22] py-2"><div className="text-[10px] font-[700] text-[#6A6A66]">시간</div><div className="text-[11px] font-[700] mt-0.5 text-[#D4AF37]">{selectedLog.timeRecords?.[0]?.time ?? '-'}</div></div>
-                          <div className="rounded-[10px] bg-[#121214] border border-[#1E1E22] py-2"><div className="text-[10px] font-[700] text-[#6A6A66]">RPE</div><div className="text-[13px] font-[800] mt-0.5 text-[#F5F1E8]">{selectedLog.rpe}</div></div>
-                        </div>
                       </div>
                     ) : (
                       <div className="mt-3 py-4 text-center rounded-[12px] bg-[#0E0E10] border border-[#1E1E22]">
@@ -746,54 +675,8 @@ export default function App() {
 
                           <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
 
-                          {editing.type==='ice' && (
-                            <div className="space-y-8">
-                              <div className="grid lg:grid-cols-2 gap-4">
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">바퀴수 · LAPS</div>
-                                  <div className="mt-4 flex items-center gap-3">
-                                    <button onClick={()=>setEditing({...editing, laps: Math.max(0,(editing.laps||0)-5)})} className="w-11 h-11 rounded-full bg-[#18181B] border border-[#232326] font-[800] text-[18px]">−</button>
-                                    <div className="flex-1 h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] flex items-center justify-center gap-2">
-                                      <input type="number" inputMode="numeric" value={editing.laps||0} onChange={e=>setEditing({...editing, laps: parseInt(e.target.value)||0})} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
-                                      <span className="text-[12px] font-[700] text-[#6A6A66]">바퀴</span>
-                                    </div>
-                                    <button onClick={()=>setEditing({...editing, laps: (editing.laps||0)+5})} className="w-11 h-11 rounded-full gold-gradient text-[#060608] font-[800] text-[18px]">+</button>
-                                  </div>
-                                  <div className="mt-3 text-[11px] font-[600] text-[#6A6A66] text-center">{((editing.laps||0)*TRACK/1000).toFixed(2)}km · 111.12m 기준</div>
-                                </div>
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">강도 · RPE (1~10)</div>
-                                  <div className="mt-4 flex flex-wrap gap-1.5">
-                                    {[1,2,3,4,5,6,7,8,9,10].map(n=>{
-                                      const active=(editing.rpe||5)>=n;
-                                      return <button key={n} onClick={()=>setEditing({...editing, rpe:n})} className={`w-9 h-9 rounded-full text-[12px] font-[800] border transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#4A4A4E]'}`}>{n}</button>;
-                                    })}
-                                  </div>
-                                </div>
-                              </div>
-                              <TimeInputsEditor timeInputs={timeInputs} onChange={(d,v)=>setTimeInputs({...timeInputs, [d]:v})} />
-                            </div>
-                          )}
-
                           {editing.type==='dry' && (
-                            <div className="space-y-6">
-                              <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                <div className="label-caps">훈련 시간</div>
-                                <div className="mt-4 flex items-center gap-3">
-                                  <button onClick={()=>setEditing({...editing, minutes: Math.max(0,(editing.minutes||0)-10)})} className="w-11 h-11 rounded-full bg-[#18181B] border border-[#232326] font-[800] text-[18px]">−</button>
-                                  <div className="flex-1 h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] flex items-center justify-center gap-2">
-                                    <input type="number" value={editing.minutes||0} onChange={e=>setEditing({...editing, minutes: parseInt(e.target.value)||0})} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
-                                    <span className="text-[12px] font-[700] text-[#6A6A66]">분</span>
-                                  </div>
-                                  <button onClick={()=>setEditing({...editing, minutes: (editing.minutes||0)+10})} className="w-11 h-11 rounded-full gold-gradient text-[#060608] font-[800] text-[18px]">+</button>
-                                </div>
-                              </div>
-                              <DryItemsEditor
-                                items={editing.dryItems||[]}
-                                onAdd={(item)=>setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]})}
-                                onRemove={(id)=>setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)})}
-                              />
-                            </div>
+                            <QuickNoteInsert onInsert={insertNoteItem} />
                           )}
 
                          {editing.type==='rest' && (
@@ -804,6 +687,14 @@ export default function App() {
                            </div>
                          )}
 
+
+                          <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
+
+                          <div>
+                            <div className="label-caps text-[#D4AF37] text-[11px]">한줄 일기 · 오늘의 디테일{editing.type==='ice' && ' · 빙상'}{editing.type==='dry' && ' · 육상'}</div>
+                            <textarea value={activeNote} onChange={e=>setActiveNote(e.target.value)} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까? 구체적으로 적을수록 다음 훈련이 빨라져요." className="mt-4 w-full min-h-[140px] rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
+                            <div className="mt-3 text-[11px] font-[600] text-[#6A6A66]">{activeNote.length}/200 · 챔피언은 디테일을 기록한다</div>
+                          </div>
 
                           {/* Media links section */}
                           <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/30 via-[#2A2A20] to-transparent"/>
@@ -839,14 +730,6 @@ export default function App() {
                             </div>
                           </div>
 
-                          <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
-
-                          <div>
-                            <div className="label-caps text-[#D4AF37] text-[11px]">한줄 일기 · 오늘의 디테일</div>
-                            <textarea value={editing.note||''} onChange={e=>setEditing({...editing, note:e.target.value})} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까? 구체적으로 적을수록 다음 훈련이 빨라져요." className="mt-4 w-full min-h-[140px] rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
-                            <div className="mt-3 text-[11px] font-[600] text-[#6A6A66]">{(editing.note||'').length}/200 · 챔피언은 디테일을 기록한다</div>
-                          </div>
-
                           <div className="flex gap-3 pt-2">
                             <button onClick={saveLog} className="flex-1 h-[56px] rounded-[16px] gold-gradient text-[#060608] font-[800] text-[16px] shadow-[0_0_24px_rgba(212,175,55,0.3)] hover:shadow-[0_0_32px_rgba(212,175,55,0.45)] active:scale-[0.98] transition-all">기록 저장</button>
                             <button onClick={()=>setDiaryEditMode(false)} className="h-[56px] px-8 rounded-[16px] bg-[#18181B] border border-[#232326] text-[14px] font-[700] text-[#CFCFC8] hover:border-[#3A3520]">취소</button>
@@ -862,59 +745,25 @@ export default function App() {
                             <div>
                               <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[#060608] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(212,175,55,0.3)]">{TYPE_META[selectedLog.type].label} · {selectedLog.date}</div>
                               <div className="mt-3 font-[800] text-[20px] leading-[1.2]">오늘의 챔피언 로그</div>
-                              <div className="mt-1 text-[13px] font-[500] text-[#9A9A93]">컨디션 {MOODS.find(m=>m.id===selectedLog.condition)?.label} · 집중 {selectedLog.focus}/5 · 수면 {selectedLog.sleepHours?.toFixed(1)}h</div>
+                              <div className="mt-1 text-[13px] font-[500] text-[#9A9A93]">컨디션 {MOODS.find(m=>m.id===selectedLog.condition)?.label}{selectedLog.focus!=null && ` · 집중 ${selectedLog.focus}/5`}{selectedLog.sleepHours!=null && ` · 수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
                             </div>
                           </div>
                           <div className="hidden lg:flex w-[96px] h-[96px] rounded-full border border-[#D4AF37]/20 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(212,175,55,0.15),transparent)] items-center justify-center text-[40px] opacity-80">⛸️</div>
                         </div>
 
-                        {/* Huge stats */}
-                        <div className="mt-10 grid lg:grid-cols-[1.2fr_0.8fr] gap-8 items-start">
-                          <div>
-                            <div className="label-caps text-[#D4AF37]">바퀴수 · LAPS</div>
-                            <div className="mt-2 flex items-baseline gap-3">
-                              <span className="text-[72px] font-[800] leading-[0.9] tracking-[-0.05em] gold-text">{selectedLog.laps ?? '-'}</span>
-                              <span className="text-[18px] font-[700] text-[#9A9A93]">바퀴</span>
-                              {selectedLog.km && <span className="ml-2 text-[14px] font-[600] text-[#6A6A66]">{selectedLog.km}km</span>}
-                            </div>
-                            <div className="mt-6 h-[1px] bg-gradient-to-r from-[#D4AF37]/20 to-transparent"/>
-                            <div className="mt-6">
-                              <div className="label-caps text-[#9A9A93]">타임 기록</div>
-                              <div className="mt-4 flex flex-wrap gap-3">
-                                {selectedLog.timeRecords && selectedLog.timeRecords.length>0 ? selectedLog.timeRecords.map((r,i)=>(
-                                  <div key={i} className="rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] px-5 py-4 min-w-[132px]">
-                                    <div className="text-[11px] font-[700] tracking-[0.1em] text-[#D4AF37]">{r.distance}M</div>
-                                    <div className="mt-1 font-[800] text-[22px] tracking-[-0.02em] text-[#F5F1E8]">{r.time}</div>
-                                  </div>
-                                )) : <div className="text-[14px] text-[#6A6A66]">기록 없음 · 다음엔 타임을 재보자</div>}
-                              </div>
-                            </div>
+                        {/* Condition */}
+                        <div className="mt-10 rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] p-4">
+                          <div className="label-caps">컨디션</div>
+                          <div className="mt-3 flex items-center gap-3">
+                            <span className="text-[28px]">{MOODS.find(m=>m.id===selectedLog.condition)?.emoji}</span>
+                            <span className="text-[16px] font-[700]">{MOODS.find(m=>m.id===selectedLog.condition)?.label}</span>
+                            <span className="ml-auto text-[12px] font-[600] text-[#9A9A93]">{selectedLog.focus!=null && `${selectedLog.focus} 집중 · `}{selectedLog.sleepHours!=null ? `${selectedLog.sleepHours.toFixed(1)}h 수면` : ''}</span>
                           </div>
-                          <div className="space-y-6">
-                            <div>
-                              <div className="label-caps">RPE · 강도</div>
-                              <div className="mt-3 flex gap-1.5">
-                                {Array.from({length:10}).map((_,idx)=>{
-                                  const filled=(selectedLog.rpe||0)>idx;
-                                  return <div key={idx} className={`flex-1 h-[28px] rounded-[8px] border transition-all ${filled? 'gold-gradient border-[#D4AF37] shadow-[0_0_8px_rgba(212,175,55,0.25)]' : 'bg-[#18181B] border-[#232326]'}`}/>;
-                                })}
-                              </div>
-                              <div className="mt-2 text-[12px] font-[700] text-[#9A9A93]">RPE {selectedLog.rpe} / 10 · {selectedLog.rpe && selectedLog.rpe<=3?'가볍게': selectedLog.rpe && selectedLog.rpe<=6?'보통':'강하게'}</div>
+                          {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
+                            <div className="mt-4 flex flex-wrap gap-1.5">
+                              {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
                             </div>
-                            <div className="rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] p-4">
-                              <div className="label-caps">컨디션</div>
-                              <div className="mt-3 flex items-center gap-3">
-                                <span className="text-[28px]">{MOODS.find(m=>m.id===selectedLog.condition)?.emoji}</span>
-                                <span className="text-[16px] font-[700]">{MOODS.find(m=>m.id===selectedLog.condition)?.label}</span>
-                                <span className="ml-auto text-[12px] font-[600] text-[#9A9A93]">{selectedLog.focus} 집중 · {selectedLog.sleepHours?.toFixed(1)}h 수면</span>
-                              </div>
-                              {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
-                                <div className="mt-4 flex flex-wrap gap-1.5">
-                                  {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                          )}
                         </div>
 
                        {/* Blockquote */}
@@ -1002,13 +851,12 @@ export default function App() {
                         {/* Edit/delete */}
                         <div className="mt-10 flex gap-3">
                           <button onClick={()=>{
-                            const inputs: Record<number,string> = {};
-                            DISTANCES.forEach(d=>{ inputs[d] = selectedLog.timeRecords?.find(r=>r.distance===d)?.time || ''; });
-                            setEditing({...selectedLog, mood:selectedLog.condition as Mood});
-                            setTimeInputs(inputs);
+                            const draftNote = selectedLog.type==='ice' ? { noteIce: selectedLog.note } : selectedLog.type==='dry' ? { noteDry: selectedLog.note } : {};
+                            setEditing({...selectedLog, mood:selectedLog.condition as Mood, ...draftNote});
                             setDiaryEditMode(true);
                           }} className="h-[48px] px-8 rounded-full bg-[#F5F1E8] text-[#060608] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[#18181B] border border-[#232326] text-[13px] font-[700] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]">삭제</button>
+                          <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[#18181B] border border-[#232326] text-[13px] font-[700] text-[#D4AF37] hover:border-[#3A3520] flex items-center gap-2 disabled:opacity-50"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[#6A6A66]">BLACK & GOLD · {selectedLog.date}</span>
                         </div>
                       </div>
@@ -1029,6 +877,31 @@ export default function App() {
 
             {view==='records' && (
               <div className="space-y-5">
+                {/* Input */}
+                <div className="card p-5 lg:p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="font-[700] text-[14px] flex items-center gap-2"><Trophy size={16} className="text-[#D4AF37]"/> 기록 입력</div>
+                    <input type="date" value={recordDate} onChange={e=>setRecordDate(e.target.value)} className="h-9 px-3 rounded-full bg-[#101012] border border-[#2A2A2E] text-[12px] font-[700] text-[#F5F1E8] outline-none"/>
+                  </div>
+                  <div className="mt-5 rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
+                    <div className="label-caps">바퀴수 선택 · LAPS</div>
+                    <div className="mt-4 flex items-center gap-3">
+                      <button onClick={()=>setRecordLaps(Math.max(0,recordLaps-5))} className="w-11 h-11 rounded-full bg-[#18181B] border border-[#232326] font-[800] text-[18px]">−</button>
+                      <div className="flex-1 h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] flex items-center justify-center gap-2">
+                        <input type="number" inputMode="numeric" value={recordLaps} onChange={e=>setRecordLaps(parseInt(e.target.value)||0)} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
+                        <span className="text-[12px] font-[700] text-[#6A6A66]">바퀴</span>
+                      </div>
+                      <button onClick={()=>setRecordLaps(recordLaps+5)} className="w-11 h-11 rounded-full gold-gradient text-[#060608] font-[800] text-[18px]">+</button>
+                    </div>
+                    <div className="mt-3 text-[11px] font-[600] text-[#6A6A66] text-center">{(recordLaps*111.12/1000).toFixed(2)}km · 111.12m 기준</div>
+                  </div>
+                  <div className="mt-4">
+                    <div className="label-caps mb-3">시간 입력 · TIME</div>
+                    <TimeInputsEditor timeInputs={recordTimeInputs} onChange={(d,v)=>setRecordTimeInputs({...recordTimeInputs, [d]:v})} />
+                  </div>
+                  <button onClick={saveRecordEntry} className="mt-5 w-full h-[52px] rounded-[16px] gold-gradient text-[#060608] font-[800] text-[14px] shadow-[0_0_24px_rgba(212,175,55,0.3)] hover:shadow-[0_0_32px_rgba(212,175,55,0.45)] active:scale-[0.98] transition-all">기록 저장</button>
+                </div>
+
                 <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
@@ -1128,118 +1001,48 @@ export default function App() {
             )}
 
             {view==='growth' && (
-              <div className="grid lg:grid-cols-[1.2fr_0.8fr] gap-4 lg:gap-5">
-                <div className="space-y-4 lg:space-y-5">
-                  <div className="card p-5 lg:p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="font-[700] text-[14px]">Body Growth · 신체 성장</div>
-                      <span className="text-[10px] font-[700] tracking-[0.1em] px-2.5 h-5 rounded-full bg-[#1A1912] border border-[#3A3520] text-[#D4AF37] inline-flex items-center">6개월</span>
-                    </div>
-                    <div className="mt-6 h-[200px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={mockBody}>
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:'#9A9A93', fontWeight:600 }} />
-                          <YAxis domain={['dataMin -1','dataMax +1']} axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#6A6A66' }} width={36} />
-                          <Tooltip contentStyle={{ background:'#121214', border:'1px solid #2C2A20', borderRadius:12, fontSize:11 }} />
-                          <Line type="monotone" dataKey="height" stroke="#D4AF37" strokeWidth={2.5} dot={{ r:4, strokeWidth:2, fill:'#060608', stroke:'#D4AF37' }} />
-                          <Line type="monotone" dataKey="weight" stroke="#4A4A4E" strokeWidth={1.5} dot={false} strokeDasharray="4 4"/>
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-4 flex gap-2 text-[11px] font-[600]">
-                      <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-[#D4AF37] rounded-full"/>키 cm</span>
-                      <span className="inline-flex items-center gap-1.5"><span className="w-2.5 h-0.5 bg-[#4A4A4E] rounded-full border border-dashed border-[#4A4A4E]"/>몸무게 kg</span>
-                      <span className="ml-auto font-[700] text-[#D4AF37]">+4.1cm / +3.0kg 성장</span>
-                    </div>
-                  </div>
-                  <div className="card p-5 lg:p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
-                      <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800]">+ 목표 추가</button>
-                    </div>
-                    <div className="mt-5 grid sm:grid-cols-3 gap-3">
-                      {goals.map(g=>(
-                        <div key={g.id} className="rounded-[16px] bg-[#101012] border border-[#1E1C14] p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#2C2A20] flex items-center justify-center text-[18px]">{g.icon}</div>
-                            <div className="flex gap-1">
-                              <button onClick={()=>setGoalForm(g)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">✎</button>
-                              <button onClick={()=>deleteGoalRemote(g.id)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">×</button>
-                            </div>
-                          </div>
-                          <div className="mt-3 font-[700] text-[12px] leading-[1.3]">{g.title}</div>
-                          <div className="mt-2 h-1.5 rounded-full bg-[#1E1E22] overflow-hidden"><div className="h-full gold-gradient rounded-full" style={{width:`${g.progress}%`}}/></div>
-                          <div className="mt-2 flex justify-between text-[10px] font-[600] text-[#9A9A93]"><span>{g.current}</span><span>{g.progress}% · 목표 {g.target}</span></div>
-                        </div>
-                      ))}
-                      {goals.length===0 && !goalForm && <div className="sm:col-span-3 text-center py-8 text-[12px] text-[#6A6A66]">아직 등록된 목표가 없어요 · 위 버튼으로 추가해보세요</div>}
-                    </div>
-                    {goalForm && (
-                      <div className="mt-5 rounded-[16px] bg-[#0E0E10] border border-[#1E1C14] p-4 space-y-3">
-                        <div className="grid grid-cols-[56px_1fr] gap-2">
-                          <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center text-[18px] outline-none"/>
-                          <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <input value={goalForm.current} onChange={e=>setGoalForm({...goalForm, current:e.target.value})} placeholder="현재 (예: 52.14)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                          <input value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target:e.target.value})} placeholder="목표 (예: 50.00)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                        </div>
-                        <div>
-                          <div className="flex items-center justify-between text-[11px] font-[600] text-[#9A9A93]"><span>달성률</span><span className="text-[#D4AF37] font-[800]">{goalForm.progress}%</span></div>
-                          <input type="range" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: parseInt(e.target.value)})} className="mt-2 w-full accent-[#D4AF37]"/>
-                        </div>
-                        <div className="flex gap-2">
-                          <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] disabled:opacity-40">저장</button>
-                          <button onClick={()=>setGoalForm(null)} className="h-10 px-4 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#9A9A93]">취소</button>
-                        </div>
-                      </div>
-                    )}
-                    <div className="mt-5 rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] p-4 flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full gold-gradient flex items-center justify-center"><Crown size={16} className="text-[#060608]"/></div>
-                      <div>
-                        <div className="text-[12px] font-[700]">Olympic Roadmap</div>
-                        <div className="text-[11px] font-[500] text-[#9A9A93]">지금 페이스 유지하면 시즌 50초 컷 가능. 코너링 안정성이 핵심.</div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="card p-5 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
+                  <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800]">+ 목표 추가</button>
                 </div>
-
-                <div className="space-y-4 lg:space-y-5">
-                  <div className="card p-5 lg:p-6">
-                    <div className="font-[700] text-[14px]">Mental & Skills Radar</div>
-                    <div className="mt-4 h-[260px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadarChart data={mockMental} outerRadius={88}>
-                          <PolarGrid stroke="#232326" />
-                          <PolarAngleAxis dataKey="subject" tick={{ fontSize:11, fill:'#9A9A93', fontWeight:600 }} />
-                          <PolarRadiusAxis angle={30} domain={[0,100]} tick={false} axisLine={false} />
-                          <Radar dataKey="value" stroke="#D4AF37" fill="#D4AF37" fillOpacity={0.22} strokeWidth={2} />
-                        </RadarChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 grid grid-cols-3 gap-2">
-                      {mockMental.slice(0,3).map(m=>(
-                        <div key={m.subject} className="rounded-[10px] bg-[#101012] border border-[#1E1E22] p-2.5 text-center">
-                          <div className="label-caps text-[9px]">{m.subject}</div>
-                          <div className="mt-1 font-[800] text-[13px] text-[#D4AF37]">{m.value}</div>
+                <div className="mt-5 grid sm:grid-cols-3 gap-3">
+                  {goals.map(g=>(
+                    <div key={g.id} className="rounded-[16px] bg-[#101012] border border-[#1E1C14] p-4">
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#2C2A20] flex items-center justify-center text-[18px]">{g.icon}</div>
+                        <div className="flex gap-1">
+                          <button onClick={()=>setGoalForm(g)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">✎</button>
+                          <button onClick={()=>deleteGoalRemote(g.id)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">×</button>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="card p-5">
-                    <div className="font-[700] text-[13px]">성장 코멘트</div>
-                    <div className="mt-3 space-y-3">
-                      <div className="rounded-[12px] bg-[#101012] border border-[#1E1C14] p-3">
-                        <div className="text-[11px] font-[700] text-[#D4AF37]">코치 노트</div>
-                        <div className="mt-1 text-[11px] font-[500] leading-[1.5] text-[#CFCFC8]">코너 진입 시 상체 기울기 좋아졌어. 이제 아웃-인-아웃 라인만 더 연습하면 0.5초는 더 줄일 수 있어.</div>
                       </div>
-                      <div className="rounded-[12px] bg-[#101012] border border-[#1E1C14] p-3">
-                        <div className="text-[11px] font-[700] text-[#C9A86A]">다음주 포커스</div>
-                        <div className="mt-1 text-[11px] font-[500] leading-[1.5] text-[#CFCFC8]">· 스타트 3회 추가 · 코어 15분 루틴 · 수면 8시간 확보</div>
-                      </div>
+                      <div className="mt-3 font-[700] text-[12px] leading-[1.3]">{g.title}</div>
+                      <div className="mt-2 h-1.5 rounded-full bg-[#1E1E22] overflow-hidden"><div className="h-full gold-gradient rounded-full" style={{width:`${g.progress}%`}}/></div>
+                      <div className="mt-2 flex justify-between text-[10px] font-[600] text-[#9A9A93]"><span>{g.current}</span><span>{g.progress}% · 목표 {g.target}</span></div>
                     </div>
-                  </div>
+                  ))}
+                  {goals.length===0 && !goalForm && <div className="sm:col-span-3 text-center py-8 text-[12px] text-[#6A6A66]">아직 등록된 목표가 없어요 · 위 버튼으로 추가해보세요</div>}
                 </div>
+                {goalForm && (
+                  <div className="mt-5 rounded-[16px] bg-[#0E0E10] border border-[#1E1C14] p-4 space-y-3">
+                    <div className="grid grid-cols-[56px_1fr] gap-2">
+                      <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center text-[18px] outline-none"/>
+                      <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <input value={goalForm.current} onChange={e=>setGoalForm({...goalForm, current:e.target.value})} placeholder="현재 (예: 52.14)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                      <input value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target:e.target.value})} placeholder="목표 (예: 50.00)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                    </div>
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] font-[600] text-[#9A9A93]"><span>달성률</span><span className="text-[#D4AF37] font-[800]">{goalForm.progress}%</span></div>
+                      <input type="range" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: parseInt(e.target.value)})} className="mt-2 w-full accent-[#D4AF37]"/>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] disabled:opacity-40">저장</button>
+                      <button onClick={()=>setGoalForm(null)} className="h-10 px-4 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#9A9A93]">취소</button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </main>
@@ -1301,66 +1104,8 @@ export default function App() {
                 </div>
               </div>
 
-              {editing.type==='ice' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="card !p-4">
-                      <div className="label-caps">Laps</div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button onClick={()=>setEditing({...editing, laps: Math.max(0,(editing.laps||0)-5)})} className="w-9 h-9 rounded-full bg-[#18181B] border border-[#232326] font-[800]">−</button>
-                        <div className="flex-1 h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] flex items-center justify-center gap-1">
-                          <input type="number" inputMode="numeric" value={editing.laps||0} onChange={e=>setEditing({...editing, laps: parseInt(e.target.value)||0})} className="w-[64px] bg-transparent text-center font-[800] text-[20px] outline-none"/>
-                          <span className="text-[11px] font-[600] text-[#6A6A66]">바퀴</span>
-                        </div>
-                        <button onClick={()=>setEditing({...editing, laps: (editing.laps||0)+5})} className="w-9 h-9 rounded-full gold-gradient text-[#060608] font-[800]">+</button>
-                      </div>
-                      <div className="mt-2 text-[10px] font-[600] text-[#6A6A66] text-center">{((editing.laps||0)*TRACK/1000).toFixed(2)}km · 111.12m/랩</div>
-                    </div>
-                    <div className="card !p-4">
-                      <div className="label-caps">RPE · 강도</div>
-                      <div className="mt-3 flex items-center gap-1">
-                        {[1,2,3,4,5,6,7,8,9,10].map(n=>{
-                          const active=(editing.rpe||5)>=n;
-                          return <button key={n} onClick={()=>setEditing({...editing, rpe:n})} className={`flex-1 h-7 rounded-full text-[10px] font-[800] border transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#4A4A4E]'}`}>{n}</button>;
-                        })}
-                      </div>
-                      <div className="mt-2 text-[10px] font-[600] text-[#6A6A66] text-center">현재 RPE {editing.rpe||5} · { (editing.rpe||5)<=3?'가볍게' : (editing.rpe||5)<=6?'보통':'강하게' }</div>
-                    </div>
-                  </div>
-                  <TimeInputsEditor timeInputs={timeInputs} onChange={(d,v)=>setTimeInputs({...timeInputs, [d]:v})} compact />
-                </div>
-              )}
-
               {editing.type==='dry' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="card !p-4">
-                      <div className="label-caps">Minutes</div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button onClick={()=>setEditing({...editing, minutes: Math.max(0,(editing.minutes||0)-10)})} className="w-9 h-9 rounded-full bg-[#18181B] border border-[#232326] font-[800]">−</button>
-                        <div className="flex-1 h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] flex items-center justify-center gap-1">
-                          <input type="number" value={editing.minutes||0} onChange={e=>setEditing({...editing, minutes: parseInt(e.target.value)||0})} className="w-[56px] bg-transparent text-center font-[800] text-[20px] outline-none"/>
-                          <span className="text-[11px] font-[600] text-[#6A6A66]">분</span>
-                        </div>
-                        <button onClick={()=>setEditing({...editing, minutes: (editing.minutes||0)+10})} className="w-9 h-9 rounded-full gold-gradient text-[#060608] font-[800]">+</button>
-                      </div>
-                    </div>
-                    <div className="card !p-4">
-                      <div className="label-caps">Focus Level</div>
-                      <div className="mt-3 flex gap-1.5">
-                        {[1,2,3,4,5].map(n=>(
-                          <button key={n} onClick={()=>setEditing({...editing, focus:n})} className={`flex-1 h-11 rounded-[12px] border font-[700] text-[12px] ${editing.focus===n?'gold-gradient border-[#D4AF37] text-[#060608]':'bg-[#18181B] border-[#232326] text-[#9A9A93]'}`}>{n}</button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                  <DryItemsEditor
-                    items={editing.dryItems||[]}
-                    onAdd={(item)=>setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]})}
-                    onRemove={(id)=>setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)})}
-                    compact
-                  />
-                </div>
+                <QuickNoteInsert onInsert={insertNoteItem} compact />
               )}
 
               {editing.type==='rest' && (
@@ -1376,11 +1121,11 @@ export default function App() {
               )}
 
               <div className="card !p-4">
-                <div className="label-caps">오늘의 노트 · 챔피언 다이어리</div>
-                <textarea value={editing.note||''} onChange={e=>setEditing({...editing, note:e.target.value})} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까?" className="mt-3 w-full min-h-[80px] rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
+                <div className="label-caps">오늘의 노트 · 챔피언 다이어리{editing.type==='ice' && ' · 빙상'}{editing.type==='dry' && ' · 육상'}</div>
+                <textarea value={activeNote} onChange={e=>setActiveNote(e.target.value)} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까?" className="mt-3 w-full min-h-[80px] rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
                 <div className="mt-3 flex items-center justify-between text-[10px] font-[600] text-[#6A6A66]">
                   <span>팁: 구체적일수록 다음 훈련이 빨라져요</span>
-                  <span className="text-[#D4AF37]">{(editing.note||'').length}/120</span>
+                  <span className="text-[#D4AF37]">{activeNote.length}/120</span>
                 </div>
               </div>
 
