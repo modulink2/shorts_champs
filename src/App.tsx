@@ -27,7 +27,7 @@ const GOLD_BRIGHT = '#FFD700';
 const GOLD_GRAD = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%)';
 
 // Short-track record distances — add/remove here to change what's trackable everywhere.
-const DISTANCES = [222, 333, 500, 1000, 1500] as const;
+const DISTANCES = [111, 222, 333, 500, 1000, 1500] as const;
 // Dry-land (육상) training item types and their valid units — add/remove here to change the picker.
 const DRY_ITEM_TYPES: { type: string; units: string[] }[] = [
   { type: '러닝', units: ['분', '바퀴'] },
