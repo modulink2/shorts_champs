@@ -319,13 +319,13 @@ export default function App() {
     <div className="min-h-screen w-full bg-[#060608] text-[#F5F1E8] selection:bg-[#D4AF37]/20 antialiased overflow-x-hidden">
       {/* subtle radial gold vignette */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(212,175,55,0.10),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(201,168,106,0.06),transparent_50%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(212,175,55,0.14),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(201,168,106,0.09),transparent_50%),radial-gradient(50%_45%_at_5%_60%,rgba(212,175,55,0.07),transparent_55%),radial-gradient(45%_40%_at_85%_90%,rgba(201,168,106,0.06),transparent_55%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/40 to-transparent" />
       </div>
 
       <div className="relative z-10 flex min-h-screen">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[#08080A] border-r border-[#1C1A12] sticky top-0 h-screen">
+        <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[#08080A]/70 backdrop-blur-2xl border-r border-[#1C1A12] sticky top-0 h-screen">
           <div className="h-[72px] px-6 flex items-center gap-3 border-b border-[#1C1A12]">
             <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[#060608] font-[900] text-[16px] shadow-[0_0_20px_rgba(212,175,55,0.4)]">S</div>
             <div>
@@ -1259,7 +1259,7 @@ export default function App() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
           <div className="absolute inset-0 bg-[#060608]/80 backdrop-blur-[12px]" onClick={()=>setShowModal(false)}/>
-          <div className="relative w-full lg:max-w-[640px] max-h-[92vh] lg:max-h-[88vh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[#0C0C0E] border border-[#2C2A20] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(212,175,55,0.15)_inset]">
+          <div className="relative w-full lg:max-w-[640px] max-h-[92vh] lg:max-h-[88vh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[#0C0C0E]/80 backdrop-blur-2xl border border-[#2C2A20] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(212,175,55,0.15)_inset]">
             <div className="sticky top-0 z-10 bg-[#0C0C0E]/90 backdrop-blur-xl border-b border-[#1E1C14] px-6 h-[68px] flex items-center justify-between">
               <div>
                 <div className="font-[800] text-[15px] tracking-[-0.02em] flex items-center gap-2"><span className="w-6 h-6 rounded-full gold-gradient flex items-center justify-center text-[#060608] text-[12px]">✦</span>{editing.date} 훈련 기록</div>
