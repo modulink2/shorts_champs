@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, X, Trophy, Target, Activity, Calendar, BarCh
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, AreaChart, Area } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
+import { useGoals } from './useGoals';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
@@ -10,19 +11,33 @@ type ViewType = 'dashboard' | 'diary' | 'records' | 'growth';
 type Mood = 1 | 2 | 3 | 4 | 5;
 
 export interface TimeRecord { distance: number; time: string; seconds: number; }
+export interface DryItem { id: string; type: string; value: number; unit: string; }
 export interface TrainingLog {
   id: string; date: string; type: TrainingType; minutes: number; condition: number; rpe: number; laps?: number; km?: number;
-  timeRecords?: TimeRecord[]; dryItems?: string[]; pain: boolean; note: string; focus?: number; sleepHours?: number;
+  timeRecords?: TimeRecord[]; dryItems?: DryItem[]; pain: boolean; note: string; focus?: number; sleepHours?: number;
   youtubeUrl?: string; instaUrl?: string;
 }
 interface BodyRecord { date: string; height: number; weight: number; }
-interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
+export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
 interface Mental { subject:string; value:number; fullMark:number; }
 
 const TRACK = 111.12;
 const GOLD = '#D4AF37';
 const GOLD_BRIGHT = '#FFD700';
 const GOLD_GRAD = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%)';
+
+// Short-track record distances — add/remove here to change what's trackable everywhere.
+const DISTANCES = [222, 333, 500, 1000, 1500] as const;
+// Dry-land (육상) training item types and their valid units — add/remove here to change the picker.
+const DRY_ITEM_TYPES: { type: string; units: string[] }[] = [
+  { type: '러닝', units: ['분', '바퀴'] },
+  { type: '점프', units: ['셋트', '회'] },
+  { type: '코어', units: ['분', '셋트'] },
+  { type: '웨이트', units: ['분', '셋트'] },
+  { type: '스트레칭', units: ['분'] },
+  { type: '스프린트', units: ['회', '바퀴'] },
+  { type: '밸런스', units: ['분', '셋트'] },
+];
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -100,25 +115,73 @@ const mockMental: Mental[] = [
   { subject: '멘탈', value: 84, fullMark: 100 },
   { subject: '코너링', value: 90, fullMark: 100 },
 ];
-const mockGoals: Goal[] = [
-  { id:'g1', title:'500m 50초 벽 돌파', target:'50.00', current:'52.14', progress:78, icon:'🏆' },
-  { id:'g2', title:'주 5일 빙상 훈련', target:'5일', current:'4일', progress:80, icon:'⛸️' },
-  { id:'g3', title:'월 1000바퀴 챌린지', target:'1000', current:'847', progress:84, icon:'👑' },
-];
+function TimeInputsEditor({ timeInputs, onChange, compact }: { timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void; compact?:boolean }) {
+  return (
+    <div className={compact ? 'grid grid-cols-2 gap-3' : 'grid sm:grid-cols-3 gap-4'}>
+      {DISTANCES.map(d=>(
+        <div key={d} className={compact ? 'card !p-4' : 'rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5'}>
+          <div className="label-caps">{d}m {compact ? 'Time' : '기록'}</div>
+          <input
+            value={timeInputs[d]||''} onChange={e=>onChange(d, e.target.value)}
+            placeholder={d>=1000 ? 'm:ss.ss' : 'ss.ss'} inputMode="decimal"
+            className={compact
+              ? 'mt-3 w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-3 text-[14px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]'
+              : 'mt-4 w-full h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] px-4 text-[18px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]'}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DryItemsEditor({ items, onAdd, onRemove, compact }: { items: DryItem[]; onAdd:(item:Omit<DryItem,'id'>)=>void; onRemove:(id:string)=>void; compact?:boolean }) {
+  const [type, setType] = useState(DRY_ITEM_TYPES[0].type);
+  const [unit, setUnit] = useState(DRY_ITEM_TYPES[0].units[0]);
+  const [value, setValue] = useState(10);
+  const units = DRY_ITEM_TYPES.find(t=>t.type===type)?.units || [];
+  return (
+    <div className={compact ? 'card !p-4' : 'rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5'}>
+      <div className="label-caps mb-3">훈련 항목 추가</div>
+      <div className="flex flex-wrap gap-2">
+        {DRY_ITEM_TYPES.map(t=>(
+          <button key={t.type} type="button" onClick={()=>{ setType(t.type); setUnit(t.units[0]); }} className={`h-9 px-3.5 rounded-full border text-[12px] font-[700] transition-all ${type===t.type? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520]'}`}>{t.type}</button>
+        ))}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <input type="number" value={value} onChange={e=>setValue(parseInt(e.target.value)||0)} className="w-20 h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center font-[700] outline-none"/>
+        <select value={unit} onChange={e=>setUnit(e.target.value)} className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-2 text-[12px] font-[700] outline-none">
+          {units.map(u=><option key={u} value={u}>{u}</option>)}
+        </select>
+        <button type="button" onClick={()=>onAdd({type, value, unit})} className="ml-auto h-10 px-4 rounded-full gold-gradient text-[#060608] font-[800] text-[12px]">+ 추가</button>
+      </div>
+      {items.length>0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {items.map(it=>(
+            <span key={it.id} className="h-8 pl-3 pr-1.5 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#CFCFC8] inline-flex items-center gap-1.5">
+              {it.type} {it.value}{it.unit}
+              <button type="button" onClick={()=>onRemove(it.id)} className="w-5 h-5 rounded-full bg-[#232326] hover:bg-[#3A3520] flex items-center justify-center text-[10px] leading-none">×</button>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function App() {
   const { user, logOut } = useAuth();
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
+  const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const [view, setView] = useState<ViewType>('dashboard');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10));
   const [showModal, setShowModal] = useState(false);
   const [diaryEditMode, setDiaryEditMode] = useState(false);
-  const [editing, setEditing] = useState<Partial<TrainingLog> & { mood?: Mood; time500?: string; time1000?: string }>({});
+  const [editing, setEditing] = useState<Partial<TrainingLog> & { mood?: Mood }>({});
   const [toast, setToast] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [time500Input, setTime500Input] = useState('');
-  const [time1000Input, setTime1000Input] = useState('');
+  const [timeInputs, setTimeInputs] = useState<Record<number,string>>({});
   const [searchType, setSearchType] = useState<'all'|'ice'|'dry'|'rest'>('all');
+  const [goalForm, setGoalForm] = useState<Goal | null>(null);
 
   useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t);} },[toast]);
   // Switch to edit mode automatically when changing to diary view? keep false initially
@@ -136,26 +199,18 @@ export default function App() {
   const totalKmMonth = useMemo(()=> thisMonthLogs.reduce((a,b)=>a+(b.km||0),0),[thisMonthLogs]);
   const totalLapsWeek = useMemo(()=> thisWeekLogs.reduce((a,b)=>a+(b.laps||0),0),[thisWeekLogs]);
 
-  const best500 = useMemo(()=>{
-    let best=Infinity; let str='-';
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===500 && r.seconds<best){ best=r.seconds; str=r.time; } }));
-    return { time:str, sec:best };
+  const bestByDistance = useMemo(()=>{
+    const map: Record<number, { time:string; sec:number }> = {};
+    DISTANCES.forEach(d=>{ map[d] = { time:'-', sec:Infinity }; });
+    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(map[r.distance] && r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds }; } }));
+    return map;
   },[logs]);
-  const best1000 = useMemo(()=>{
-    let best=Infinity; let str='-';
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===1000 && r.seconds<best){ best=r.seconds; str=r.time; } }));
-    return { time:str, sec:best };
-  },[logs]);
+  const best500 = bestByDistance[500];
 
   const time500List = useMemo(()=>{
     const arr: { date:string; seconds:number; time:string }[]=[];
     logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===500) arr.push({date:l.date, seconds:r.seconds, time:r.time}); }));
     return arr.sort((a,b)=> a.date.localeCompare(b.date)).slice(-12);
-  },[logs]);
-  const time1000List = useMemo(()=>{
-    const arr: { date:string; seconds:number; time:string }[]=[];
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===1000) arr.push({date:l.date, seconds:r.seconds, time:r.time}); }));
-    return arr.sort((a,b)=> b.date.localeCompare(a.date)).slice(0,8);
   },[logs]);
 
   const weeklyVolume = useMemo(()=>{
@@ -206,15 +261,14 @@ export default function App() {
 
  const openLog = (dateStr:string)=>{
    const existing = logs.find(l=>l.date===dateStr);
+   const inputs: Record<number,string> = {};
+   DISTANCES.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
    if(existing){
-     const t500 = existing.timeRecords?.find(r=>r.distance===500)?.time || '';
-     const t1000 = existing.timeRecords?.find(r=>r.distance===1000)?.time || '';
-      setEditing({ ...existing, mood: (existing.condition as Mood)||2, time500: t500, time1000: t1000, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
-      setTime500Input(t500); setTime1000Input(t1000);
+      setEditing({ ...existing, mood: (existing.condition as Mood)||2, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
     }else{
-      setEditing({ date:dateStr, type:'ice', minutes:70, mood:2 as Mood, laps:55, rpe:5, dryItems:[], note:'', time500:'', time1000:'', condition:2, focus:4, sleepHours:8, youtubeUrl:'', instaUrl:'' });
-      setTime500Input(''); setTime1000Input('');
+      setEditing({ date:dateStr, type:'ice', minutes:70, mood:2 as Mood, laps:55, rpe:5, dryItems:[], note:'', condition:2, focus:4, sleepHours:8, youtubeUrl:'', instaUrl:'' });
     }
+    setTimeInputs(inputs);
     setSelectedDate(dateStr);
     if(view==='diary'){
       setDiaryEditMode(true);
@@ -227,7 +281,6 @@ export default function App() {
     if(!editing.date) return;
     const laps = editing.type==='ice' ? (editing.laps||0) : undefined;
     const km = laps ? +(laps*TRACK/1000).toFixed(2) : undefined;
-    const timeRecs: TimeRecord[]=[];
     const parseTime = (raw:string)=>{
       raw=raw.trim(); if(!raw) return null;
       let sec=0;
@@ -235,12 +288,10 @@ export default function App() {
       if(sec<=0) return null;
       return { sec, display: raw.includes(':')? raw : sec.toFixed(2) };
     };
-    const p500 = parseTime(time500Input);
-    if(p500) timeRecs.push({ distance:500, time:p500.display, seconds:p500.sec });
-    const p1000 = parseTime(time1000Input);
-    if(p1000) timeRecs.push({ distance:1000, time:p1000.display, seconds:p1000.sec });
-    const prev = logs.find(l=>l.date===editing.date);
-    prev?.timeRecords?.forEach(r=>{ if(r.distance===1500) timeRecs.push(r); });
+    const timeRecs: TimeRecord[] = DISTANCES.map(d=>{
+      const p = parseTime(timeInputs[d]||'');
+      return p ? { distance:d, time:p.display, seconds:p.sec } : null;
+    }).filter((r): r is TimeRecord => r !== null);
 
     const cleanYt = (editing.youtubeUrl||'').trim();
     const cleanInsta = (editing.instaUrl||'').trim();
@@ -525,10 +576,10 @@ export default function App() {
                       <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-[radial-gradient(60%_60%_at_50%_50%,rgba(212,175,55,0.14),transparent)] pointer-events-none" />
                       <div className="flex items-center justify-between relative">
                         <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[#D4AF37]"/> 시즌 목표</div>
-                        <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[#1A1912] border border-[#3A3520] text-[#D4AF37] inline-flex items-center">3 GOALS</span>
+                        <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[#1A1912] border border-[#3A3520] text-[#D4AF37] inline-flex items-center">{goals.length} GOALS</span>
                       </div>
                       <div className="mt-5 space-y-4 relative">
-                        {mockGoals.map(g=>(
+                        {goals.slice(0,3).map(g=>(
                           <div key={g.id} className="rounded-[14px] bg-[#121214] border border-[#1E1C14] p-3.5">
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-2"><span>{g.icon}</span><span className="text-[12px] font-[700]">{g.title}</span></div>
@@ -538,6 +589,7 @@ export default function App() {
                             <div className="mt-2 flex justify-between text-[10px] font-[600] text-[#9A9A93]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
                           </div>
                         ))}
+                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[#6A6A66]">성장리포트 탭에서 시즌 목표를 등록해보세요</div>}
                       </div>
                     </div>
                     <div className="card p-4 flex items-center gap-3">
@@ -719,49 +771,28 @@ export default function App() {
                                   </div>
                                 </div>
                               </div>
-                              <div className="grid lg:grid-cols-2 gap-4">
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">500m 기록</div>
-                                  <input value={time500Input} onChange={e=>setTime500Input(e.target.value)} placeholder="58.32" inputMode="decimal" className="mt-4 w-full h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] px-4 text-[18px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                                </div>
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">1000m 기록</div>
-                                  <input value={time1000Input} onChange={e=>setTime1000Input(e.target.value)} placeholder="1:52.10" inputMode="decimal" className="mt-4 w-full h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] px-4 text-[18px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                                </div>
-                              </div>
+                              <TimeInputsEditor timeInputs={timeInputs} onChange={(d,v)=>setTimeInputs({...timeInputs, [d]:v})} />
                             </div>
                           )}
 
                           {editing.type==='dry' && (
                             <div className="space-y-6">
-                              <div className="grid lg:grid-cols-2 gap-4">
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">훈련 시간</div>
-                                  <div className="mt-4 flex items-center gap-3">
-                                    <button onClick={()=>setEditing({...editing, minutes: Math.max(0,(editing.minutes||0)-10)})} className="w-11 h-11 rounded-full bg-[#18181B] border border-[#232326] font-[800] text-[18px]">−</button>
-                                    <div className="flex-1 h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] flex items-center justify-center gap-2">
-                                      <input type="number" value={editing.minutes||0} onChange={e=>setEditing({...editing, minutes: parseInt(e.target.value)||0})} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
-                                      <span className="text-[12px] font-[700] text-[#6A6A66]">분</span>
-                                    </div>
-                                    <button onClick={()=>setEditing({...editing, minutes: (editing.minutes||0)+10})} className="w-11 h-11 rounded-full gold-gradient text-[#060608] font-[800] text-[18px]">+</button>
+                              <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
+                                <div className="label-caps">훈련 시간</div>
+                                <div className="mt-4 flex items-center gap-3">
+                                  <button onClick={()=>setEditing({...editing, minutes: Math.max(0,(editing.minutes||0)-10)})} className="w-11 h-11 rounded-full bg-[#18181B] border border-[#232326] font-[800] text-[18px]">−</button>
+                                  <div className="flex-1 h-[56px] rounded-[14px] bg-[#121214] border border-[#1E1E22] flex items-center justify-center gap-2">
+                                    <input type="number" value={editing.minutes||0} onChange={e=>setEditing({...editing, minutes: parseInt(e.target.value)||0})} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
+                                    <span className="text-[12px] font-[700] text-[#6A6A66]">분</span>
                                   </div>
-                                </div>
-                                <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5">
-                                  <div className="label-caps">항목 선택 · 3개까지</div>
-                                  <div className="mt-4 flex flex-wrap gap-2">
-                                    {['러닝','점프','코어','웨이트','스트레칭','스프린트','밸런스'].map(item=>{
-                                      const active=editing.dryItems?.includes(item);
-                                      return (
-                                        <button key={item} onClick={()=>{
-                                          const cur=editing.dryItems||[];
-                                          const next= active? cur.filter(c=>c!==item) : cur.length<3? [...cur, item] : cur;
-                                          setEditing({...editing, dryItems:next});
-                                        }} className={`h-10 px-4 rounded-full border text-[13px] font-[700] transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520]'}`}>{item}</button>
-                                      );
-                                    })}
-                                  </div>
+                                  <button onClick={()=>setEditing({...editing, minutes: (editing.minutes||0)+10})} className="w-11 h-11 rounded-full gold-gradient text-[#060608] font-[800] text-[18px]">+</button>
                                 </div>
                               </div>
+                              <DryItemsEditor
+                                items={editing.dryItems||[]}
+                                onAdd={(item)=>setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]})}
+                                onRemove={(id)=>setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)})}
+                              />
                             </div>
                           )}
 
@@ -879,7 +910,7 @@ export default function App() {
                               </div>
                               {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
                                 <div className="mt-4 flex flex-wrap gap-1.5">
-                                  {selectedLog.dryItems.map(it=> <span key={it} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it}</span>)}
+                                  {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
                                 </div>
                               )}
                             </div>
@@ -970,7 +1001,13 @@ export default function App() {
 
                         {/* Edit/delete */}
                         <div className="mt-10 flex gap-3">
-                          <button onClick={()=>{const t500=selectedLog.timeRecords?.find(r=>r.distance===500)?.time||''; const t1000=selectedLog.timeRecords?.find(r=>r.distance===1000)?.time||''; setEditing({...selectedLog, mood:selectedLog.condition as Mood, time500:t500, time1000:t1000}); setTime500Input(t500); setTime1000Input(t1000); setDiaryEditMode(true);}} className="h-[48px] px-8 rounded-full bg-[#F5F1E8] text-[#060608] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
+                          <button onClick={()=>{
+                            const inputs: Record<number,string> = {};
+                            DISTANCES.forEach(d=>{ inputs[d] = selectedLog.timeRecords?.find(r=>r.distance===d)?.time || ''; });
+                            setEditing({...selectedLog, mood:selectedLog.condition as Mood});
+                            setTimeInputs(inputs);
+                            setDiaryEditMode(true);
+                          }} className="h-[48px] px-8 rounded-full bg-[#F5F1E8] text-[#060608] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[#18181B] border border-[#232326] text-[13px] font-[700] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]">삭제</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[#6A6A66]">BLACK & GOLD · {selectedLog.date}</span>
                         </div>
@@ -1076,25 +1113,14 @@ export default function App() {
                     </div>
                   </div>
                   <div className="card p-5 lg:p-6">
-                    <div className="font-[700] text-[13px]">1000m / 1500m 기록</div>
+                    <div className="font-[700] text-[13px]">거리별 베스트 기록</div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      <div className="rounded-[12px] bg-[#101012] border border-[#1E1E22] p-3">
-                        <div className="label-caps">Best 1000m</div>
-                        <div className="mt-1 font-[800] text-[16px] text-[#F5F1E8]">{best1000.time}</div>
-                      </div>
-                      <div className="rounded-[12px] bg-[#101012] border border-[#1E1E22] p-3">
-                        <div className="label-caps">Best 1500m</div>
-                        <div className="mt-1 font-[800] text-[16px] text-[#F5F1E8]">{logs.flatMap(l=>l.timeRecords||[]).filter(r=>r.distance===1500).sort((a,b)=>a.seconds-b.seconds)[0]?.time || '-'}</div>
-                      </div>
-                    </div>
-                    <div className="mt-4 space-y-2 max-h-[128px] overflow-auto">
-                      {time1000List.map((r,i)=>(
-                        <div key={i} className="h-9 rounded-[10px] bg-[#101012] border border-[#1E1E22] px-3 flex items-center justify-between text-[11px]">
-                          <span className="text-[#9A9A93] font-[600]">{r.date.slice(5)}</span>
-                          <span className="font-[700]">{r.time}</span>
+                      {DISTANCES.filter(d=>d!==500).map(d=>(
+                        <div key={d} className="rounded-[12px] bg-[#101012] border border-[#1E1E22] p-3">
+                          <div className="label-caps">Best {d}m</div>
+                          <div className="mt-1 font-[800] text-[16px] text-[#F5F1E8]">{bestByDistance[d].time}</div>
                         </div>
                       ))}
-                      {time1000List.length===0 && <div className="text-[11px] text-[#6A6A66] text-center py-6">1000m 기록이 아직 없어요</div>}
                     </div>
                   </div>
                 </div>
@@ -1127,17 +1153,47 @@ export default function App() {
                     </div>
                   </div>
                   <div className="card p-5 lg:p-6">
-                    <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
+                    <div className="flex items-center justify-between">
+                      <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
+                      <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800]">+ 목표 추가</button>
+                    </div>
                     <div className="mt-5 grid sm:grid-cols-3 gap-3">
-                      {mockGoals.map(g=>(
+                      {goals.map(g=>(
                         <div key={g.id} className="rounded-[16px] bg-[#101012] border border-[#1E1C14] p-4">
-                          <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#2C2A20] flex items-center justify-center text-[18px]">{g.icon}</div>
+                          <div className="flex items-start justify-between">
+                            <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#2C2A20] flex items-center justify-center text-[18px]">{g.icon}</div>
+                            <div className="flex gap-1">
+                              <button onClick={()=>setGoalForm(g)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">✎</button>
+                              <button onClick={()=>deleteGoalRemote(g.id)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8]">×</button>
+                            </div>
+                          </div>
                           <div className="mt-3 font-[700] text-[12px] leading-[1.3]">{g.title}</div>
                           <div className="mt-2 h-1.5 rounded-full bg-[#1E1E22] overflow-hidden"><div className="h-full gold-gradient rounded-full" style={{width:`${g.progress}%`}}/></div>
-                          <div className="mt-2 text-[10px] font-[600] text-[#9A9A93]">{g.progress}% 달성</div>
+                          <div className="mt-2 flex justify-between text-[10px] font-[600] text-[#9A9A93]"><span>{g.current}</span><span>{g.progress}% · 목표 {g.target}</span></div>
                         </div>
                       ))}
+                      {goals.length===0 && !goalForm && <div className="sm:col-span-3 text-center py-8 text-[12px] text-[#6A6A66]">아직 등록된 목표가 없어요 · 위 버튼으로 추가해보세요</div>}
                     </div>
+                    {goalForm && (
+                      <div className="mt-5 rounded-[16px] bg-[#0E0E10] border border-[#1E1C14] p-4 space-y-3">
+                        <div className="grid grid-cols-[56px_1fr] gap-2">
+                          <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center text-[18px] outline-none"/>
+                          <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <input value={goalForm.current} onChange={e=>setGoalForm({...goalForm, current:e.target.value})} placeholder="현재 (예: 52.14)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                          <input value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target:e.target.value})} placeholder="목표 (예: 50.00)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-between text-[11px] font-[600] text-[#9A9A93]"><span>달성률</span><span className="text-[#D4AF37] font-[800]">{goalForm.progress}%</span></div>
+                          <input type="range" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: parseInt(e.target.value)})} className="mt-2 w-full accent-[#D4AF37]"/>
+                        </div>
+                        <div className="flex gap-2">
+                          <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] disabled:opacity-40">저장</button>
+                          <button onClick={()=>setGoalForm(null)} className="h-10 px-4 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#9A9A93]">취소</button>
+                        </div>
+                      </div>
+                    )}
                     <div className="mt-5 rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] p-4 flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full gold-gradient flex items-center justify-center"><Crown size={16} className="text-[#060608]"/></div>
                       <div>
@@ -1271,20 +1327,7 @@ export default function App() {
                       <div className="mt-2 text-[10px] font-[600] text-[#6A6A66] text-center">현재 RPE {editing.rpe||5} · { (editing.rpe||5)<=3?'가볍게' : (editing.rpe||5)<=6?'보통':'강하게' }</div>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="card !p-4">
-                      <div className="label-caps">500m Time</div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <input value={time500Input} onChange={e=>setTime500Input(e.target.value)} placeholder="58.32" inputMode="decimal" className="flex-1 h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-3 text-[14px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                      </div>
-                    </div>
-                    <div className="card !p-4">
-                      <div className="label-caps">1000m Time</div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <input value={time1000Input} onChange={e=>setTime1000Input(e.target.value)} placeholder="1:52.10" inputMode="decimal" className="flex-1 h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-3 text-[14px] font-[700] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
-                      </div>
-                    </div>
-                  </div>
+                  <TimeInputsEditor timeInputs={timeInputs} onChange={(d,v)=>setTimeInputs({...timeInputs, [d]:v})} compact />
                 </div>
               )}
 
@@ -1311,21 +1354,12 @@ export default function App() {
                       </div>
                     </div>
                   </div>
-                  <div className="card !p-4">
-                    <div className="label-caps mb-3">훈련 항목 · 3개까지</div>
-                    <div className="flex flex-wrap gap-2">
-                      {['러닝','점프','코어','웨이트','스트레칭','스프린트','밸런스'].map(item=>{
-                        const active=editing.dryItems?.includes(item);
-                        return (
-                          <button key={item} onClick={()=>{
-                            const cur=editing.dryItems||[];
-                            const next= active? cur.filter(c=>c!==item) : cur.length<3? [...cur, item] : cur;
-                            setEditing({...editing, dryItems:next});
-                          }} className={`h-9 px-3.5 rounded-full border text-[12px] font-[700] transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]'}`}>{item}</button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <DryItemsEditor
+                    items={editing.dryItems||[]}
+                    onAdd={(item)=>setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]})}
+                    onRemove={(id)=>setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)})}
+                    compact
+                  />
                 </div>
               )}
 
