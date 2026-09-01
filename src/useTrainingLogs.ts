@@ -1,16 +1,24 @@
 import { useEffect, useState } from 'react';
 import { collection, doc, setDoc, deleteDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import type { TrainingLog, DryItem } from './App';
+import type { TrainingLog, TrainingItem } from './App';
 
-// Older records may still carry dryItems as plain strings (pre-migration schema).
-// Drop anything that isn't a proper {type,value,unit} object rather than let it
-// crash renders/exports downstream.
+function cleanItems(raw: any): TrainingItem[] {
+  // Older records may still carry items as plain strings (pre-migration schema).
+  // Drop anything that isn't a proper {type,value,unit} object rather than let
+  // it crash renders/exports downstream.
+  return Array.isArray(raw) ? raw.filter((it: any) => it && typeof it === 'object' && typeof it.type === 'string') : [];
+}
 function normalizeLog(data: any): TrainingLog {
-  const dryItems: DryItem[] = Array.isArray(data.dryItems)
-    ? data.dryItems.filter((it: any) => it && typeof it === 'object' && typeof it.type === 'string')
-    : [];
-  return { ...data, dryItems };
+  const dryItems = cleanItems(data.dryItems);
+  const iceItems = cleanItems(data.iceItems);
+  // Pre-migration records used a single exclusive `type` + `note` instead of
+  // separate noteIce/noteDry/isRest; read them into the new shape on the fly.
+  const legacyType = data.type;
+  const noteIce = data.noteIce ?? (legacyType === 'ice' ? data.note : undefined);
+  const noteDry = data.noteDry ?? (legacyType === 'dry' ? data.note : undefined);
+  const isRest = data.isRest ?? (legacyType === 'rest');
+  return { ...data, dryItems, iceItems, noteIce, noteDry, isRest };
 }
 
 export function useTrainingLogs(uid: string | undefined) {

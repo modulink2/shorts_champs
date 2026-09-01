@@ -1,9 +1,6 @@
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import type { TrainingLog } from './App';
-
-const TYPE_LABEL: Record<string, string> = { ice: '빙상', dry: '육상', rest: '리커버리' };
-const MOOD_LABEL: Record<number, string> = { 1: '최고', 2: '좋음', 3: '보통', 4: '힘듦', 5: '아픔' };
+import { TYPE_META, logTypes, type TrainingLog } from './App';
 
 function escapeHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -19,13 +16,26 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string): string {
       </tr>`).join('')
     : `<tr><td colspan="2" style="padding:14px;color:#999;text-align:center;">기록 없음</td></tr>`;
 
-  const dryItems = (log.dryItems || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string');
-  const dryHtml = dryItems.length
-    ? `<div style="margin-top:24px;">
-        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">훈련 항목</div>
-        <div style="margin-top:10px;">${dryItems.map(it => `<span style="display:inline-block;margin:0 8px 8px 0;padding:6px 14px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;color:#8a6d1c;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('')}</div>
-      </div>`
-    : '';
+  const itemsChips = (items: typeof log.dryItems) => (items || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string')
+    .map(it => `<span style="display:inline-block;margin:0 8px 8px 0;padding:6px 14px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;color:#8a6d1c;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
+  const iceItemsHtml = itemsChips(log.iceItems);
+  const dryItemsHtml = itemsChips(log.dryItems);
+
+  const types = logTypes(log);
+  const typeLabel = types.length ? types.map(t => TYPE_META[t].label).join(' + ') : '기록 없음';
+
+  const noteSections = [
+    (log.noteIce || iceItemsHtml) ? `
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">⛸️ 빙상 훈련</div>
+        <div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${log.noteIce ? escapeHtml(log.noteIce) : ''}${iceItemsHtml ? `<div style="margin-top:${log.noteIce?'12px':'0'};">${iceItemsHtml}</div>` : ''}</div>
+      </div>` : '',
+    (log.noteDry || dryItemsHtml) ? `
+      <div style="margin-top:16px;">
+        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">🏋️ 육상 훈련</div>
+        <div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${log.noteDry ? escapeHtml(log.noteDry) : ''}${dryItemsHtml ? `<div style="margin-top:${log.noteDry?'12px':'0'};">${dryItemsHtml}</div>` : ''}</div>
+      </div>` : '',
+  ].join('');
 
   return `
     <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #D4AF37;padding-bottom:20px;">
@@ -46,36 +56,22 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string): string {
       </div>
       <div style="flex:1;background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:16px 18px;">
         <div style="font-size:12px;color:#999;">훈련 타입</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">${TYPE_LABEL[log.type] || log.type}</div>
+        <div style="font-size:18px;font-weight:700;margin-top:4px;">${typeLabel}</div>
       </div>
       <div style="flex:1;background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:16px 18px;">
-        <div style="font-size:12px;color:#999;">컨디션</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">${MOOD_LABEL[log.condition] || '-'}</div>
+        <div style="font-size:12px;color:#999;">바퀴수</div>
+        <div style="font-size:18px;font-weight:700;margin-top:4px;">${log.laps ?? '-'}${log.laps ? ' 바퀴' : ''}${log.km ? ` (${log.km}km)` : ''}</div>
       </div>
     </div>
-
-    <div style="margin-top:24px;display:flex;gap:16px;">
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">주요 지표</div>
-        <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:14px;">
-          <tr><td style="padding:8px 0;color:#666;width:110px;">바퀴수</td><td style="padding:8px 0;font-weight:700;">${log.laps ?? '-'}${log.laps ? ' 바퀴' : ''}${log.km ? ` (${log.km}km)` : ''}</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">RPE (강도)</td><td style="padding:8px 0;font-weight:700;">${log.rpe ?? '-'} / 10</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">훈련 시간</td><td style="padding:8px 0;font-weight:700;">${log.minutes ?? 0}분</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">집중도</td><td style="padding:8px 0;font-weight:700;">${log.focus ?? '-'} / 5</td></tr>
-          <tr><td style="padding:8px 0;color:#666;">수면 시간</td><td style="padding:8px 0;font-weight:700;">${log.sleepHours != null ? log.sleepHours.toFixed(1) : '-'}h</td></tr>
-        </table>
-      </div>
-      <div style="flex:1;">
-        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">기록 타임</div>
-        <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:14px;">${timeRows}</table>
-      </div>
-    </div>
-
-    ${dryHtml}
 
     <div style="margin-top:24px;">
+      <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">기록 타임</div>
+      <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:14px;">${timeRows}</table>
+    </div>
+
+    <div style="margin-top:16px;">
       <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">한줄 일기</div>
-      <div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${escapeHtml(log.note || '기록된 메모가 없습니다.')}</div>
+      ${noteSections || `<div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;">기록된 메모가 없습니다.</div>`}
     </div>
 
     <div style="margin-top:40px;padding-top:16px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:11px;color:#999;">

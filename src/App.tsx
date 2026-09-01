@@ -1,24 +1,29 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
+import { useItemTypes } from './useItemTypes';
 import { downloadTrainingReport } from './reportPdf';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
 type ViewType = 'dashboard' | 'diary' | 'records' | 'growth';
-type Mood = 1 | 2 | 3 | 4 | 5;
 
 export interface TimeRecord { distance: number; time: string; seconds: number; }
-export interface DryItem { id: string; type: string; value: number; unit: string; }
+// A logged instance of a user-defined item type (e.g. "러닝 30분").
+export interface TrainingItem { id: string; type: string; value: number; unit: string; }
 export interface TrainingLog {
-  id: string; date: string; type: TrainingType; minutes?: number; condition: number; rpe?: number; laps?: number; km?: number;
-  timeRecords?: TimeRecord[]; dryItems?: DryItem[]; pain: boolean; note: string; focus?: number; sleepHours?: number;
+  id: string; date: string;
+  isRest: boolean; noteIce?: string; noteDry?: string;
+  minutes?: number; rpe?: number; laps?: number; km?: number;
+  timeRecords?: TimeRecord[]; iceItems?: TrainingItem[]; dryItems?: TrainingItem[]; focus?: number; sleepHours?: number;
   youtubeUrl?: string; instaUrl?: string;
 }
 export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
+// A user-managed item type (name + unit) available in the ice or dry item picker.
+export interface ItemType { id: string; category: 'ice' | 'dry'; name: string; unit: string; }
 
 const GOLD = '#D4AF37';
 const GOLD_BRIGHT = '#FFD700';
@@ -26,8 +31,18 @@ const GOLD_GRAD = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%
 
 // Short-track record distances — still used to display historical PB data.
 const DISTANCES = [111, 222, 333, 500, 1000, 1500] as const;
-// Dry-land (육상) training item labels — add/remove here to change the quick-insert picker.
-const DRY_ITEM_LABELS = ['러닝', '점프', '코어', '웨이트', '스트레칭', '스프린트', '밸런스'];
+// Units selectable when defining a custom ice/dry item type.
+export const ITEM_UNITS = ['시간', '분', '바퀴', '셋트'];
+// Seeded once per new user (see useItemTypes) so 육상 starts with familiar items.
+export const DEFAULT_ITEM_TYPES: { category: 'ice' | 'dry'; name: string; unit: string }[] = [
+  { category: 'dry', name: '러닝', unit: '분' },
+  { category: 'dry', name: '점프', unit: '셋트' },
+  { category: 'dry', name: '코어', unit: '분' },
+  { category: 'dry', name: '웨이트', unit: '분' },
+  { category: 'dry', name: '스트레칭', unit: '분' },
+  { category: 'dry', name: '스프린트', unit: '바퀴' },
+  { category: 'dry', name: '밸런스', unit: '분' },
+];
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -83,18 +98,24 @@ function parseTimeInput(raw: string): { sec: number; display: string } | null {
   return { sec, display: raw.includes(':') ? raw : sec.toFixed(2) };
 }
 
-const MOODS: { id: Mood; emoji: string; label: string }[] = [
-  { id: 1, emoji: '👑', label: '최고' },
-  { id: 2, emoji: '✨', label: '좋음' },
-  { id: 3, emoji: '⚪', label: '보통' },
-  { id: 4, emoji: '🌙', label: '힘듦' },
-  { id: 5, emoji: '🩹', label: '아픔' },
-];
-const TYPE_META: Record<TrainingType, { label: string; emoji: string; color: string }> = {
+export const TYPE_META: Record<TrainingType, { label: string; emoji: string; color: string }> = {
   ice: { label: '빙상', emoji: '⛸️', color: GOLD },
   dry: { label: '육상', emoji: '🏋️', color: '#C9A86A' },
   rest: { label: '리커버리', emoji: '🌑', color: '#4A4A4E' },
 };
+// Which training types apply to a log — a day can be both ice and dry at once.
+export function logTypes(log: TrainingLog): TrainingType[] {
+  const types: TrainingType[] = [];
+  if ((log.noteIce && log.noteIce.trim()) || (log.iceItems && log.iceItems.length>0)) types.push('ice');
+  if ((log.noteDry && log.noteDry.trim()) || (log.dryItems && log.dryItems.length>0)) types.push('dry');
+  if (log.isRest) types.push('rest');
+  return types;
+}
+function logSummary(log: TrainingLog): string {
+  const itemsText = (items?: TrainingItem[]) => (items||[]).map(it=>`${it.type} ${it.value}${it.unit}`).join(', ');
+  const parts = [log.noteIce || itemsText(log.iceItems), log.noteDry || itemsText(log.dryItems)].filter(Boolean);
+  return parts.join(' · ');
+}
 
 function TimeInputsEditor({ timeInputs, onChange }: { timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void }) {
   return (
@@ -113,15 +134,63 @@ function TimeInputsEditor({ timeInputs, onChange }: { timeInputs: Record<number,
   );
 }
 
-function QuickNoteInsert({ onInsert, compact }: { onInsert:(label:string)=>void; compact?:boolean }) {
+// User-managed item picker: add/delete custom item types (name+unit) per
+// category, click a type to reveal a value input, register it onto the log.
+function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRemoveItem, compact }: {
+  itemTypes: ItemType[]; items: TrainingItem[];
+  onAddType:(name:string, unit:string)=>void; onDeleteType:(id:string)=>void;
+  onAddItem:(item:Omit<TrainingItem,'id'>)=>void; onRemoveItem:(id:string)=>void;
+  compact?: boolean;
+}) {
+  const [activeTypeId, setActiveTypeId] = useState<string|null>(null);
+  const [value, setValue] = useState('');
+  const [showAddType, setShowAddType] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newUnit, setNewUnit] = useState(ITEM_UNITS[0]);
+  const activeType = itemTypes.find(t=>t.id===activeTypeId);
+
   return (
     <div className={compact ? 'card !p-4' : 'rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] p-5'}>
-      <div className="label-caps mb-3">항목 선택 · 클릭하면 노트에 추가돼요</div>
+      <div className="label-caps mb-3">항목 선택 · 클릭 후 값 입력</div>
       <div className="flex flex-wrap gap-2">
-        {DRY_ITEM_LABELS.map(label=>(
-          <button key={label} type="button" onClick={()=>onInsert(label)} className="h-9 px-3.5 rounded-full border text-[12px] font-[700] transition-all bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]">{label}</button>
+        {itemTypes.map(t=>(
+          <div key={t.id} className="relative group">
+            <button type="button" onClick={()=>{ setActiveTypeId(t.id); setValue(''); }} className={`h-9 pl-3.5 pr-3.5 rounded-full border text-[12px] font-[700] transition-all ${activeTypeId===t.id? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#18181B] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]'}`}>{t.name}</button>
+            <button type="button" onClick={()=>onDeleteType(t.id)} title="항목 삭제" className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[#232326] border border-[#3A3520] text-[9px] text-[#9A9A93] opacity-0 group-hover:opacity-100 flex items-center justify-center leading-none">×</button>
+          </div>
         ))}
+        <button type="button" onClick={()=>setShowAddType(v=>!v)} className="h-9 px-3.5 rounded-full border border-dashed border-[#3A3520] text-[12px] font-[700] text-[#D4AF37]">+ 새 항목</button>
       </div>
+
+      {showAddType && (
+        <div className="mt-3 flex items-center gap-2">
+          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="항목 이름" className="flex-1 h-9 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[12px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+          <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="h-9 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-2 text-[12px] font-[700] outline-none">
+            {ITEM_UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+          </select>
+          <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[#060608] font-[800] text-[12px]">추가</button>
+        </div>
+      )}
+
+      {activeType && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="text-[12px] font-[700] text-[#F5F1E8]">{activeType.name}</span>
+          <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="w-20 h-9 rounded-[10px] bg-[#121214] border border-[#1E1E22] text-center font-[700] outline-none"/>
+          <span className="text-[12px] font-[600] text-[#6A6A66]">{activeType.unit}</span>
+          <button type="button" onClick={()=>{ const n=parseFloat(value); if(n>0){ onAddItem({type:activeType.name, value:n, unit:activeType.unit}); setActiveTypeId(null); setValue(''); } }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[#060608] font-[800] text-[12px]">등록</button>
+        </div>
+      )}
+
+      {items.length>0 && (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {items.map(it=>(
+            <span key={it.id} className="h-8 pl-3 pr-1.5 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#CFCFC8] inline-flex items-center gap-1.5">
+              {it.type} {it.value}{it.unit}
+              <button type="button" onClick={()=>onRemoveItem(it.id)} className="w-5 h-5 rounded-full bg-[#232326] hover:bg-[#3A3520] flex items-center justify-center text-[10px] leading-none">×</button>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -130,11 +199,14 @@ export default function App() {
   const { user, logOut } = useAuth();
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
+  const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
+  const iceItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='ice'), [itemTypes]);
+  const dryItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='dry'), [itemTypes]);
   const [view, setView] = useState<ViewType>('dashboard');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10));
   const [showModal, setShowModal] = useState(false);
   const [diaryEditMode, setDiaryEditMode] = useState(false);
-  const [editing, setEditing] = useState<Partial<TrainingLog> & { mood?: Mood; noteIce?: string; noteDry?: string }>({});
+  const [editing, setEditing] = useState<Partial<TrainingLog>>({});
   const [toast, setToast] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [searchType, setSearchType] = useState<'all'|'ice'|'dry'|'rest'>('all');
@@ -161,7 +233,7 @@ export default function App() {
 
   const todayStr = new Date().toISOString().slice(0,10);
 
-  const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=>l.type===searchType), [logs, searchType]);
+  const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=> logTypes(l).includes(searchType)), [logs, searchType]);
   const thisWeekLogs = useMemo(()=>{
     const now=new Date(); const start=new Date(now); const dayIdx=(now.getDay()+6)%7; start.setDate(now.getDate()-dayIdx);
     return logs.filter(l=>{ const d=new Date(l.date); return d>=start; });
@@ -181,19 +253,15 @@ export default function App() {
     return arr.sort((a,b)=> a.date.localeCompare(b.date)).slice(-12);
   },[logs]);
 
-  const conditionTrend = useMemo(()=>{
-    return logs.slice(-14).map(l=>({ date: l.date.slice(5).replace('-','/'), cond: 6 - l.condition, rpe: l.rpe }));
-  },[logs]);
-
   const typeDist = useMemo(()=>{
-    const ice = logs.filter(l=>l.type==='ice').length;
-    const dry = logs.filter(l=>l.type==='dry').length;
-    const rest = logs.filter(l=>l.type==='rest').length;
+    const ice = logs.filter(l=>l.noteIce && l.noteIce.trim()).length;
+    const dry = logs.filter(l=>l.noteDry && l.noteDry.trim()).length;
+    const rest = logs.filter(l=>l.isRest).length;
     return [{ name:'빙상', value:ice, color:'#D4AF37' }, { name:'육상', value:dry, color:'#C9A86A' }, { name:'휴식', value:rest, color:'#2A2A2E' }];
   },[logs]);
 
   const lapAnalysis = useMemo(()=>{
-    const iceLogs = logs.filter(l=>l.type==='ice' && l.laps).slice(-10);
+    const iceLogs = logs.filter(l=>l.laps).slice(-10);
     return iceLogs.map(l=>({ date:l.date.slice(5).replace('-','/'), laps:l.laps||0, km:l.km||0 }));
   },[logs]);
 
@@ -213,16 +281,15 @@ export default function App() {
       return `${month}월 ${day}일, ${wk}의 훈련`;
     }catch{ return dateStr; }
   };
-  const recentLogsWithRecord = useMemo(()=> logs.filter(l=>l.type!=='rest' || (l.note&&l.note.length>0)).slice(-5).reverse(), [logs]);
+  const recentLogsWithRecord = useMemo(()=> logs.slice(-5).reverse(), [logs]);
   const selectedLog = useMemo(()=> logs.find(l=>l.date===selectedDate), [logs, selectedDate]);
 
  const openLog = (dateStr:string)=>{
    const existing = logs.find(l=>l.date===dateStr);
    if(existing){
-      const draftNote = existing.type==='ice' ? { noteIce: existing.note } : existing.type==='dry' ? { noteDry: existing.note } : {};
-      setEditing({ ...existing, mood: (existing.condition as Mood)||2, ...draftNote, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
+      setEditing({ ...existing, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
     }else{
-      setEditing({ date:dateStr, type:'ice', mood:2 as Mood, dryItems:[], note:'', noteIce:'', noteDry:'', condition:2, sleepHours:8, youtubeUrl:'', instaUrl:'' });
+      setEditing({ date:dateStr, isRest:false, noteIce:'', noteDry:'', iceItems:[], dryItems:[], sleepHours:8, youtubeUrl:'', instaUrl:'' });
     }
     setSelectedDate(dateStr);
     if(view==='diary'){
@@ -234,21 +301,22 @@ export default function App() {
 
   const saveLog = ()=>{
     if(!editing.date) return;
-    // Laps/RPE/minutes/focus/time records no longer have input UI — carry over
-    // whatever the log already had (nothing for a brand-new entry) unchanged.
+    // Laps/RPE/minutes/focus/time records no longer have input UI here — carry
+    // over whatever the log already had (nothing for a brand-new entry) unchanged.
     const prevLog = logs.find(l=>l.date===editing.date);
 
     const cleanYt = (editing.youtubeUrl||'').trim();
     const cleanInsta = (editing.instaUrl||'').trim();
-    // Ice and dry keep separate note drafts while editing (so switching the type
-    // toggle doesn't lose or mix text); only the active type's note gets saved.
-    const activeNote = editing.type==='ice' ? (editing.noteIce||'') : editing.type==='dry' ? (editing.noteDry||'') : (editing.note||'');
+    const isRest = !!editing.isRest;
     const newLog: TrainingLog = {
-      id: editing.date!, date: editing.date!, type: (editing.type as TrainingType)||'ice',
-      minutes: editing.type==='rest' ? 0 : prevLog?.minutes,
-      condition: (editing.mood as number)||2,
+      id: editing.date!, date: editing.date!,
+      isRest,
+      noteIce: isRest ? undefined : (editing.noteIce||'').trim() || undefined,
+      noteDry: isRest ? undefined : (editing.noteDry||'').trim() || undefined,
+      minutes: prevLog?.minutes,
       rpe: prevLog?.rpe, laps: prevLog?.laps, km: prevLog?.km, timeRecords: prevLog?.timeRecords||[],
-      dryItems: editing.dryItems||[], pain: (editing.mood===5), note: activeNote,
+      iceItems: isRest ? [] : (editing.iceItems||[]),
+      dryItems: isRest ? [] : (editing.dryItems||[]),
       focus: prevLog?.focus, sleepHours: editing.sleepHours||8,
       youtubeUrl: cleanYt || undefined,
       instaUrl: cleanInsta || undefined
@@ -263,16 +331,10 @@ export default function App() {
     setToast('기록이 삭제되었어요');
   };
 
-  const insertNoteItem = (label:string)=>{
-    setEditing({...editing, noteDry: (editing.noteDry ? editing.noteDry.trimEnd()+' ' : '') + label + ' '});
-  };
-
-  const activeNote = editing.type==='ice' ? (editing.noteIce||'') : editing.type==='dry' ? (editing.noteDry||'') : (editing.note||'');
-  const setActiveNote = (v:string)=>{
-    if(editing.type==='ice') setEditing({...editing, noteIce:v});
-    else if(editing.type==='dry') setEditing({...editing, noteDry:v});
-    else setEditing({...editing, note:v});
-  };
+  const addIceItem = (item:Omit<TrainingItem,'id'>)=> setEditing({...editing, iceItems:[...(editing.iceItems||[]), {...item, id: crypto.randomUUID()}]});
+  const removeIceItem = (id:string)=> setEditing({...editing, iceItems:(editing.iceItems||[]).filter(it=>it.id!==id)});
+  const addDryItem = (item:Omit<TrainingItem,'id'>)=> setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]});
+  const removeDryItem = (id:string)=> setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)});
 
   const saveRecordEntry = ()=>{
     const prevLog = logs.find(l=>l.date===recordDate);
@@ -284,7 +346,7 @@ export default function App() {
     const km = laps ? +(laps*111.12/1000).toFixed(2) : undefined;
     const merged: TrainingLog = prevLog
       ? { ...prevLog, laps, km, timeRecords: timeRecs }
-      : { id: recordDate, date: recordDate, type: 'ice', condition: 2, pain: false, note: '', laps, km, timeRecords: timeRecs };
+      : { id: recordDate, date: recordDate, isRest: false, laps, km, timeRecords: timeRecs };
     saveLogRemote(merged);
     setToast('기록이 저장됐어요 · 분석에 반영됩니다');
   };
@@ -442,33 +504,6 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
-                  {/* Condition & RPE */}
-                  <div className="card p-5 lg:p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="font-[700] text-[14px]">컨디션 & RPE 추세</div>
-                      <div className="flex gap-2 text-[10px] font-[600]">
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#D4AF37]"/>컨디션</span>
-                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-[#4A4A4E]"/>RPE</span>
-                      </div>
-                    </div>
-                    <div className="mt-5 h-[168px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={conditionTrend}>
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'#6A6A66' }} interval="preserveStartEnd" />
-                          <YAxis domain={[0,10]} hide />
-                          <Tooltip contentStyle={{ background:'#121214', border:'1px solid #2C2A20', borderRadius:12, fontSize:11 }}/>
-                          <Line type="monotone" dataKey="cond" stroke="#D4AF37" strokeWidth={2.5} dot={false} />
-                          <Line type="monotone" dataKey="rpe" stroke="#3A3A3E" strokeWidth={1.5} dot={false} strokeDasharray="4 4"/>
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-                    <div className="mt-3 p-3 rounded-[12px] bg-[#0E0E10] border border-[#1E1C14] flex items-center justify-between">
-                      <span className="text-[11px] font-[600] text-[#9A9A93]">평균 RPE</span>
-                      <span className="text-[13px] font-[800] text-[#F5F1E8]">{(()=>{ const withRpe=conditionTrend.filter(c=>typeof c.rpe==='number'); return withRpe.length ? (withRpe.reduce((a,b)=>a+(b.rpe as number),0)/withRpe.length).toFixed(1) : '-'; })()} / 10</span>
-                    </div>
-                  </div>
-                </div>
 
                 <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
                   {/* Recent trainings */}
@@ -483,17 +518,17 @@ export default function App() {
                     </div>
                     <div className="mt-4 space-y-2.5 max-h-[320px] overflow-auto pr-1">
                       {filteredLogs.slice(-8).reverse().map(log=>{
-                        const meta=TYPE_META[log.type];
+                        const types=logTypes(log);
                         return (
                           <div key={log.id} className="group h-[64px] rounded-[14px] bg-[#101012] border border-[#1E1E22] hover:border-[#2C2A20] hover:bg-[#15151A] flex items-center gap-3 px-3.5 transition-all">
-                            <div className="w-10 h-10 rounded-[12px] bg-[#18181B] border border-[#232326] flex items-center justify-center text-[16px]">{meta.emoji}</div>
+                            <div className="w-10 h-10 rounded-[12px] bg-[#18181B] border border-[#232326] flex items-center justify-center text-[16px]">{types.map(t=>TYPE_META[t].emoji).join('') || '📝'}</div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-[700]">{log.date.slice(5).replace('-','/')}</span>
-                                <span className="text-[10px] font-[600] px-1.5 h-4 rounded-full bg-[#1A1A1E] border border-[#2A2A2E] text-[#9A9A93]">{meta.label}</span>
+                                {types.map(t=> <span key={t} className="text-[10px] font-[600] px-1.5 h-4 rounded-full bg-[#1A1A1E] border border-[#2A2A2E] text-[#9A9A93]">{TYPE_META[t].label}</span>)}
                                 {log.laps && <span className="text-[10px] font-[600] text-[#D4AF37]">{log.laps}바퀴</span>}
                               </div>
-                              <div className="text-[11px] font-[500] text-[#9A9A93] truncate mt-0.5">{log.note}</div>
+                              <div className="text-[11px] font-[500] text-[#9A9A93] truncate mt-0.5">{logSummary(log)}</div>
                             </div>
                             <div className="text-right">
                               <div className="text-[12px] font-[800] text-[#F5F1E8]">{log.timeRecords?.[0]?.time || '-'}</div>
@@ -563,7 +598,11 @@ export default function App() {
                           <div key={i} className="h-[32px] flex items-center justify-center">
                             <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[#F5F1E8] text-[#060608] border-[#F5F1E8] shadow-[0_2px_10px_rgba(245,241,232,0.25)]' : isToday? 'bg-[#121214] border-[#D4AF37] text-[#F5F1E8]' : 'bg-[#101012] border-[#1E1E22] text-[#CFCFC8] hover:border-[#2C2A20] hover:bg-[#151519]'}`}>
                               <span className="leading-none">{d.getDate()}</span>
-                              {log && <span className={`mt-[1px] w-1 h-1 rounded-full ${isSel? 'bg-[#060608]' : log.type==='ice' ? 'bg-[#D4AF37]' : log.type==='dry' ? 'bg-[#C9A86A]' : 'bg-[#4A4A4E]'}`} />}
+                              {log && (
+                                <span className="mt-[1px] flex gap-[2px]">
+                                  {logTypes(log).map(t=> <span key={t} className={`w-1 h-1 rounded-full ${isSel? 'bg-[#060608]' : t==='ice' ? 'bg-[#D4AF37]' : t==='dry' ? 'bg-[#C9A86A]' : 'bg-[#4A4A4E]'}`} />)}
+                                </span>
+                              )}
                             </button>
                           </div>
                         );
@@ -582,12 +621,15 @@ export default function App() {
                       <span className="label-caps text-[#D4AF37]">선택일 요약</span>
                       <span className="text-[11px] font-[700] text-[#F5F1E8]">{selectedDate.slice(5).replace('-','/')}</span>
                     </div>
-                    {selectedLog ? (
+    {selectedLog ? (
                       <div className="mt-3 space-y-2.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-[10px] bg-[#18181B] border border-[#232326] flex items-center justify-center text-[16px]">{TYPE_META[selectedLog.type].emoji}</div>
-                          <span className="text-[13px] font-[800]">{TYPE_META[selectedLog.type].label}</span>
-                          <span className="ml-auto text-[12px]">{MOODS.find(m=>m.id===selectedLog.condition)?.emoji}</span>
+                          {logTypes(selectedLog).map(t=>(
+                            <div key={t} className="flex items-center gap-1.5">
+                              <div className="w-8 h-8 rounded-[10px] bg-[#18181B] border border-[#232326] flex items-center justify-center text-[16px]">{TYPE_META[t].emoji}</div>
+                              <span className="text-[13px] font-[800]">{TYPE_META[t].label}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ) : (
@@ -607,8 +649,8 @@ export default function App() {
                         return (
                           <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[#F5F1E8] border-[#F5F1E8] text-[#060608] shadow-[0_2px_12px_rgba(245,241,232,0.2)]':'bg-[#101012] border-[#1E1E22] text-[#CFCFC8] hover:border-[#2C2A20] hover:bg-[#15151A]'}`}>
                             <span className="text-[11px] font-[700] text-[#6A6A66] w-[36px]">{l.date.slice(5)}</span>
-                            <span className="text-[14px]">{TYPE_META[l.type].emoji}</span>
-                            <span className="text-[12px] font-[700] flex-1 truncate">{l.note || TYPE_META[l.type].label}</span>
+                            <span className="text-[14px]">{logTypes(l).map(t=>TYPE_META[t].emoji).join('') || '📝'}</span>
+                            <span className="text-[12px] font-[700] flex-1 truncate">{logSummary(l) || logTypes(l).map(t=>TYPE_META[t].label).join(', ')}</span>
                             <span className="text-[11px] font-[700] opacity-70">{l.laps? `${l.laps}바` : ''}</span>
                           </button>
                         );
@@ -626,7 +668,7 @@ export default function App() {
                     <div>
                       <h1 className="text-[28px] lg:text-[32px] font-[800] tracking-[-0.03em] leading-[1.1] text-[#F5F1E8]">{formatDiaryTitle(selectedDate)}</h1>
                       <div className="mt-3 h-[3px] w-[48px] gold-gradient rounded-full"/>
-                      <div className="mt-3 text-[13px] font-[500] text-[#9A9A93]">{selectedDate} · {selectedLog? '기록 있음' : '기록 없음'} {selectedLog? `· ${TYPE_META[selectedLog.type].label} ${selectedLog.laps? `${selectedLog.laps}바퀴`:''}` : ''}</div>
+                      <div className="mt-3 text-[13px] font-[500] text-[#9A9A93]">{selectedDate} · {selectedLog? '기록 있음' : '기록 없음'} {selectedLog? `· ${logTypes(selectedLog).map(t=>TYPE_META[t].label).join(', ')} ${selectedLog.laps? `${selectedLog.laps}바퀴`:''}` : ''}</div>
                     </div>
 
                     <div className="mt-8 h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
@@ -641,60 +683,38 @@ export default function App() {
 
                         <div className="mt-8 space-y-10">
                           <div>
-                            <div className="label-caps text-[#D4AF37] text-[11px]">오늘의 컨디션</div>
-                            <div className="mt-4 grid grid-cols-5 gap-2.5">
-                              {MOODS.map(m=>{
-                                const active=editing.mood===m.id;
-                                return (
-                                  <button key={m.id} onClick={()=>setEditing({...editing, mood:m.id, condition:m.id})} className={`h-[72px] rounded-[16px] border flex flex-col items-center justify-center gap-1.5 transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608] shadow-[0_0_18px_rgba(212,175,55,0.35)] scale-[1.02]' : 'bg-[#121214] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]'}`}>
-                                    <span className="text-[20px] leading-none">{m.emoji}</span>
-                                    <span className="text-[11px] font-[700]">{m.label}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[#F5F1E8] border-[#F5F1E8] text-[#060608]' : 'bg-[#121214] border-[#232326] text-[#CFCFC8] hover:border-[#3A3520]'}`}>
+                              <span className="text-[22px] leading-none">🌑</span>
+                              <span className="text-[14px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
+                              <span className={`w-11 h-6 rounded-full relative transition-all ${editing.isRest? 'bg-[#D4AF37]' : 'bg-[#232326]'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editing.isRest? 'left-[22px]' : 'left-0.5'}`}/></span>
+                            </button>
                           </div>
 
-                          <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
-
-                          <div>
-                            <div className="label-caps text-[#D4AF37] text-[11px]">훈련 타입</div>
-                            <div className="mt-4 grid grid-cols-3 gap-3">
-                              {(Object.keys(TYPE_META) as TrainingType[]).map(t=>{
-                                const active=editing.type===t;
-                                const meta=TYPE_META[t];
-                                return (
-                                  <button key={t} onClick={()=>setEditing({...editing, type:t})} className={`min-h-[84px] rounded-[18px] border p-4 flex flex-col items-center justify-center gap-2 transition-all ${active? 'bg-[#F5F1E8] border-[#F5F1E8] text-[#060608] shadow-[0_0_20px_rgba(245,241,232,0.25)]' : 'bg-[#121214] border-[#232326] hover:border-[#3A3520] text-[#CFCFC8]'}`}>
-                                    <span className="text-[28px] leading-none">{meta.emoji}</span>
-                                    <span className="text-[13px] font-[800]">{meta.label}</span>
-                                  </button>
-                                );
-                              })}
+                          {editing.isRest ? (
+                            <div className="rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 text-center">
+                              <div className="w-16 h-16 mx-auto rounded-full bg-[#121214] border border-[#2C2A20] flex items-center justify-center text-[28px]">🌑</div>
+                              <div className="mt-4 font-[800] text-[18px]">리커버리 데이</div>
+                              <div className="mt-2 text-[14px] font-[500] text-[#9A9A93] leading-[1.6]">잘 쉬는 것도 전략. 내일 더 강하게 돌아오자.</div>
                             </div>
-                          </div>
+                          ) : (
+                            <>
+                              <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
+                              <div>
+                                <div className="label-caps text-[#D4AF37] text-[11px]">⛸️ 빙상 훈련 · 오늘의 디테일</div>
+                                <div className="mt-4"><ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} /></div>
+                                <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요? 코너 진입 각도, 스타트 느낌 등을 자유롭게 적어보세요." className="mt-4 w-full min-h-[120px] rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
+                                <div className="mt-3 text-[11px] font-[600] text-[#6A6A66]">{(editing.noteIce||'').length}/200 · 훈련이 없었다면 비워두세요</div>
+                              </div>
 
-                          <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
-
-                          {editing.type==='dry' && (
-                            <QuickNoteInsert onInsert={insertNoteItem} />
+                              <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
+                              <div>
+                                <div className="label-caps text-[#D4AF37] text-[11px]">🏋️ 육상 훈련 · 오늘의 디테일</div>
+                                <div className="mt-4"><ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} /></div>
+                                <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="mt-4 w-full min-h-[120px] rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
+                                <div className="mt-3 text-[11px] font-[600] text-[#6A6A66]">{(editing.noteDry||'').length}/200 · 훈련이 없었다면 비워두세요</div>
+                              </div>
+                            </>
                           )}
-
-                         {editing.type==='rest' && (
-                           <div className="rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 text-center">
-                             <div className="w-16 h-16 mx-auto rounded-full bg-[#121214] border border-[#2C2A20] flex items-center justify-center text-[28px]">🌑</div>
-                             <div className="mt-4 font-[800] text-[18px]">리커버리 데이</div>
-                             <div className="mt-2 text-[14px] font-[500] text-[#9A9A93] leading-[1.6]">잘 쉬는 것도 전략. 내일 더 강하게 돌아오자.</div>
-                           </div>
-                         )}
-
-
-                          <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/20 via-[#2A2A20] to-transparent"/>
-
-                          <div>
-                            <div className="label-caps text-[#D4AF37] text-[11px]">한줄 일기 · 오늘의 디테일{editing.type==='ice' && ' · 빙상'}{editing.type==='dry' && ' · 육상'}</div>
-                            <textarea value={activeNote} onChange={e=>setActiveNote(e.target.value)} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까? 구체적으로 적을수록 다음 훈련이 빨라져요." className="mt-4 w-full min-h-[140px] rounded-[16px] bg-[#0E0E10] border border-[#1E1E22] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
-                            <div className="mt-3 text-[11px] font-[600] text-[#6A6A66]">{activeNote.length}/200 · 챔피언은 디테일을 기록한다</div>
-                          </div>
 
                           {/* Media links section */}
                           <div className="h-[1px] bg-gradient-to-r from-[#D4AF37]/30 via-[#2A2A20] to-transparent"/>
@@ -741,39 +761,53 @@ export default function App() {
                         {/* Hero gradient */}
                         <div className="relative overflow-hidden rounded-[20px] h-[180px] bg-[radial-gradient(120%_120%_at_0%_0%,rgba(212,175,55,0.22),transparent_60%),linear-gradient(135deg,#121214,#0E0E10)] border border-[#2C2A20] flex items-center justify-between px-8">
                           <div className="flex items-center gap-5">
-                            <div className="w-[72px] h-[72px] rounded-[18px] bg-[#18181B] border border-[#2C2A20] flex items-center justify-center text-[36px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">{TYPE_META[selectedLog.type].emoji}</div>
+                            <div className="w-[72px] h-[72px] rounded-[18px] bg-[#18181B] border border-[#2C2A20] flex items-center justify-center text-[36px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">{logTypes(selectedLog).map(t=>TYPE_META[t].emoji).join(' ') || '📝'}</div>
                             <div>
-                              <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[#060608] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(212,175,55,0.3)]">{TYPE_META[selectedLog.type].label} · {selectedLog.date}</div>
+                              <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[#060608] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(212,175,55,0.3)]">{logTypes(selectedLog).map(t=>TYPE_META[t].label).join(' + ') || '기록'} · {selectedLog.date}</div>
                               <div className="mt-3 font-[800] text-[20px] leading-[1.2]">오늘의 챔피언 로그</div>
-                              <div className="mt-1 text-[13px] font-[500] text-[#9A9A93]">컨디션 {MOODS.find(m=>m.id===selectedLog.condition)?.label}{selectedLog.focus!=null && ` · 집중 ${selectedLog.focus}/5`}{selectedLog.sleepHours!=null && ` · 수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
+                              {(selectedLog.focus!=null || selectedLog.sleepHours!=null) && (
+                                <div className="mt-1 text-[13px] font-[500] text-[#9A9A93]">{selectedLog.focus!=null && `집중 ${selectedLog.focus}/5`}{selectedLog.focus!=null && selectedLog.sleepHours!=null && ' · '}{selectedLog.sleepHours!=null && `수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
+                              )}
                             </div>
                           </div>
                           <div className="hidden lg:flex w-[96px] h-[96px] rounded-full border border-[#D4AF37]/20 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(212,175,55,0.15),transparent)] items-center justify-center text-[40px] opacity-80">⛸️</div>
                         </div>
 
-                        {/* Condition */}
-                        <div className="mt-10 rounded-[14px] bg-[#0E0E10] border border-[#1E1C14] p-4">
-                          <div className="label-caps">컨디션</div>
-                          <div className="mt-3 flex items-center gap-3">
-                            <span className="text-[28px]">{MOODS.find(m=>m.id===selectedLog.condition)?.emoji}</span>
-                            <span className="text-[16px] font-[700]">{MOODS.find(m=>m.id===selectedLog.condition)?.label}</span>
-                            <span className="ml-auto text-[12px] font-[600] text-[#9A9A93]">{selectedLog.focus!=null && `${selectedLog.focus} 집중 · `}{selectedLog.sleepHours!=null ? `${selectedLog.sleepHours.toFixed(1)}h 수면` : ''}</span>
-                          </div>
-                          {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
-                            <div className="mt-4 flex flex-wrap gap-1.5">
-                              {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
-                            </div>
-                          )}
-                        </div>
-
-                       {/* Blockquote */}
-                       <div className="mt-10 relative rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 lg:p-10 overflow-hidden">
-                         <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[#D4AF37]/10">“</div>
-                         <div className="relative">
-                           <div className="label-caps text-[#D4AF37]">한줄 일기</div>
-                           <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2]">“{selectedLog.note || '오늘의 디테일을 기록해보세요. 코너 진입 각도, 스타트 느낌, 호흡 등 작은 것 하나가 내일을 바꿉니다.'}”</blockquote>
+                       {/* Ice note */}
+                       {(selectedLog.noteIce || (selectedLog.iceItems && selectedLog.iceItems.length>0)) && (
+                         <div className="mt-10 relative rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 lg:p-10 overflow-hidden">
+                           <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[#D4AF37]/10">“</div>
+                           <div className="relative">
+                             <div className="label-caps text-[#D4AF37]">⛸️ 빙상 훈련</div>
+                             {selectedLog.noteIce && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2]">“{selectedLog.noteIce}”</blockquote>}
+                             {selectedLog.iceItems && selectedLog.iceItems.length>0 && (
+                               <div className="mt-5 flex flex-wrap gap-1.5">
+                                 {selectedLog.iceItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#D4AF37]">{it.type} {it.value}{it.unit}</span>)}
+                               </div>
+                             )}
+                           </div>
                          </div>
-                       </div>
+                       )}
+
+                       {/* Dry note */}
+                       {(selectedLog.noteDry || (selectedLog.dryItems && selectedLog.dryItems.length>0)) && (
+                         <div className="mt-10 relative rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 lg:p-10 overflow-hidden">
+                           <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[#D4AF37]/10">“</div>
+                           <div className="relative">
+                             <div className="label-caps text-[#D4AF37]">🏋️ 육상 훈련</div>
+                             {selectedLog.noteDry && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2]">“{selectedLog.noteDry}”</blockquote>}
+                             {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
+                               <div className="mt-5 flex flex-wrap gap-1.5">
+                                 {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
+                               </div>
+                             )}
+                           </div>
+                         </div>
+                       )}
+
+                       {!selectedLog.noteIce && !selectedLog.noteDry && !(selectedLog.iceItems&&selectedLog.iceItems.length) && !(selectedLog.dryItems&&selectedLog.dryItems.length) && !selectedLog.isRest && (
+                         <div className="mt-10 rounded-[20px] bg-[#0E0E10] border border-[#1E1C14] p-8 text-center text-[14px] text-[#6A6A66]">기록된 내용이 없어요</div>
+                       )}
 
                         {/* Media Embeds - YouTube & Instagram */}
                         {(selectedLog.youtubeUrl || selectedLog.instaUrl) && (
@@ -844,15 +878,14 @@ export default function App() {
                           <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center shrink-0"><Crown size={16} className="text-[#D4AF37]"/></div>
                           <div>
                             <div className="text-[12px] font-[800] text-[#D4AF37] tracking-[0.06em]">COACH FEEDBACK</div>
-                            <div className="mt-1.5 text-[14px] font-[500] leading-[1.6] text-[#CFCFC8]">{selectedLog.type==='ice' ? '코너 진입 시 상체 기울기 좋았어. 다음엔 아웃-인-아웃 라인 연습하면 0.3초 더 줄일 수 있어.' : selectedLog.type==='dry' ? '코어 안정성이 올라왔어. 점프 후 착지 밸런스 유지가 핵심이야.' : '잘 쉬었네. 내일 빙판에서 가볍게 풀고 본 훈련 들어가자.'}</div>
+                            <div className="mt-1.5 text-[14px] font-[500] leading-[1.6] text-[#CFCFC8]">{selectedLog.isRest ? '잘 쉬었네. 내일 빙판에서 가볍게 풀고 본 훈련 들어가자.' : selectedLog.noteIce && selectedLog.noteDry ? '빙상, 육상 둘 다 챙겼네! 이 페이스 유지하면서 회복도 신경 쓰자.' : selectedLog.noteIce ? '코너 진입 시 상체 기울기 좋았어. 다음엔 아웃-인-아웃 라인 연습하면 0.3초 더 줄일 수 있어.' : selectedLog.noteDry ? '코어 안정성이 올라왔어. 점프 후 착지 밸런스 유지가 핵심이야.' : '오늘의 훈련을 기록해보세요.'}</div>
                           </div>
                         </div>
 
                         {/* Edit/delete */}
                         <div className="mt-10 flex gap-3">
                           <button onClick={()=>{
-                            const draftNote = selectedLog.type==='ice' ? { noteIce: selectedLog.note } : selectedLog.type==='dry' ? { noteDry: selectedLog.note } : {};
-                            setEditing({...selectedLog, mood:selectedLog.condition as Mood, ...draftNote});
+                            setEditing({...selectedLog});
                             setDiaryEditMode(true);
                           }} className="h-[48px] px-8 rounded-full bg-[#F5F1E8] text-[#060608] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[#18181B] border border-[#232326] text-[13px] font-[700] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]">삭제</button>
@@ -1072,62 +1105,33 @@ export default function App() {
             </div>
 
             <div className="p-6 space-y-6">
-              {/* Mood */}
-              <div>
-                <div className="label-caps mb-3">오늘의 컨디션</div>
-                <div className="grid grid-cols-5 gap-2">
-                  {MOODS.map(m=>{
-                    const active=editing.mood===m.id;
-                    return (
-                      <button key={m.id} onClick={()=>setEditing({...editing, mood:m.id, condition:m.id})} className={`h-[68px] rounded-[16px] border flex flex-col items-center justify-center gap-1 transition-all ${active? 'gold-gradient border-[#D4AF37] text-[#060608] shadow-[0_0_16px_rgba(212,175,55,0.4)] scale-[1.02]' : 'bg-[#121214] border-[#232326] text-[#9A9A93] hover:border-[#3A3520] hover:text-[#F5F1E8]'}`}>
-                        <span className="text-[18px] leading-none">{m.emoji}</span>
-                        <span className="text-[11px] font-[700]">{m.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[#F5F1E8] border-[#F5F1E8] text-[#060608]' : 'bg-[#121214] border-[#232326] text-[#CFCFC8] hover:border-[#3A3520]'}`}>
+                <span className="text-[18px] leading-none">🌑</span>
+                <span className="text-[13px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
+                <span className={`w-10 h-[22px] rounded-full relative transition-all ${editing.isRest? 'bg-[#D4AF37]' : 'bg-[#232326]'}`}><span className={`absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all ${editing.isRest? 'left-[20px]' : 'left-0.5'}`}/></span>
+              </button>
 
-              <div>
-                <div className="label-caps mb-3">훈련 타입</div>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {(Object.keys(TYPE_META) as TrainingType[]).map(t=>{
-                    const active=editing.type===t;
-                    const meta=TYPE_META[t];
-                    return (
-                      <button key={t} onClick={()=>setEditing({...editing, type:t})} className={`min-h-[64px] rounded-[16px] border p-3 flex flex-col items-center justify-center gap-1 transition-all ${active? 'bg-[#F5F1E8] border-[#F5F1E8] text-[#060608] shadow-[0_0_16px_rgba(245,241,232,0.2)]' : 'bg-[#121214] border-[#232326] hover:border-[#3A3520] text-[#CFCFC8]'}`}>
-                        <span className="text-[22px] leading-none">{meta.emoji}</span>
-                        <span className="text-[12px] font-[700]">{meta.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {editing.type==='dry' && (
-                <QuickNoteInsert onInsert={insertNoteItem} compact />
-              )}
-
-              {editing.type==='rest' && (
+              {editing.isRest ? (
                 <div className="rounded-[16px] bg-[#0E0E10] border border-[#1E1C14] p-6 text-center">
                   <div className="w-12 h-12 mx-auto rounded-full bg-[#121214] border border-[#2C2A20] flex items-center justify-center text-[22px]">🌑</div>
                   <div className="mt-3 font-[700] text-[13px]">리커버리 데이</div>
                   <div className="mt-1 text-[11px] font-[500] text-[#9A9A93]">잘 쉬는 것도 챔피언의 전략. 내일 더 강하게.</div>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <div className="rounded-[12px] bg-[#121214] border border-[#1E1E22] p-3"><div className="label-caps">Sleep</div><div className="mt-1 flex items-center gap-2"><input type="number" step="0.5" value={editing.sleepHours||8} onChange={e=>setEditing({...editing, sleepHours: parseFloat(e.target.value)||0})} className="w-full bg-transparent font-[800] text-[16px] outline-none"/>h</div></div>
-                    <div className="rounded-[12px] bg-[#121214] border border-[#1E1E22] p-3"><div className="label-caps">컨디션 회복</div><div className="mt-1 text-[12px] font-[700] text-[#D4AF37]">80% 예상</div></div>
+                  <div className="mt-4 rounded-[12px] bg-[#121214] border border-[#1E1E22] p-3"><div className="label-caps">Sleep</div><div className="mt-1 flex items-center gap-2"><input type="number" step="0.5" value={editing.sleepHours||8} onChange={e=>setEditing({...editing, sleepHours: parseFloat(e.target.value)||0})} className="w-full bg-transparent font-[800] text-[16px] outline-none"/>h</div></div>
+                </div>
+              ) : (
+                <>
+                  <div className="card !p-4">
+                    <div className="label-caps mb-3">⛸️ 빙상 훈련 · 오늘의 디테일</div>
+                    <ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} compact />
+                    <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요?" className="mt-3 w-full min-h-[70px] rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
                   </div>
-                </div>
+                  <div className="card !p-4">
+                    <div className="label-caps mb-3">🏋️ 육상 훈련 · 오늘의 디테일</div>
+                    <ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} compact />
+                    <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="mt-3 w-full min-h-[70px] rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
+                  </div>
+                </>
               )}
-
-              <div className="card !p-4">
-                <div className="label-caps">오늘의 노트 · 챔피언 다이어리{editing.type==='ice' && ' · 빙상'}{editing.type==='dry' && ' · 육상'}</div>
-                <textarea value={activeNote} onChange={e=>setActiveNote(e.target.value)} placeholder="오늘 제일 잘한 디테일은? 내일은 무엇을 더 잘할까?" className="mt-3 w-full min-h-[80px] rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E] resize-none"/>
-                <div className="mt-3 flex items-center justify-between text-[10px] font-[600] text-[#6A6A66]">
-                  <span>팁: 구체적일수록 다음 훈련이 빨라져요</span>
-                  <span className="text-[#D4AF37]">{activeNote.length}/120</span>
-                </div>
-              </div>
 
               <button onClick={saveLog} className="w-full h-[52px] rounded-[16px] gold-gradient text-[#060608] font-[800] text-[14px] tracking-[-0.01em] shadow-[0_0_24px_rgba(212,175,55,0.3)] hover:shadow-[0_0_32px_rgba(212,175,55,0.45)] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 <Crown size={16}/> 기록 저장 · 챔피언의 하루 추가
