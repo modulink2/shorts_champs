@@ -32,7 +32,7 @@ const GOLD_GRAD = 'linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%
 // Short-track record distances — still used to display historical PB data.
 const DISTANCES = [111, 222, 333, 500, 1000, 1500] as const;
 // Units selectable when defining a custom ice/dry item type.
-export const ITEM_UNITS = ['시간', '분', '바퀴', '셋트'];
+export const ITEM_UNITS = ['시간', '분', '바퀴', '셋트', '개', '회'];
 // Seeded once per new user (see useItemTypes) so 육상 starts with familiar items.
 export const DEFAULT_ITEM_TYPES: { category: 'ice' | 'dry'; name: string; unit: string }[] = [
   { category: 'dry', name: '러닝', unit: '분' },
