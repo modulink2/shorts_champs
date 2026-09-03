@@ -11,7 +11,7 @@ import { downloadTrainingReport } from './reportPdf';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
-type ViewType = 'dashboard' | 'diary' | 'records' | 'growth';
+type ViewType = 'dashboard' | 'diary' | 'records' | 'growth' | 'roster';
 
 export interface TimeRecord { distance: number; time: string; seconds: number; }
 // A logged instance of a user-defined item type (e.g. "러닝 30분").
@@ -228,6 +228,8 @@ export default function App() {
   const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
   const allProfiles = useAllProfiles(myRole==='athlete');
   const [coachSearch, setCoachSearch] = useState('');
+  const [nameEditing, setNameEditing] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
@@ -415,14 +417,13 @@ export default function App() {
             </div>
           </div>
           <div className="p-3 space-y-1.5 flex-1">
-            {(isCoachOrAdmin ? [
-              { id:'dashboard', label: myRole==='admin'?'회원 관리':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':'ATHLETES' },
-            ] : [
+            {[
               { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
               { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
               { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
               { id:'growth', label:'성장리포트', icon:TrendingUp, desc:'GROWTH' },
-            ]).map(tab=>{
+              ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':'ATHLETES' }] : []),
+            ].map(tab=>{
               const active=view===tab.id;
               const Icon=tab.icon;
               return (
@@ -439,7 +440,7 @@ export default function App() {
                 </button>
               );
             })}
-            {!isCoachOrAdmin && <div className="pt-6 px-3">
+            <div className="pt-6 px-3">
               <div className="card-gold rounded-[16px] p-4 overflow-hidden">
                 <div className="flex items-center gap-2">
                   <Crown size={14} className="text-[#D4AF37]" />
@@ -452,7 +453,7 @@ export default function App() {
                   <span className="text-[11px] font-[700] text-[#D4AF37]">72% 달성</span>
                 </div>
               </div>
-            </div>}
+            </div>
           </div>
           <div className="p-4 border-t border-[#1C1A12]">
             <div className="flex items-center gap-3">
@@ -476,11 +477,11 @@ export default function App() {
                 <div>
                   <div className="flex items-center gap-2.5">
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">
-                      {isCoachOrAdmin && (myRole==='admin' ? '회원 관리' : '내 선수')}
-                      {!isCoachOrAdmin && view==='dashboard' && '대시보드'}
-                      {!isCoachOrAdmin && view==='diary' && '훈련일지'}
-                      {!isCoachOrAdmin && view==='records' && '기록입력/분석'}
-                      {!isCoachOrAdmin && view==='growth' && '성장리포트'}
+                      {view==='dashboard' && '대시보드'}
+                      {view==='diary' && '훈련일지'}
+                      {view==='records' && '기록입력/분석'}
+                      {view==='growth' && '성장리포트'}
+                      {view==='roster' && (myRole==='admin' ? '회원 관리' : '내 선수')}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[#1A1912] border border-[#3A3520] text-[10px] font-[700] tracking-[0.1em] text-[#D4AF37] items-center">BLACK & GOLD</span>
                   </div>
@@ -492,14 +493,14 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {!isCoachOrAdmin && <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[#101012] border border-[#2A2A2E]">
+                <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[#101012] border border-[#2A2A2E]">
                   <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center"><Flame size={12} className="text-[#060608]"/></div>
                   <span className="text-[11px] font-[700] text-[#F5F1E8]">스트릭 12일</span>
                   <span className="h-6 px-2.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800] flex items-center">LVL 8</span>
-                </div>}
-                {!isCoachOrAdmin && <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_28px_rgba(212,175,55,0.35)] active:scale-[0.98] transition-all">
+                </div>
+                <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_28px_rgba(212,175,55,0.35)] active:scale-[0.98] transition-all">
                   <span className="hidden sm:inline">✦</span> 기록하기
-                </button>}
+                </button>
                 <button onClick={logOut} title="로그아웃" className="lg:hidden w-9 h-9 rounded-full bg-[#101012] border border-[#2A2A2E] flex items-center justify-center text-[#9A9A93] hover:text-[#D4AF37] hover:border-[#3A3520] transition-colors">
                   <LogOut size={15} />
                 </button>
@@ -507,14 +508,13 @@ export default function App() {
             </div>
             {/* Mobile tabs */}
             <div className="lg:hidden px-4 pb-3 flex gap-1.5 overflow-x-auto">
-              {(isCoachOrAdmin ? [
-                { id:'dashboard', label: myRole==='admin'?'회원 관리':'내 선수' },
-              ] : [
+              {[
                 { id:'dashboard', label:'대시보드' },
                 { id:'diary', label:'훈련일지' },
                 { id:'records', label:'기록입력/분석' },
                 { id:'growth', label:'성장리포트' },
-              ]).map(tab=>{
+                ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수' }] : []),
+              ].map(tab=>{
                 const active=view===tab.id;
                 return (
                   <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`whitespace-nowrap h-8 px-4 rounded-full text-[12px] font-[700] border transition-all ${active?'gold-gradient text-[#060608] border-[#D4AF37] shadow-[0_0_16px_rgba(212,175,55,0.3)]':'bg-[#101012] border-[#2A2A2E] text-[#9A9A93]'}`}>{tab.label}</button>
@@ -524,8 +524,8 @@ export default function App() {
           </header>
 
           <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px] mx-auto">
-            {isCoachOrAdmin && <CoachAdminView role={myRole} />}
-            {!isCoachOrAdmin && view==='dashboard' && (
+            {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
+            {view==='dashboard' && (
               <>
                 {/* KPI */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
@@ -1079,6 +1079,41 @@ export default function App() {
 
             {view==='growth' && (
               <div className="card p-5 lg:p-6">
+                <div className="font-[700] text-[14px]">내 정보</div>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <label className="label-caps">이름</label>
+                    {nameEditing ? (
+                      <input
+                        autoFocus value={nameDraft} onChange={e=>setNameDraft(e.target.value)}
+                        onBlur={()=>{ if(nameDraft.trim()) saveProfile(user!.uid, { displayName: nameDraft.trim() }); setNameEditing(false); }}
+                        onKeyDown={e=>{ if(e.key==='Enter') (e.target as HTMLInputElement).blur(); }}
+                        className="mt-1.5 w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#3A3520] px-4 text-[13px] font-[600] outline-none"
+                      />
+                    ) : (
+                      <button onClick={()=>{ setNameEditing(true); setNameDraft(myProfile?.displayName || user?.displayName || ''); }} className="mt-1.5 w-full h-11 rounded-[12px] bg-[#101012] border border-[#1E1C14] px-4 flex items-center justify-between text-left hover:border-[#3A3520] transition-colors">
+                        <span className="text-[13px] font-[600] text-[#F5F1E8]">{myProfile?.displayName || user?.displayName || '이름 없음'}</span>
+                        <span className="text-[11px] font-[600] text-[#9A9A93]">수정</span>
+                      </button>
+                    )}
+                  </div>
+                  <div>
+                    <label className="label-caps">회원 분류</label>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                      {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
+                        <button
+                          key={val} onClick={()=>saveProfile(user!.uid, { role: val })}
+                          className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${myProfile?.role===val? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#0E0E10] border-[#1E1E22] text-[#9A9A93] hover:border-[#3A3520]'}`}
+                        >{label}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {view==='growth' && myRole==='athlete' && (
+              <div className="card p-5 lg:p-6">
                 <div className="font-[700] text-[14px]">담당 코치</div>
                 {myProfile?.coachName ? (
                   <div className="mt-3 flex items-center justify-between rounded-[14px] bg-[#101012] border border-[#1E1C14] px-4 h-12">
@@ -1159,7 +1194,7 @@ export default function App() {
       </div>
 
       {/* Floating action mobile */}
-      {!isCoachOrAdmin && <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[13px] shadow-[0_0_24px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>}
+      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[13px] shadow-[0_0_24px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
 
       {toast && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[#F5F1E8] text-[#060608] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(212,175,55,0.3)] border border-[#D4AF37]/30">
