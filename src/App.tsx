@@ -223,13 +223,27 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
 
 export default function App() {
   const { user, logOut } = useAuth();
-  const { profile: myProfile } = useProfile(user?.uid);
+  const { profile: myProfile, loaded: myProfileLoaded } = useProfile(user?.uid);
   const myRole = effectiveRole(user?.email, myProfile);
   const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
   const allProfiles = useAllProfiles(myRole==='athlete');
   const [coachSearch, setCoachSearch] = useState('');
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+
+  // Accounts created before the role system existed (or that only ever wrote
+  // a partial profile via the coach-picker) may have no `role` — which makes
+  // them invisible to every role== filter (rosters, member management).
+  // Backfill missing fields once the doc is confirmed loaded, without
+  // clobbering anything already set (e.g. a chosen coachId).
+  useEffect(() => {
+    if (!user || !myProfileLoaded) return;
+    const patch: Partial<UserProfile> = {};
+    if (!myProfile) { patch.uid = user.uid; patch.email = user.email || ''; patch.createdAt = Date.now(); }
+    if (!myProfile?.role) patch.role = 'athlete';
+    if (!myProfile?.displayName) patch.displayName = user.displayName || user.email || '';
+    if (Object.keys(patch).length > 0) saveProfile(user.uid, patch);
+  }, [user, myProfile, myProfileLoaded]);
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
