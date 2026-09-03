@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
-import { useProfile, useAllProfiles, saveProfile, useComments } from './useProfile';
+import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
 
@@ -41,6 +41,10 @@ export function effectiveRole(email: string|null|undefined, profile: UserProfile
   return profile?.role || 'athlete';
 }
 export interface LogComment { id: string; authorUid: string; authorName: string; text: string; createdAt: number; }
+// Denormalized pointer to the most recent coach comment, kept on the
+// athlete's own profile so the dashboard can flag it without scanning every
+// training log's comments subcollection.
+export interface LatestComment { text: string; authorName: string; date: string; createdAt: number; }
 
 const GOLD = '#D4AF37';
 const GOLD_BRIGHT = '#FFD700';
@@ -244,6 +248,23 @@ export default function App() {
     if (!myProfile?.displayName) patch.displayName = user.displayName || user.email || '';
     if (Object.keys(patch).length > 0) saveProfile(user.uid, patch);
   }, [user, myProfile, myProfileLoaded]);
+
+  // "New coach feedback" banner: compare the latest comment's timestamp
+  // against the last one this browser has seen (stored locally — this is a
+  // per-device convenience, not data that needs to sync anywhere else).
+  const latestComment = useLatestComment(user?.uid);
+  const [seenCommentAt, setSeenCommentAt] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    try { setSeenCommentAt(Number(localStorage.getItem(`seenCommentAt_${user.uid}`)) || 0); } catch { setSeenCommentAt(0); }
+  }, [user?.uid]);
+  const hasNewComment = !!latestComment && latestComment.createdAt > seenCommentAt;
+  const dismissComment = () => {
+    if (!user || !latestComment) return;
+    try { localStorage.setItem(`seenCommentAt_${user.uid}`, String(latestComment.createdAt)); } catch {}
+    setSeenCommentAt(latestComment.createdAt);
+  };
+
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
@@ -541,6 +562,19 @@ export default function App() {
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
+                {hasNewComment && latestComment && (
+                  <button
+                    onClick={()=>{ setSelectedDate(latestComment.date); setView('diary'); dismissComment(); }}
+                    className="glow-pulse w-full text-left rounded-[20px] p-5 lg:p-6 gold-gradient text-[#060608] flex items-center gap-4 active:scale-[0.99] transition-transform"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[#060608]/15 flex items-center justify-center shrink-0"><MessageSquare size={22}/></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {latestComment.authorName} 코치님의 피드백이 도착했어요</div>
+                      <div className="mt-1 text-[15px] lg:text-[16px] font-[800] truncate">"{latestComment.text}"</div>
+                    </div>
+                    <ChevronRight size={22} className="shrink-0"/>
+                  </button>
+                )}
                 {/* KPI */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
                   <div className="card p-4 lg:p-5">

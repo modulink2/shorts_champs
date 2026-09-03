@@ -34,3 +34,9 @@ html, body { overflow-x: hidden; background: #060608; }
 .big-num { font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; }
 .label-caps { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A93; }
 .noise { position: absolute; inset: 0; pointer-events: none; opacity: 0.025; background-image: radial-gradient(rgba(212,175,55,0.8) 1px, transparent 1px); background-size: 22px 22px; }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(212,175,55,0.35), 0 0 0 1px rgba(212,175,55,0.4); }
+  50% { box-shadow: 0 0 44px rgba(212,175,55,0.65), 0 0 0 1px rgba(212,175,55,0.7); }
+}
+.glow-pulse { animation: glow-pulse 1.8s ease-in-out infinite; }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { collection, doc, setDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from './firebase';
-import type { UserProfile, LogComment } from './App';
+import type { UserProfile, LogComment, LatestComment } from './App';
 
 // Write (or patch) any profile doc — usable for editing your own profile or,
 // for admin/coach flows, a target athlete's.
@@ -51,13 +51,33 @@ export function useComments(athleteUid: string | undefined, date: string | undef
     return onSnapshot(q, (snap) => setComments(snap.docs.map((d) => d.data() as LogComment)), (err) => console.error('[useComments]', err));
   }, [athleteUid, date]);
 
-  const addComment = (authorUid: string, authorName: string, text: string) => {
-    if (!athleteUid || !date || !text.trim()) return Promise.resolve();
+  const addComment = async (authorUid: string, authorName: string, text: string) => {
+    if (!athleteUid || !date || !text.trim()) return;
     const id = crypto.randomUUID();
-    return setDoc(doc(db, 'users', athleteUid, 'logs', date, 'comments', id), {
-      id, authorUid, authorName, text: text.trim(), createdAt: Date.now(),
+    const createdAt = Date.now();
+    await setDoc(doc(db, 'users', athleteUid, 'logs', date, 'comments', id), {
+      id, authorUid, authorName, text: text.trim(), createdAt,
     });
+    // Denormalize onto notifications/{athleteUid} so the athlete's dashboard
+    // can flag the newest comment without listening to every date's
+    // comments subcollection.
+    await setDoc(doc(db, 'notifications', athleteUid), {
+      lastComment: { text: text.trim(), authorName, date, createdAt },
+    }, { merge: true });
   };
 
   return { comments, addComment };
+}
+
+// The athlete's own most-recent-coach-comment pointer, used to surface a
+// "new feedback" banner on login.
+export function useLatestComment(uid: string | undefined) {
+  const [latestComment, setLatestComment] = useState<LatestComment | null>(null);
+  useEffect(() => {
+    if (!uid) { setLatestComment(null); return; }
+    return onSnapshot(doc(db, 'notifications', uid), (snap) => {
+      setLatestComment(snap.exists() ? ((snap.data().lastComment as LatestComment) ?? null) : null);
+    }, (err) => console.error('[useLatestComment]', err));
+  }, [uid]);
+  return latestComment;
 }
