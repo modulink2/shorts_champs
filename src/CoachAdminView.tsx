@@ -220,7 +220,7 @@ function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSe
 
 export default function CoachAdminView({ role }: { role: 'coach' | 'admin' }) {
   const { user } = useAuth();
-  const [tab, setTab] = useState<'roster'|'members'>('roster');
+  const [tab, setTab] = useState<'roster'|'members'>(role==='admin' ? 'members' : 'roster');
   const [selectedAthlete, setSelectedAthlete] = useState<UserProfile|null>(null);
 
   if (!user) return null;
