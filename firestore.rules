@@ -1,8 +1,31 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'llsk2507@gmail.com';
+    }
+    function isAssignedCoach(athleteUid) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/profiles/$(athleteUid)).data.coachId == request.auth.uid;
+    }
+
+    // Profile docs (name/email/role/coachId) — readable by any signed-in user
+    // so athletes can search coaches and coaches/admin can see rosters, but
+    // only the owner or the admin account can write one.
+    match /profiles/{uid} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+    }
+
+    // Coach/admin can leave comments on an athlete's log without otherwise
+    // touching that athlete's data.
+    match /users/{userId}/logs/{logId}/comments/{commentId} {
+      allow write: if isAdmin() || isAssignedCoach(userId);
+    }
+
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if isAdmin() || isAssignedCoach(userId);
     }
   }
 }

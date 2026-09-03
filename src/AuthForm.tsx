@@ -18,6 +18,7 @@ export default function AuthForm() {
   const { signUp, logIn } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
+  const [role, setRole] = useState<'athlete'|'coach'>('athlete');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +29,7 @@ export default function AuthForm() {
     setError('');
     setBusy(true);
     try {
-      if (mode === 'signup') await signUp(email, password, name);
+      if (mode === 'signup') await signUp(email, password, name, role);
       else await logIn(email, password);
     } catch (err: any) {
       setError(mapError(err?.code || ''));
@@ -69,14 +70,27 @@ export default function AuthForm() {
 
           <form onSubmit={submit} className="space-y-3.5">
             {mode === 'signup' && (
-              <div>
-                <label className="label-caps">선수 이름</label>
-                <input
-                  required value={name} onChange={(e) => setName(e.target.value)}
-                  placeholder="예: 서윤" autoComplete="name"
-                  className="mt-1.5 w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 text-[13px] font-[500] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="label-caps">이름</label>
+                  <input
+                    required value={name} onChange={(e) => setName(e.target.value)}
+                    placeholder="예: 서윤" autoComplete="name"
+                    className="mt-1.5 w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] px-4 text-[13px] font-[500] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"
+                  />
+                </div>
+                <div>
+                  <label className="label-caps">회원 분류</label>
+                  <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
+                      <button
+                        key={val} type="button" onClick={()=>setRole(val)}
+                        className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${role===val? 'gold-gradient border-[#D4AF37] text-[#060608]' : 'bg-[#0E0E10] border-[#1E1E22] text-[#9A9A93] hover:border-[#3A3520]'}`}
+                      >{label}</button>
+                    ))}
+                  </div>
+                </div>
+              </>
             )}
             <div>
               <label className="label-caps">이메일</label>

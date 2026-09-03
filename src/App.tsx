@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
+import { useProfile, useAllProfiles, saveProfile, useComments } from './useProfile';
+import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
 
 // Types
@@ -24,6 +26,21 @@ export interface TrainingLog {
 export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
 // A user-managed item type (name + unit) available in the ice or dry item picker.
 export interface ItemType { id: string; category: 'ice' | 'dry'; name: string; unit: string; }
+
+// Roles & profiles ---------------------------------------------------------
+// 'admin' is never stored — it's derived purely from the account email so
+// there's nothing in the data to accidentally grant/revoke.
+export type UserRole = 'athlete' | 'coach' | 'admin';
+export interface UserProfile {
+  uid: string; email: string; displayName: string; role: 'athlete'|'coach';
+  coachId?: string; coachName?: string; createdAt?: number;
+}
+export const ADMIN_EMAIL = 'llsk2507@gmail.com';
+export function effectiveRole(email: string|null|undefined, profile: UserProfile|null): UserRole {
+  if (email && email === ADMIN_EMAIL) return 'admin';
+  return profile?.role || 'athlete';
+}
+export interface LogComment { id: string; authorUid: string; authorName: string; text: string; createdAt: number; }
 
 const GOLD = '#D4AF37';
 const GOLD_BRIGHT = '#FFD700';
@@ -89,6 +106,15 @@ function isValidInstaUrl(url: string): boolean {
 function truncateUrl(url: string, max = 42): string {
   if (url.length <= max) return url;
   return url.slice(0, max) + '…';
+}
+// `date.toISOString()` converts to UTC first, which silently shifts the date
+// back a day for any timezone ahead of UTC (e.g. KST) during local morning
+// hours — always format calendar dates from local fields instead.
+export function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
 }
 function parseTimeInput(raw: string): { sec: number; display: string } | null {
   raw = raw.trim(); if (!raw) return null;
@@ -197,13 +223,18 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
 
 export default function App() {
   const { user, logOut } = useAuth();
+  const { profile: myProfile } = useProfile(user?.uid);
+  const myRole = effectiveRole(user?.email, myProfile);
+  const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
+  const allProfiles = useAllProfiles(myRole==='athlete');
+  const [coachSearch, setCoachSearch] = useState('');
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
   const iceItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='ice'), [itemTypes]);
   const dryItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='dry'), [itemTypes]);
   const [view, setView] = useState<ViewType>('dashboard');
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().slice(0,10));
+  const [selectedDate, setSelectedDate] = useState<string>(()=> toLocalDateStr(new Date()));
   const [showModal, setShowModal] = useState(false);
   const [diaryEditMode, setDiaryEditMode] = useState(false);
   const [editing, setEditing] = useState<Partial<TrainingLog>>({});
@@ -212,7 +243,7 @@ export default function App() {
   const [searchType, setSearchType] = useState<'all'|'ice'|'dry'|'rest'>('all');
   const [goalForm, setGoalForm] = useState<Goal | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
-  const [recordDate, setRecordDate] = useState(()=> new Date().toISOString().slice(0,10));
+  const [recordDate, setRecordDate] = useState(()=> toLocalDateStr(new Date()));
   const [recordLaps, setRecordLaps] = useState(0);
   const [recordTimeInputs, setRecordTimeInputs] = useState<Record<number,string>>({});
 
@@ -231,7 +262,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recordDate]);
 
-  const todayStr = new Date().toISOString().slice(0,10);
+  const todayStr = toLocalDateStr(new Date());
 
   const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=> logTypes(l).includes(searchType)), [logs, searchType]);
   const thisWeekLogs = useMemo(()=>{
@@ -283,6 +314,7 @@ export default function App() {
   };
   const recentLogsWithRecord = useMemo(()=> logs.slice(-5).reverse(), [logs]);
   const selectedLog = useMemo(()=> logs.find(l=>l.date===selectedDate), [logs, selectedDate]);
+  const { comments: myLogComments } = useComments(user?.uid, selectedDate);
 
  const openLog = (dateStr:string)=>{
    const existing = logs.find(l=>l.date===dateStr);
@@ -383,12 +415,14 @@ export default function App() {
             </div>
           </div>
           <div className="p-3 space-y-1.5 flex-1">
-            {[
+            {(isCoachOrAdmin ? [
+              { id:'dashboard', label: myRole==='admin'?'회원 관리':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':'ATHLETES' },
+            ] : [
               { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
               { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
               { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
               { id:'growth', label:'성장리포트', icon:TrendingUp, desc:'GROWTH' },
-            ].map(tab=>{
+            ]).map(tab=>{
               const active=view===tab.id;
               const Icon=tab.icon;
               return (
@@ -405,20 +439,20 @@ export default function App() {
                 </button>
               );
             })}
-            <div className="pt-6 px-3">
+            {!isCoachOrAdmin && <div className="pt-6 px-3">
               <div className="card-gold rounded-[16px] p-4 overflow-hidden">
                 <div className="flex items-center gap-2">
                   <Crown size={14} className="text-[#D4AF37]" />
                   <span className="label-caps text-[#D4AF37]">Today's Focus</span>
                 </div>
-                <div className="mt-2.5 text-[12px] font-[600] leading-[1.4] text-[#E8E2D2]">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
+                <div className="mt-2.5 text-[12px] font-[600] leading-[1.4] text-[#E8E2D2] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
                 <div className="mt-3 h-[1px] bg-[#2A2A20]" />
                 <div className="mt-3 flex items-center justify-between">
                   <span className="text-[11px] font-[500] text-[#9A9A93]">시즌 D-47</span>
                   <span className="text-[11px] font-[700] text-[#D4AF37]">72% 달성</span>
                 </div>
               </div>
-            </div>
+            </div>}
           </div>
           <div className="p-4 border-t border-[#1C1A12]">
             <div className="flex items-center gap-3">
@@ -442,10 +476,11 @@ export default function App() {
                 <div>
                   <div className="flex items-center gap-2.5">
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">
-                      {view==='dashboard' && '대시보드'}
-                      {view==='diary' && '훈련일지'}
-                      {view==='records' && '기록입력/분석'}
-                      {view==='growth' && '성장리포트'}
+                      {isCoachOrAdmin && (myRole==='admin' ? '회원 관리' : '내 선수')}
+                      {!isCoachOrAdmin && view==='dashboard' && '대시보드'}
+                      {!isCoachOrAdmin && view==='diary' && '훈련일지'}
+                      {!isCoachOrAdmin && view==='records' && '기록입력/분석'}
+                      {!isCoachOrAdmin && view==='growth' && '성장리포트'}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[#1A1912] border border-[#3A3520] text-[10px] font-[700] tracking-[0.1em] text-[#D4AF37] items-center">BLACK & GOLD</span>
                   </div>
@@ -457,14 +492,14 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[#101012] border border-[#2A2A2E]">
+                {!isCoachOrAdmin && <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[#101012] border border-[#2A2A2E]">
                   <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center"><Flame size={12} className="text-[#060608]"/></div>
                   <span className="text-[11px] font-[700] text-[#F5F1E8]">스트릭 12일</span>
                   <span className="h-6 px-2.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800] flex items-center">LVL 8</span>
-                </div>
-                <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_28px_rgba(212,175,55,0.35)] active:scale-[0.98] transition-all">
+                </div>}
+                {!isCoachOrAdmin && <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(212,175,55,0.25)] hover:shadow-[0_0_28px_rgba(212,175,55,0.35)] active:scale-[0.98] transition-all">
                   <span className="hidden sm:inline">✦</span> 기록하기
-                </button>
+                </button>}
                 <button onClick={logOut} title="로그아웃" className="lg:hidden w-9 h-9 rounded-full bg-[#101012] border border-[#2A2A2E] flex items-center justify-center text-[#9A9A93] hover:text-[#D4AF37] hover:border-[#3A3520] transition-colors">
                   <LogOut size={15} />
                 </button>
@@ -472,12 +507,14 @@ export default function App() {
             </div>
             {/* Mobile tabs */}
             <div className="lg:hidden px-4 pb-3 flex gap-1.5 overflow-x-auto">
-              {[
+              {(isCoachOrAdmin ? [
+                { id:'dashboard', label: myRole==='admin'?'회원 관리':'내 선수' },
+              ] : [
                 { id:'dashboard', label:'대시보드' },
                 { id:'diary', label:'훈련일지' },
                 { id:'records', label:'기록입력/분석' },
                 { id:'growth', label:'성장리포트' },
-              ].map(tab=>{
+              ]).map(tab=>{
                 const active=view===tab.id;
                 return (
                   <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`whitespace-nowrap h-8 px-4 rounded-full text-[12px] font-[700] border transition-all ${active?'gold-gradient text-[#060608] border-[#D4AF37] shadow-[0_0_16px_rgba(212,175,55,0.3)]':'bg-[#101012] border-[#2A2A2E] text-[#9A9A93]'}`}>{tab.label}</button>
@@ -487,7 +524,8 @@ export default function App() {
           </header>
 
           <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px] mx-auto">
-            {view==='dashboard' && (
+            {isCoachOrAdmin && <CoachAdminView role={myRole} />}
+            {!isCoachOrAdmin && view==='dashboard' && (
               <>
                 {/* KPI */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
@@ -590,7 +628,7 @@ export default function App() {
                       {['월','화','수','목','금','토','일'].map(d=> <div key={d} className="h-[24px] flex items-center justify-center text-[10px] font-[700] text-[#6A6A66]">{d}</div>)}
                       {calendarDays.map((d,i)=>{
                         if(!d) return <div key={i} className="h-[32px] flex items-center justify-center"/>;
-                        const ds=d.toISOString().slice(0,10);
+                        const ds=toLocalDateStr(d);
                         const log=logs.find(l=>l.date===ds);
                         const isToday=ds===todayStr;
                         const isSel=ds===selectedDate;
@@ -779,7 +817,7 @@ export default function App() {
                            <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[#D4AF37]/10">“</div>
                            <div className="relative">
                              <div className="label-caps text-[#D4AF37]">⛸️ 빙상 훈련</div>
-                             {selectedLog.noteIce && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2]">“{selectedLog.noteIce}”</blockquote>}
+                             {selectedLog.noteIce && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2] whitespace-pre-wrap">“{selectedLog.noteIce}”</blockquote>}
                              {selectedLog.iceItems && selectedLog.iceItems.length>0 && (
                                <div className="mt-5 flex flex-wrap gap-1.5">
                                  {selectedLog.iceItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#D4AF37]">{it.type} {it.value}{it.unit}</span>)}
@@ -795,7 +833,7 @@ export default function App() {
                            <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[#D4AF37]/10">“</div>
                            <div className="relative">
                              <div className="label-caps text-[#D4AF37]">🏋️ 육상 훈련</div>
-                             {selectedLog.noteDry && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2]">“{selectedLog.noteDry}”</blockquote>}
+                             {selectedLog.noteDry && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[#E8E2D2] whitespace-pre-wrap">“{selectedLog.noteDry}”</blockquote>}
                              {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
                                <div className="mt-5 flex flex-wrap gap-1.5">
                                  {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[#1A1912] border border-[#2C2A20] text-[12px] font-[600] text-[#C9A86A]">{it.type} {it.value}{it.unit}</span>)}
@@ -873,14 +911,20 @@ export default function App() {
                           </div>
                         )}
 
-                        {/* Coach bubble */}
-                        <div className="mt-6 rounded-[16px] bg-[#121214] border border-[#2C2A20] p-5 flex gap-4">
-                          <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center shrink-0"><Crown size={16} className="text-[#D4AF37]"/></div>
-                          <div>
-                            <div className="text-[12px] font-[800] text-[#D4AF37] tracking-[0.06em]">COACH FEEDBACK</div>
-                            <div className="mt-1.5 text-[14px] font-[500] leading-[1.6] text-[#CFCFC8]">{selectedLog.isRest ? '잘 쉬었네. 내일 빙판에서 가볍게 풀고 본 훈련 들어가자.' : selectedLog.noteIce && selectedLog.noteDry ? '빙상, 육상 둘 다 챙겼네! 이 페이스 유지하면서 회복도 신경 쓰자.' : selectedLog.noteIce ? '코너 진입 시 상체 기울기 좋았어. 다음엔 아웃-인-아웃 라인 연습하면 0.3초 더 줄일 수 있어.' : selectedLog.noteDry ? '코어 안정성이 올라왔어. 점프 후 착지 밸런스 유지가 핵심이야.' : '오늘의 훈련을 기록해보세요.'}</div>
+                        {/* Coach feedback */}
+                        {myLogComments.length>0 && (
+                          <div className="mt-6 space-y-3">
+                            {myLogComments.map(c=>(
+                              <div key={c.id} className="rounded-[16px] bg-[#121214] border border-[#2C2A20] p-5 flex gap-4">
+                                <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center shrink-0"><Crown size={16} className="text-[#D4AF37]"/></div>
+                                <div>
+                                  <div className="text-[12px] font-[800] text-[#D4AF37] tracking-[0.06em]">{c.authorName} · COACH FEEDBACK</div>
+                                  <div className="mt-1.5 text-[14px] font-[500] leading-[1.6] text-[#CFCFC8] whitespace-pre-wrap">{c.text}</div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        </div>
+                        )}
 
                         {/* Edit/delete */}
                         <div className="mt-10 flex gap-3">
@@ -1035,6 +1079,38 @@ export default function App() {
 
             {view==='growth' && (
               <div className="card p-5 lg:p-6">
+                <div className="font-[700] text-[14px]">담당 코치</div>
+                {myProfile?.coachName ? (
+                  <div className="mt-3 flex items-center justify-between rounded-[14px] bg-[#101012] border border-[#1E1C14] px-4 h-12">
+                    <span className="text-[13px] font-[600] text-[#F5F1E8]">{myProfile.coachName} 코치님</span>
+                    <button onClick={()=>saveProfile(user!.uid, { coachId:'', coachName:'' })} className="text-[11px] font-[700] text-[#9A9A93] hover:text-[#D4AF37]">지정 해제</button>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#6A6A66]"/>
+                      <input value={coachSearch} onChange={e=>setCoachSearch(e.target.value)} placeholder="코치 이름 검색" className="w-full h-11 rounded-[12px] bg-[#0E0E10] border border-[#1E1E22] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                    </div>
+                    {coachSearch.trim() && (
+                      <div className="mt-2 space-y-1.5">
+                        {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).map(p=>(
+                          <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { coachId:p.uid, coachName:p.displayName }); setCoachSearch(''); }} className="w-full h-11 rounded-[12px] bg-[#101012] border border-[#1E1C14] px-4 flex items-center justify-between text-left hover:border-[#3A3520] transition-colors">
+                            <span className="text-[13px] font-[600] text-[#F5F1E8]">{p.displayName}</span>
+                            <span className="text-[11px] font-[600] text-[#D4AF37]">선택</span>
+                          </button>
+                        ))}
+                        {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).length===0 && (
+                          <div className="text-[12px] text-[#6A6A66] py-2">일치하는 코치가 없어요</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {view==='growth' && (
+              <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
                   <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800]">+ 목표 추가</button>
@@ -1083,7 +1159,7 @@ export default function App() {
       </div>
 
       {/* Floating action mobile */}
-      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[13px] shadow-[0_0_24px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
+      {!isCoachOrAdmin && <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[#060608] font-[800] text-[13px] shadow-[0_0_24px_rgba(212,175,55,0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>}
 
       {toast && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[#F5F1E8] text-[#060608] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(212,175,55,0.3)] border border-[#D4AF37]/30">
