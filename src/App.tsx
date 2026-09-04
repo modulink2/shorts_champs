@@ -1164,14 +1164,14 @@ export default function App() {
                         )}
 
                         {/* Edit/delete */}
-                        <div className="mt-10 flex gap-3">
+                        <div className="mt-10 flex gap-3 overflow-x-auto">
                           <button onClick={()=>{
                             setEditing({...selectedLog});
                             setDiaryEditMode(true);
-                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors">수정하기</button>
-                          <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]">삭제</button>
-                          <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
-                          <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)]">{themeLabel} · {selectedLog.date}</span>
+                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors shrink-0 whitespace-nowrap">수정하기</button>
+                          <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)] shrink-0 whitespace-nowrap">삭제</button>
+                          <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50 shrink-0 whitespace-nowrap"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
+                          <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)] shrink-0">{themeLabel} · {selectedLog.date}</span>
                         </div>
                       </div>
                     ) : (
