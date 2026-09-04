@@ -9,6 +9,7 @@ import { useWeeklyPlan } from './useWeeklyPlan';
 import { useAwards } from './useAwards';
 import { useRecordTypes } from './useRecordTypes';
 import Logo from './Logo';
+import TrackBackground from './TrackBackground';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
@@ -513,9 +514,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
-      {/* subtle radial gold vignette + faint background photo */}
-      <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/images/main_bg.jpg')] bg-cover bg-center opacity-[0.16]" />
+      {/* animated track-ring canvas background + subtle radial gold vignette */}
+      <div className="pointer-events-none fixed inset-0 z-0" style={{background:'radial-gradient(120% 120% at 50% 30%, #0f172a 0%, #1e293b 40%, #0f172a 100%)'}}>
+        <TrackBackground />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),var(--glow-1)),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),var(--glow-2)),transparent_50%),radial-gradient(50%_45%_at_5%_60%,rgba(var(--c-D4AF37-rgb),var(--glow-3)),transparent_55%),radial-gradient(45%_40%_at_85%_90%,rgba(var(--c-C9A86A-rgb),var(--glow-4)),transparent_55%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
