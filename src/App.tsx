@@ -7,6 +7,7 @@ import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
 import { useWeeklyPlan } from './useWeeklyPlan';
 import { useAwards } from './useAwards';
+import { useRecordTypes } from './useRecordTypes';
 import Logo from './Logo';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
@@ -70,8 +71,11 @@ const GOLD = 'var(--c-D4AF37)';
 const GOLD_BRIGHT = 'var(--c-FFD700)';
 const GOLD_GRAD = 'linear-gradient(135deg, var(--c-D4AF37) 0%, var(--c-FFD700) 50%, var(--c-FFC700) 100%)';
 
-// Short-track record distances — still used to display historical PB data.
-const DISTANCES = [111, 222, 333, 500, 1000, 1500] as const;
+// User-managed distance entries for 베스트 기록 (record-type items, same
+// add-your-own pattern as ice/dry training items). Seeded once with the
+// short-track standard distances so existing PB data stays visible.
+export interface RecordType { id: string; distance: number; }
+export const DEFAULT_RECORD_DISTANCES = [111, 222, 333, 500, 1000, 1500];
 // Units selectable when defining a custom ice/dry item type.
 export const ITEM_UNITS = ['시간', '분', '바퀴', '셋트', '개', '회'];
 // Seeded once per new user (see useItemTypes) so 육상 starts with familiar items.
@@ -167,15 +171,18 @@ function logSummary(log: TrainingLog): string {
   return parts.join(' · ');
 }
 
-function TimeInputsEditor({ timeInputs, onChange }: { timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void }) {
+function TimeInputsEditor({ recordTypes, timeInputs, onChange, onDelete }: { recordTypes: RecordType[]; timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void; onDelete:(id:string)=>void }) {
   return (
     <div className="grid sm:grid-cols-3 gap-3">
-      {DISTANCES.map(d=>(
-        <div key={d} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-4">
-          <div className="label-caps">{d}m</div>
+      {recordTypes.map(rt=>(
+        <div key={rt.id} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-4">
+          <div className="flex items-center justify-between">
+            <div className="label-caps">{rt.distance}m</div>
+            <button type="button" onClick={()=>onDelete(rt.id)} className="w-5 h-5 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[10px] text-[var(--c-9A9A93)] hover:text-[var(--c-F5F1E8)] flex items-center justify-center">×</button>
+          </div>
           <input
-            value={timeInputs[d]||''} onChange={e=>onChange(d, e.target.value)}
-            placeholder={d>=1000 ? 'm:ss.ss' : 'ss.ss'} inputMode="decimal"
+            value={timeInputs[rt.distance]||''} onChange={e=>onChange(rt.distance, e.target.value)}
+            placeholder={rt.distance>=1000 ? 'm:ss.ss' : 'ss.ss'} inputMode="decimal"
             className="mt-3 w-full h-11 rounded-[10px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-3 text-[14px] font-[700] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
           />
         </div>
@@ -301,6 +308,9 @@ export default function App() {
   const todayWeekDay: WeekDay = WEEKDAYS[(new Date().getDay()+6)%7].key;
   const { awards, saveAward, deleteAward } = useAwards(user?.uid);
   const [awardForm, setAwardForm] = useState<{ competitionName: string; event: string; rank: string } | null>(null);
+  const { recordTypes, saveRecordType, deleteRecordType } = useRecordTypes(user?.uid);
+  const [newDistance, setNewDistance] = useState('');
+  const [showAddDistance, setShowAddDistance] = useState(false);
   const iceItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='ice'), [itemTypes]);
   const dryItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='dry'), [itemTypes]);
   const [view, setView] = useState<ViewType>('dashboard');
@@ -327,10 +337,11 @@ export default function App() {
     const existing = logs.find(l=>l.date===recordDate);
     setRecordLaps(existing?.laps || 0);
     const inputs: Record<number,string> = {};
-    DISTANCES.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
+    const distances = new Set([...recordTypes.map(rt=>rt.distance), ...(existing?.timeRecords?.map(r=>r.distance) || [])]);
+    distances.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
     setRecordTimeInputs(inputs);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [recordDate]);
+  }, [recordDate, recordTypes]);
 
   const todayStr = toLocalDateStr(new Date());
 
@@ -342,11 +353,10 @@ export default function App() {
 
   const bestByDistance = useMemo(()=>{
     const map: Record<number, { time:string; sec:number }> = {};
-    DISTANCES.forEach(d=>{ map[d] = { time:'-', sec:Infinity }; });
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(map[r.distance] && r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds }; } }));
+    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(!map[r.distance] || r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds }; } }));
     return map;
   },[logs]);
-  const best500 = bestByDistance[500];
+  const best500 = bestByDistance[500] || { time:'-', sec:Infinity };
 
   const time500List = useMemo(()=>{
     const arr: { date:string; seconds:number; time:string }[]=[];
@@ -440,7 +450,7 @@ export default function App() {
 
   const saveRecordEntry = ()=>{
     const prevLog = logs.find(l=>l.date===recordDate);
-    const timeRecs: TimeRecord[] = DISTANCES.map(d=>{
+    const timeRecs: TimeRecord[] = Object.keys(recordTimeInputs).map(Number).map(d=>{
       const p = parseTimeInput(recordTimeInputs[d]||'');
       return p ? { distance:d, time:p.display, seconds:p.sec } : null;
     }).filter((r): r is TimeRecord => r !== null);
@@ -735,9 +745,9 @@ export default function App() {
                       <div className="mt-5 space-y-4 relative">
                         {goals.slice(0,3).map(g=>(
                           <div key={g.id} className="rounded-[14px] bg-[var(--c-121214)] border border-[var(--c-1E1C14)] p-3.5">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2"><span>{g.icon}</span><span className="text-[12px] font-[700]">{g.title}</span></div>
-                              <span className="text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-060608)] inline-flex items-center">{g.progress}%</span>
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words">{g.title}</span></div>
+                              <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-060608)] inline-flex items-center">{g.progress}%</span>
                             </div>
                             <div className="mt-3 h-1.5 rounded-full bg-[var(--c-1E1E22)] overflow-hidden"><div className="h-full rounded-full gold-gradient" style={{width:`${g.progress}%`}}/></div>
                             <div className="mt-2 flex justify-between text-[10px] font-[600] text-[var(--c-9A9A93)]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
@@ -745,6 +755,23 @@ export default function App() {
                         ))}
                         {goals.length===0 && <div className="text-center py-6 text-[11px] text-[var(--c-6A6A66)]">마이페이지 탭에서 시즌 목표를 등록해보세요</div>}
                       </div>
+                    </div>
+                    <div className="card p-5 lg:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="font-[700] text-[14px] flex items-center gap-2"><Trophy size={16} className="text-[var(--c-D4AF37)]"/> 베스트 기록</div>
+                      </div>
+                      {recordTypes.length===0 ? (
+                        <div className="mt-4 text-center py-6 text-[11px] text-[var(--c-6A6A66)]">기록입력/분석 탭에서 거리 항목을 등록해보세요</div>
+                      ) : (
+                        <div className="mt-4 grid grid-cols-2 gap-2">
+                          {recordTypes.map(rt=>(
+                            <div key={rt.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
+                              <div className="label-caps">{rt.distance}m</div>
+                              <div className="mt-1 font-[800] text-[15px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <div className="card p-5 lg:p-6">
                       <div className="flex items-center justify-between">
@@ -1138,8 +1165,25 @@ export default function App() {
                     <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)] text-center">{(recordLaps*111.12/1000).toFixed(2)}km · 111.12m 기준</div>
                   </div>
                   <div className="mt-4">
-                    <div className="label-caps mb-3">시간 입력 · TIME</div>
-                    <TimeInputsEditor timeInputs={recordTimeInputs} onChange={(d,v)=>setRecordTimeInputs({...recordTimeInputs, [d]:v})} />
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="label-caps">시간 입력 · TIME</div>
+                      <button onClick={()=>setShowAddDistance(v=>!v)} className="text-[11px] font-[700] text-[var(--c-D4AF37)]">+ 거리 추가</button>
+                    </div>
+                    {showAddDistance && (
+                      <div className="mb-3 flex items-center gap-2">
+                        <input
+                          type="number" inputMode="numeric" value={newDistance} onChange={e=>setNewDistance(e.target.value)}
+                          placeholder="거리(m) · 예: 300" autoFocus
+                          className="flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                        />
+                        <button
+                          onClick={()=>{ const n=parseInt(newDistance); if(n>0){ saveRecordType({ id:crypto.randomUUID(), distance:n }); setNewDistance(''); setShowAddDistance(false); } }}
+                          disabled={!newDistance} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px] disabled:opacity-40"
+                        >추가</button>
+                      </div>
+                    )}
+                    <TimeInputsEditor recordTypes={recordTypes} timeInputs={recordTimeInputs} onChange={(d,v)=>setRecordTimeInputs({...recordTimeInputs, [d]:v})} onDelete={deleteRecordType} />
+                    {recordTypes.length===0 && <div className="text-center py-6 text-[12px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요 · 위 버튼으로 추가해보세요</div>}
                   </div>
                   <button onClick={saveRecordEntry} className="mt-5 w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-060608)] font-[800] text-[14px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
                 </div>
@@ -1230,12 +1274,13 @@ export default function App() {
                   <div className="card p-5 lg:p-6">
                     <div className="font-[700] text-[13px]">거리별 베스트 기록</div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
-                      {DISTANCES.filter(d=>d!==500).map(d=>(
-                        <div key={d} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
-                          <div className="label-caps">Best {d}m</div>
-                          <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[d].time}</div>
+                      {recordTypes.filter(rt=>rt.distance!==500).map(rt=>(
+                        <div key={rt.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
+                          <div className="label-caps">Best {rt.distance}m</div>
+                          <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
                         </div>
                       ))}
+                      {recordTypes.filter(rt=>rt.distance!==500).length===0 && <div className="col-span-2 text-center py-4 text-[11px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요</div>}
                     </div>
                   </div>
                 </div>
