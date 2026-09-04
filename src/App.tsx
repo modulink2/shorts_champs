@@ -71,8 +71,10 @@ export const AVATAR_FILES = [
   'ms_hs_17_girl_medal.png','ms_hs_18_boy_headphones.png','ms_hs_19_girl_stretch.png','ms_hs_20_boy_surprised.png',
 ];
 // Renders a profile's chosen avatar image, falling back to an emoji when none is picked yet.
+// The avatar PNGs are already transparent, so drop any bg-color class for
+// that branch — only the emoji fallback needs a filled circle behind it.
 export function Avatar({ avatarId, fallback, className }: { avatarId?: string; fallback: string; className: string }) {
-  if (avatarId) return <img src={`/images/avatar/${avatarId}`} alt="" className={`${className} object-cover`} />;
+  if (avatarId) return <img src={`/images/avatar/${avatarId}`} alt="" className={`${className.replace(/bg-\[var\(--c-[^\]]+\)\]/g, '')} object-cover`} />;
   return <div className={`${className} flex items-center justify-center`}>{fallback}</div>;
 }
 export const ADMIN_EMAIL = 'llsk2507@gmail.com';
