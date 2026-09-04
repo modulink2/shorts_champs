@@ -26,7 +26,7 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     : `<tr><td colspan="3" style="padding:16px;color:#999;text-align:center;">기록 없음</td></tr>`;
 
   const itemsChips = (items: typeof log.dryItems) => (items || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string')
-    .map(it => `<span style="display:inline-flex;align-items:center;line-height:1;margin:0 8px 8px 0;padding:8px 16px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;font-weight:600;color:#8a6d1c;background:#fffdf6;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
+    .map(it => `<span style="display:inline-block;box-sizing:border-box;height:34px;line-height:32px;vertical-align:middle;margin:0 8px 8px 0;padding:0 16px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;font-weight:600;color:#8a6d1c;background:#fffdf6;white-space:nowrap;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
   const iceItemsHtml = itemsChips(log.iceItems);
   const dryItemsHtml = itemsChips(log.dryItems);
 
