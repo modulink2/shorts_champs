@@ -16,10 +16,8 @@ export default function TrackBackground() {
     let raf = 0;
 
     const tracks = [
-      { rx: 320, ry: 180, dash: [18, 22], width: 1.5, color: 'rgba(168,208,255,0.35)', dir: 1 },
-      { rx: 360, ry: 205, dash: [8, 18], width: 1.2, color: 'rgba(140,190,255,0.28)', dir: -1 },
-      { rx: 410, ry: 235, dash: [2, 28], width: 1.8, color: 'rgba(180,215,255,0.4)', dir: 1 },
-      { rx: 470, ry: 270, dash: [24, 14], width: 1, color: 'rgba(160,200,255,0.2)', dir: -1 },
+      { rx: 340, ry: 195, dash: [18, 22], width: 1.5, color: 'rgba(168,208,255,0.35)', dir: 1 },
+      { rx: 420, ry: 240, dash: [2, 28], width: 1.8, color: 'rgba(180,215,255,0.4)', dir: -1 },
     ];
     const particles = Array.from({ length: 38 }, (_, i) => ({
       angle: (i / 38) * Math.PI * 2,
@@ -74,7 +72,7 @@ export default function TrackBackground() {
       const cw = W / dpr, ch = H / dpr;
       pCtx.clearRect(0, 0, cw, ch);
       particles.forEach(p => {
-        p.angle += p.speed * 1.5;
+        p.angle += p.speed * 0.2;
         const x = cw / 2 + Math.cos(p.angle) * p.r;
         const y = ch / 2 + Math.sin(p.angle) * p.r * p.ryRatio;
         pCtx.beginPath();
@@ -85,7 +83,7 @@ export default function TrackBackground() {
     }
 
     function loop() {
-      dashOffset += 1.5;
+      dashOffset += 0.15;
       drawTracks();
       drawParticles();
       raf = requestAnimationFrame(loop);
@@ -100,7 +98,7 @@ export default function TrackBackground() {
 
   return (
     <>
-      <canvas ref={trackRef} className="absolute inset-0 w-full h-full opacity-90" />
+      <canvas ref={trackRef} className="absolute inset-0 w-full h-full opacity-90" style={{ filter: 'blur(1.5px)' }} />
       <canvas ref={particleRef} className="absolute inset-0 w-full h-full opacity-60" />
     </>
   );
