@@ -28,6 +28,7 @@
   --c-D4AF37-rgb: 63,208,242; --c-C9A86A-rgb: 111,168,201; --c-2C2A20-rgb: 30,62,88;
   --c-F5F1E8-rgb: 231,241,248; --c-121214-rgb: 20,28,37; --c-3A3520-rgb: 42,90,120;
   --c-FFD700-rgb: 124,232,255; --c-FFC700-rgb: 87,220,245;
+  --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
 }
 /* Crystal Blue — bright, airy, low-saturation sky blue. Cards are
    near-white translucent glass floating on a soft blue page. */
@@ -46,6 +47,7 @@
   --c-D4AF37-rgb: 28,143,224; --c-C9A86A-rgb: 91,155,209; --c-2C2A20-rgb: 186,213,240;
   --c-F5F1E8-rgb: 22,35,46; --c-121214-rgb: 247,251,254; --c-3A3520-rgb: 143,192,232;
   --c-FFD700-rgb: 79,195,247; --c-FFC700-rgb: 41,182,246;
+  --glow-1: 0.34; --glow-2: 0.22; --glow-3: 0.18; --glow-4: 0.15;
 }
 /* Glass Pink — bright, low-saturation dusty rose. Same light-glass
    structure as Crystal Blue, warmed toward pink instead of blue. */
@@ -64,6 +66,7 @@
   --c-D4AF37-rgb: 214,85,142; --c-C9A86A-rgb: 176,110,140; --c-2C2A20-rgb: 234,176,200;
   --c-F5F1E8-rgb: 46,27,35; --c-121214-rgb: 254,248,251; --c-3A3520-rgb: 222,132,172;
   --c-FFD700-rgb: 232,131,172; --c-FFC700-rgb: 221,107,156;
+  --glow-1: 0.32; --glow-2: 0.21; --glow-3: 0.17; --glow-4: 0.14;
 }
 :root[data-theme="blackgold"] {
   --c-060608: #060608; --c-on-accent: #060608;
@@ -80,6 +83,7 @@
   --c-D4AF37-rgb: 212,175,55; --c-C9A86A-rgb: 201,168,106; --c-2C2A20-rgb: 44,42,32;
   --c-F5F1E8-rgb: 245,241,232; --c-121214-rgb: 18,18,20; --c-3A3520-rgb: 58,53,32;
   --c-FFD700-rgb: 255,215,0; --c-FFC700-rgb: 255,199,0;
+  --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
 }
 /* Every element whose background or border comes from a theme token gets
    the frosted-glass backdrop blur — covers badges, inputs, icon circles,
