@@ -32,7 +32,7 @@
 /* Crystal Blue — bright, airy, low-saturation sky blue. Cards are
    near-white translucent glass floating on a soft blue page. */
 :root[data-theme="crystalblue"] {
-  --c-060608: #E4F1FB; --c-on-accent: #FFFFFF;
+  --c-060608: #D7E2EA; --c-on-accent: #FFFFFF;
   --c-08080A: rgba(255,255,255,0.55); --c-0C0C0E: rgba(255,255,255,0.6); --c-0E0E10: rgba(255,255,255,0.55);
   --c-101012: rgba(255,255,255,0.55); --c-121214: rgba(255,255,255,0.6); --c-151519: rgba(255,255,255,0.62);
   --c-151518: rgba(255,255,255,0.62); --c-15151A: rgba(255,255,255,0.64); --c-18181B: rgba(255,255,255,0.66);
@@ -50,7 +50,7 @@
 /* Glass Pink — bright, low-saturation dusty rose. Same light-glass
    structure as Crystal Blue, warmed toward pink instead of blue. */
 :root[data-theme="glasspink"] {
-  --c-060608: #FBEEF3; --c-on-accent: #FFFFFF;
+  --c-060608: #E8D9DE; --c-on-accent: #FFFFFF;
   --c-08080A: rgba(255,255,255,0.55); --c-0C0C0E: rgba(255,255,255,0.6); --c-0E0E10: rgba(255,255,255,0.55);
   --c-101012: rgba(255,255,255,0.55); --c-121214: rgba(255,255,255,0.6); --c-151519: rgba(255,255,255,0.62);
   --c-151518: rgba(255,255,255,0.62); --c-15151A: rgba(255,255,255,0.64); --c-18181B: rgba(255,255,255,0.66);

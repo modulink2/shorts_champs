@@ -176,7 +176,7 @@ function TimeInputsEditor({ recordTypes, timeInputs, onChange, onDelete }: { rec
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {recordTypes.map(rt=>(
-        <div key={rt.id} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-4">
+        <div key={rt.id} className="rounded-[14px] subcard p-4">
           <div className="flex items-center justify-between">
             <div className="label-caps">{rt.distance}m</div>
             <button type="button" onClick={()=>onDelete(rt.id)} className="w-5 h-5 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[10px] text-[var(--c-9A9A93)] hover:text-[var(--c-F5F1E8)] flex items-center justify-center">×</button>
@@ -208,7 +208,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
   const activeType = itemTypes.find(t=>t.id===activeTypeId);
 
   return (
-    <div className={compact ? 'card !p-4' : 'rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] p-5'}>
+    <div className={compact ? 'card !p-4' : 'rounded-[16px] subcard p-5'}>
       <div className="label-caps mb-3">항목 선택 · 클릭 후 값 입력</div>
       <div className="flex flex-wrap gap-2">
         {itemTypes.map(t=>(
@@ -627,7 +627,7 @@ export default function App() {
                     ) : (
                       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {myAthletes.map(p=>(
-                          <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
+                          <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] subcard p-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
                             <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[15px] shrink-0">⛸️</div>
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-[700] truncate">{p.displayName || p.email}</div>
@@ -642,7 +642,7 @@ export default function App() {
                   <div className="card p-5 lg:p-6">
                     <span className="label-caps flex items-center gap-1.5"><Crown size={12}/> 내 코치</span>
                     {myProfile?.coachName ? (
-                      <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-3.5">
+                      <div className="mt-4 flex items-center gap-3 rounded-[14px] subcard p-3.5">
                         <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center text-[16px] shrink-0">🧑‍🏫</div>
                         <div className="min-w-0">
                           <div className="text-[13px] font-[800] truncate">{myProfile.coachName} 코치님</div>
@@ -713,7 +713,7 @@ export default function App() {
                       {filteredLogs.slice(-8).reverse().map(log=>{
                         const types=logTypes(log);
                         return (
-                          <div key={log.id} className="group h-[64px] rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)] flex items-center gap-3 px-3.5 transition-all">
+                          <div key={log.id} className="group h-[64px] rounded-[14px] subcard hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)] flex items-center gap-3 px-3.5 transition-all">
                             <div className="w-10 h-10 rounded-[12px] bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[16px]">{types.map(t=>TYPE_META[t].emoji).join('') || '📝'}</div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
@@ -742,7 +742,7 @@ export default function App() {
                       </div>
                       <div className="mt-5 space-y-4 relative">
                         {goals.slice(0,3).map(g=>(
-                          <div key={g.id} className="rounded-[14px] bg-[var(--c-121214)] border border-[var(--c-1E1C14)] p-3.5">
+                          <div key={g.id} className="rounded-[14px] subcard p-3.5">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words min-w-0">{g.title}</span></div>
                               <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-on-accent)] inline-flex items-center">{g.progress}%</span>
@@ -763,7 +763,7 @@ export default function App() {
                       ) : (
                         <div className="mt-4 grid grid-cols-2 gap-2">
                           {recordTypes.map(rt=>(
-                            <div key={rt.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
+                            <div key={rt.id} className="rounded-[12px] subcard p-3">
                               <div className="label-caps">{rt.distance}m</div>
                               <div className="mt-1 font-[800] text-[15px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
                             </div>
@@ -778,7 +778,7 @@ export default function App() {
                       </div>
                       <div className="mt-4 space-y-2">
                         {awards.slice(0,4).map(a=>(
-                          <div key={a.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 flex items-center gap-2.5">
+                          <div key={a.id} className="rounded-[12px] subcard p-3 flex items-center gap-2.5">
                             <span className="text-[16px] shrink-0">🏅</span>
                             <div className="min-w-0">
                               <div className="text-[12px] font-[700] truncate">{a.competitionName}</div>
@@ -953,7 +953,7 @@ export default function App() {
                             </div>
                             <div className="mt-1 text-[11px] font-[500] text-[var(--c-6A6A66)]">훈련 영상을 붙이면 본문에서 바로 볼 수 있어요</div>
                             <div className="mt-5 grid grid-cols-1 gap-4">
-                              <div className="rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] p-5">
+                              <div className="rounded-[16px] subcard p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-6 h-6 rounded-full bg-[#FF0000]/15 border border-[#FF0000]/20 flex items-center justify-center"><Play size={12} className="text-[#FF4D4D]" /></div>
                                   <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">유튜브 영상</span>
@@ -964,7 +964,7 @@ export default function App() {
                                   <div className="mt-3 text-[11px] font-[600] text-[var(--c-D4AF37)] flex items-center gap-1"><Play size={10}/> 미리보기 가능 · ID: {extractYouTubeId(editing.youtubeUrl)}</div>
                                 )}
                               </div>
-                              <div className="rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] p-5">
+                              <div className="rounded-[16px] subcard p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#feda75] to-[#d62976] flex items-center justify-center"><Link2 size={12} className="text-white"/></div>
                                   <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">인스타그램</span>
@@ -1105,7 +1105,7 @@ export default function App() {
                         {myLogComments.length>0 && (
                           <div className="mt-6 space-y-3">
                             {myLogComments.map(c=>(
-                              <div key={c.id} className="rounded-[16px] bg-[var(--c-121214)] border border-[var(--c-2C2A20)] p-5 flex gap-4">
+                              <div key={c.id} className="rounded-[16px] subcard p-5 flex gap-4">
                                 <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center shrink-0"><Crown size={16} className="text-[var(--c-D4AF37)]"/></div>
                                 <div>
                                   <div className="text-[12px] font-[800] text-[var(--c-D4AF37)] tracking-[0.06em]">{c.authorName} · COACH FEEDBACK</div>
@@ -1197,15 +1197,15 @@ export default function App() {
                       </ResponsiveContainer>
                     </div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 text-center">
+                      <div className="rounded-[12px] subcard p-3 text-center">
                         <div className="label-caps">Best</div>
                         <div className="mt-1 font-[800] text-[14px] gold-text">{best500.time}</div>
                       </div>
-                      <div className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 text-center">
+                      <div className="rounded-[12px] subcard p-3 text-center">
                         <div className="label-caps">Avg 5</div>
                         <div className="mt-1 font-[800] text-[14px] text-[var(--c-F5F1E8)]">{time500List.length? (time500List.slice(-5).reduce((a,b)=>a+b.seconds,0)/Math.min(5,time500List.length)).toFixed(2) : '-'}</div>
                       </div>
-                      <div className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 text-center">
+                      <div className="rounded-[12px] subcard p-3 text-center">
                         <div className="label-caps">Target</div>
                         <div className="mt-1 font-[800] text-[14px] text-[var(--c-D4AF37)]">50.00</div>
                       </div>
@@ -1216,7 +1216,7 @@ export default function App() {
                       <div className="font-[700] text-[13px]">Personal Best Timeline</div>
                       <div className="mt-3 space-y-2">
                         {time500List.slice().reverse().slice(0,5).map((r,i)=>(
-                          <div key={i} className="h-12 rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] px-3 flex items-center justify-between group hover:border-[var(--c-2C2A20)] transition-all">
+                          <div key={i} className="h-12 rounded-[12px] subcard px-3 flex items-center justify-between group hover:border-[var(--c-2C2A20)] transition-all">
                             <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">{r.date.slice(5).replace('-','/')}</span>
                             <span className="font-[800] text-[13px] text-[var(--c-F5F1E8)]">{r.time}<span className="ml-1 text-[10px] font-[600] text-[var(--c-D4AF37)]">{i===0?'PB':''}</span></span>
                           </div>
@@ -1261,7 +1261,7 @@ export default function App() {
                     <div className="font-[700] text-[13px]">거리별 베스트 기록</div>
                     <div className="mt-4 grid grid-cols-2 gap-2">
                       {recordTypes.filter(rt=>rt.distance!==500).map(rt=>(
-                        <div key={rt.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
+                        <div key={rt.id} className="rounded-[12px] subcard p-3">
                           <div className="label-caps">Best {rt.distance}m</div>
                           <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
                         </div>
@@ -1287,7 +1287,7 @@ export default function App() {
                         className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-3A3520)] px-4 text-[13px] font-[600] outline-none"
                       />
                     ) : (
-                      <button onClick={()=>{ setNameEditing(true); setNameDraft(myProfile?.displayName || user?.displayName || ''); }} className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                      <button onClick={()=>{ setNameEditing(true); setNameDraft(myProfile?.displayName || user?.displayName || ''); }} className="mt-1.5 w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
                         <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{myProfile?.displayName || user?.displayName || '이름 없음'}</span>
                         <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">수정</span>
                       </button>
@@ -1326,7 +1326,7 @@ export default function App() {
               <div className="card p-5 lg:p-6">
                 <div className="font-[700] text-[14px]">담당 코치</div>
                 {myProfile?.coachName ? (
-                  <div className="mt-3 flex items-center justify-between rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] px-4 h-12">
+                  <div className="mt-3 flex items-center justify-between rounded-[14px] subcard px-4 h-12">
                     <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{myProfile.coachName} 코치님</span>
                     <button onClick={()=>saveProfile(user!.uid, { coachId:'', coachName:'' })} className="text-[11px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">지정 해제</button>
                   </div>
@@ -1339,7 +1339,7 @@ export default function App() {
                     {coachSearch.trim() && (
                       <div className="mt-2 space-y-1.5">
                         {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).map(p=>(
-                          <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { coachId:p.uid, coachName:p.displayName }); setCoachSearch(''); }} className="w-full h-11 rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                          <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { coachId:p.uid, coachName:p.displayName }); setCoachSearch(''); }} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
                             <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{p.displayName}</span>
                             <span className="text-[11px] font-[600] text-[var(--c-D4AF37)]">선택</span>
                           </button>
@@ -1361,7 +1361,7 @@ export default function App() {
                   {WEEKDAYS.map(d=>{
                     const items = planItems.filter(p=>p.day===d.key).sort((a,b)=>PLAN_TIME_SLOTS.indexOf(a.time)-PLAN_TIME_SLOTS.indexOf(b.time));
                     return (
-                      <div key={d.key} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-3.5">
+                      <div key={d.key} className="rounded-[14px] subcard p-3.5">
                         <div className="flex items-center justify-between">
                           <span className="text-[13px] font-[800] text-[var(--c-F5F1E8)]">{d.label}요일</span>
                           <button onClick={()=>setPlanForm({ day:d.key, time:'오전', content:'' })} className="w-6 h-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] text-[var(--c-D4AF37)] flex items-center justify-center">+</button>
@@ -1377,7 +1377,7 @@ export default function App() {
                           </div>
                         )}
                         {planForm?.day===d.key && (
-                          <div className="mt-2.5 rounded-[10px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-2.5 space-y-2">
+                          <div className="mt-2.5 rounded-[10px] subcard p-2.5 space-y-2">
                             <div className="grid grid-cols-3 gap-1.5">
                               {PLAN_TIME_SLOTS.map(t=>(
                                 <button key={t} onClick={()=>setPlanForm({ ...planForm, time:t })} className={`h-8 rounded-[8px] text-[11px] font-[700] ${planForm.time===t? 'gold-gradient text-[var(--c-on-accent)]' : 'bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[var(--c-9A9A93)]'}`}>{t}</button>
@@ -1412,7 +1412,7 @@ export default function App() {
                 </div>
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {goals.map(g=>(
-                    <div key={g.id} className="rounded-[16px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-4">
+                    <div key={g.id} className="rounded-[16px] subcard p-4">
                       <div className="flex items-start justify-between">
                         <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[18px]">{g.icon}</div>
                         <div className="flex gap-1">
@@ -1428,7 +1428,7 @@ export default function App() {
                   {goals.length===0 && !goalForm && <div className="sm:col-span-3 text-center py-8 text-[12px] text-[var(--c-6A6A66)]">아직 등록된 목표가 없어요 · 위 버튼으로 추가해보세요</div>}
                 </div>
                 {goalForm && (
-                  <div className="mt-5 rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4 space-y-3">
+                  <div className="mt-5 rounded-[16px] subcard p-4 space-y-3">
                     <div className="grid grid-cols-[56px_1fr] gap-2">
                       <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center text-[18px] outline-none"/>
                       <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
@@ -1458,7 +1458,7 @@ export default function App() {
                 </div>
                 <div className="mt-5 space-y-2.5">
                   {awards.map(a=>(
-                    <div key={a.id} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-3.5 flex items-center gap-3">
+                    <div key={a.id} className="rounded-[14px] subcard p-3.5 flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center text-[18px] shrink-0">🏅</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-[12px] font-[700] truncate">{a.competitionName}</div>
@@ -1470,7 +1470,7 @@ export default function App() {
                   {awards.length===0 && !awardForm && <div className="text-center py-8 text-[12px] text-[var(--c-6A6A66)]">아직 등록된 수상이력이 없어요 · 위 버튼으로 추가해보세요</div>}
                 </div>
                 {awardForm && (
-                  <div className="mt-5 rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4 space-y-3">
+                  <div className="mt-5 rounded-[16px] subcard p-4 space-y-3">
                     <input
                       autoFocus value={awardForm.competitionName} onChange={e=>setAwardForm({ ...awardForm, competitionName:e.target.value })}
                       placeholder="대회명 (예: 전국동계체전)" className="w-full h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
@@ -1524,11 +1524,11 @@ export default function App() {
               </button>
 
               {editing.isRest ? (
-                <div className="rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-6 text-center">
+                <div className="card !p-6 text-center">
                   <div className="w-12 h-12 mx-auto rounded-full bg-[var(--c-121214)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[22px]">🌑</div>
                   <div className="mt-3 font-[700] text-[13px]">리커버리 데이</div>
                   <div className="mt-1 text-[11px] font-[500] text-[var(--c-9A9A93)]">잘 쉬는 것도 챔피언의 전략. 내일 더 강하게.</div>
-                  <div className="mt-4 rounded-[12px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] p-3"><div className="label-caps">Sleep</div><div className="mt-1 flex items-center gap-2"><input type="number" step="0.5" value={editing.sleepHours||8} onChange={e=>setEditing({...editing, sleepHours: parseFloat(e.target.value)||0})} className="w-full bg-transparent font-[800] text-[16px] outline-none"/>h</div></div>
+                  <div className="mt-4 rounded-[12px] subcard p-3"><div className="label-caps">Sleep</div><div className="mt-1 flex items-center gap-2"><input type="number" step="0.5" value={editing.sleepHours||8} onChange={e=>setEditing({...editing, sleepHours: parseFloat(e.target.value)||0})} className="w-full bg-transparent font-[800] text-[16px] outline-none"/>h</div></div>
                 </div>
               ) : (
                 <>
