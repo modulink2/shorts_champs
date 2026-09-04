@@ -505,7 +505,11 @@ export default function App() {
     if (pdfBusy) return;
     setPdfBusy(true);
     try {
-      await downloadTrainingReport(log, user?.displayName || '챔피언');
+      await downloadTrainingReport(log, user?.displayName || '챔피언', {
+        bestByDistance,
+        careerLabel: myProfile?.startYearMonth ? formatCareer(myProfile.startYearMonth) : undefined,
+        coachName: myProfile?.coachName,
+      });
     } catch (err) {
       console.error('PDF export failed:', err);
       setToast('보고서 생성에 실패했어요');

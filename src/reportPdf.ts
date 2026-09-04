@@ -6,82 +6,95 @@ function escapeHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-function buildReportInnerHtml(log: TrainingLog, athleteName: string): string {
-  const timeRecords = (log.timeRecords || []).slice().sort((a, b) => a.distance - b.distance);
-  const timeRows = timeRecords.length
-    ? timeRecords.map(r => `
-      <tr>
-        <td style="padding:10px 12px;border-bottom:1px solid #eee;color:#444;">${r.distance}m</td>
-        <td style="padding:10px 12px;border-bottom:1px solid #eee;font-weight:700;">${r.time}</td>
+export interface ReportExtras {
+  bestByDistance: Record<number, { time: string; date: string }>;
+  careerLabel?: string;
+  coachName?: string;
+}
+
+function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: ReportExtras): string {
+  const bestRows = Object.entries(extras.bestByDistance)
+    .map(([distance, r]) => ({ distance: Number(distance), ...r }))
+    .sort((a, b) => a.distance - b.distance);
+  const timeRows = bestRows.length
+    ? bestRows.map((r, i) => `
+      <tr style="background:${i % 2 === 0 ? '#ffffff' : '#faf7ee'};">
+        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;color:#333;font-weight:600;">${r.distance}m</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;font-weight:800;color:#8a6d1c;font-size:15px;">${escapeHtml(r.time)}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;color:#999;">${escapeHtml(r.date)}</td>
       </tr>`).join('')
-    : `<tr><td colspan="2" style="padding:14px;color:#999;text-align:center;">기록 없음</td></tr>`;
+    : `<tr><td colspan="3" style="padding:16px;color:#999;text-align:center;">기록 없음</td></tr>`;
 
   const itemsChips = (items: typeof log.dryItems) => (items || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string')
-    .map(it => `<span style="display:inline-block;margin:0 8px 8px 0;padding:6px 14px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;color:#8a6d1c;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
+    .map(it => `<span style="display:inline-flex;align-items:center;line-height:1;margin:0 8px 8px 0;padding:8px 16px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;font-weight:600;color:#8a6d1c;background:#fffdf6;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
   const iceItemsHtml = itemsChips(log.iceItems);
   const dryItemsHtml = itemsChips(log.dryItems);
 
   const types = logTypes(log);
   const typeLabel = types.length ? types.map(t => TYPE_META[t].label).join(' + ') : '기록 없음';
 
-  const noteSections = [
-    (log.noteIce || iceItemsHtml) ? `
-      <div style="margin-top:16px;">
-        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">⛸️ 빙상 훈련</div>
-        <div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${log.noteIce ? escapeHtml(log.noteIce) : ''}${iceItemsHtml ? `<div style="margin-top:${log.noteIce?'12px':'0'};">${iceItemsHtml}</div>` : ''}</div>
+  const itemSections = [
+    iceItemsHtml ? `
+      <div style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">⛸️ 빙상 훈련 항목</div>
+        <div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${iceItemsHtml}</div>
       </div>` : '',
-    (log.noteDry || dryItemsHtml) ? `
-      <div style="margin-top:16px;">
-        <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">🏋️ 육상 훈련</div>
-        <div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${log.noteDry ? escapeHtml(log.noteDry) : ''}${dryItemsHtml ? `<div style="margin-top:${log.noteDry?'12px':'0'};">${dryItemsHtml}</div>` : ''}</div>
+    dryItemsHtml ? `
+      <div style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">🏋️ 육상 훈련 항목</div>
+        <div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${dryItemsHtml}</div>
       </div>` : '',
   ].join('');
 
+  const heroStats = [
+    { label: '훈련 일자', value: log.date },
+    { label: '훈련 타입', value: typeLabel },
+    { label: '쇼트트랙 경력', value: extras.careerLabel || '-' },
+    { label: '담당 코치', value: extras.coachName || '-' },
+  ].map(s => `
+    <div style="flex:1;background:linear-gradient(180deg,#fffdf6 0%,#faf5e6 100%);border:1px solid #e9dfb8;border-radius:14px;padding:18px 16px;">
+      <div style="font-size:11px;letter-spacing:0.5px;color:#a9925a;font-weight:700;">${s.label}</div>
+      <div style="font-size:17px;font-weight:800;margin-top:6px;color:#1a1a1a;">${escapeHtml(s.value)}</div>
+    </div>`).join('');
+
   return `
-    <div style="display:flex;align-items:center;justify-content:space-between;border-bottom:3px solid #D4AF37;padding-bottom:20px;">
+    <div style="background:linear-gradient(135deg,#0b0e14 0%,#1a1d29 100%);border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-size:12px;letter-spacing:2px;color:#D4AF37;font-weight:700;">SHORT TRACK CHAMPION EDITION</div>
-        <div style="font-size:26px;font-weight:800;margin-top:6px;">훈련 보고서</div>
+        <div style="font-size:11px;letter-spacing:3px;color:#D4AF37;font-weight:800;">SHORT TRACK · CHAMPION EDITION</div>
+        <div style="font-size:30px;font-weight:800;margin-top:8px;color:#ffffff;letter-spacing:-0.5px;">훈련 보고서</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:13px;color:#666;">선수</div>
-        <div style="font-size:16px;font-weight:700;">${escapeHtml(athleteName)}</div>
+        <div style="font-size:12px;color:#9a9a93;">선수</div>
+        <div style="font-size:19px;font-weight:800;margin-top:4px;color:#ffd700;">${escapeHtml(athleteName)}</div>
       </div>
     </div>
 
-    <div style="margin-top:28px;display:flex;gap:16px;">
-      <div style="flex:1;background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:16px 18px;">
-        <div style="font-size:12px;color:#999;">훈련 일자</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">${log.date}</div>
-      </div>
-      <div style="flex:1;background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:16px 18px;">
-        <div style="font-size:12px;color:#999;">훈련 타입</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">${typeLabel}</div>
-      </div>
-      <div style="flex:1;background:#faf9f6;border:1px solid #eee;border-radius:12px;padding:16px 18px;">
-        <div style="font-size:12px;color:#999;">바퀴수</div>
-        <div style="font-size:18px;font-weight:700;margin-top:4px;">${log.laps ?? '-'}${log.laps ? ' 바퀴' : ''}${log.km ? ` (${log.km}km)` : ''}</div>
-      </div>
+    <div style="margin-top:24px;display:flex;gap:14px;">${heroStats}</div>
+
+    <div style="margin-top:28px;">
+      <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">🏆 거리별 베스트 기록</div>
+      <table style="width:100%;margin-top:12px;border-collapse:collapse;font-size:14px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #eee2c0;">
+        <thead>
+          <tr style="background:#0b0e14;">
+            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">거리</th>
+            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">기록</th>
+            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">날짜</th>
+          </tr>
+        </thead>
+        <tbody>${timeRows}</tbody>
+      </table>
     </div>
 
-    <div style="margin-top:24px;">
-      <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">기록 타임</div>
-      <table style="width:100%;margin-top:10px;border-collapse:collapse;font-size:14px;">${timeRows}</table>
-    </div>
+    ${itemSections}
 
-    <div style="margin-top:16px;">
-      <div style="font-size:13px;font-weight:700;color:#333;border-left:4px solid #D4AF37;padding-left:8px;">한줄 일기</div>
-      ${noteSections || `<div style="margin-top:10px;padding:18px 20px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;">기록된 메모가 없습니다.</div>`}
-    </div>
-
-    <div style="margin-top:40px;padding-top:16px;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:11px;color:#999;">
-      <span>SHORT TRACK · BLACK &amp; GOLD EDITION</span>
-      <span>생성일: ${new Date().toLocaleDateString('ko-KR')}</span>
+    <div style="margin-top:44px;padding-top:18px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:11px;letter-spacing:1px;color:#a9925a;font-weight:700;">SHORT TRACK · CHAMPION EDITION</span>
+      <span style="font-size:11px;color:#999;">생성일: ${new Date().toLocaleDateString('ko-KR')}</span>
     </div>
   `;
 }
 
-export async function downloadTrainingReport(log: TrainingLog, athleteName: string) {
+export async function downloadTrainingReport(log: TrainingLog, athleteName: string, extras: ReportExtras) {
   // Render into an isolated iframe with its own bare document (no Tailwind/Recharts CSS).
   // html2canvas clones the *whole* host document when given a live-app element, and chokes
   // on modern CSS (oklch colors, backdrop-filter) it doesn't understand — an iframe keeps it
@@ -97,8 +110,8 @@ export async function downloadTrainingReport(log: TrainingLog, athleteName: stri
     doc.close();
 
     const container = doc.createElement('div');
-    container.style.cssText = 'width:794px;padding:56px;background:#ffffff;color:#111111;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;box-sizing:border-box;';
-    container.innerHTML = buildReportInnerHtml(log, athleteName);
+    container.style.cssText = 'width:794px;padding:40px;background:#ffffff;color:#111111;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;box-sizing:border-box;';
+    container.innerHTML = buildReportInnerHtml(log, athleteName, extras);
     doc.body.appendChild(container);
 
     const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: '#ffffff', useCORS: true });
