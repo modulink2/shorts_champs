@@ -374,7 +374,6 @@ export default function App() {
     logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(!map[r.distance] || r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds }; } }));
     return map;
   },[logs]);
-  const best500 = bestByDistance[500] || { time:'-', sec:Infinity };
 
   const time500List = useMemo(()=>{
     const arr: { date:string; seconds:number; time:string }[]=[];
@@ -391,7 +390,9 @@ export default function App() {
     logs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=> l.timeRecords?.forEach(r=>{
       if (baseline[r.distance] === undefined) baseline[r.distance] = r.seconds;
       if (!rows[l.date]) rows[l.date] = { date: l.date };
-      rows[l.date][r.distance] = (r.seconds / baseline[r.distance]) * 100;
+      // Speed index: baseline/seconds so faster times (smaller seconds) plot
+      // higher on the chart, matching "shorter time = better" intuitively.
+      rows[l.date][r.distance] = (baseline[r.distance] / r.seconds) * 100;
       rows[l.date][`t${r.distance}`] = r.time;
     }));
     return Object.values(rows).sort((a:any,b:any)=> a.date.localeCompare(b.date)).slice(-20);
@@ -512,7 +513,7 @@ export default function App() {
     <div className="min-h-screen h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* subtle radial gold vignette + faint background photo */}
       <div className="pointer-events-none fixed inset-0 z-0">
-        <div className="absolute inset-0 bg-[url('/images/main_bg.jpg')] bg-cover bg-center opacity-[0.16]" />
+        <div className="absolute inset-0 bg-[url('/images/main_bg.jpg')] bg-cover bg-center opacity-[0.28]" />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),var(--glow-1)),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),var(--glow-2)),transparent_50%),radial-gradient(50%_45%_at_5%_60%,rgba(var(--c-D4AF37-rgb),var(--glow-3)),transparent_55%),radial-gradient(45%_40%_at_85%_90%,rgba(var(--c-C9A86A-rgb),var(--glow-4)),transparent_55%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
@@ -1239,21 +1240,7 @@ export default function App() {
                       </ResponsiveContainer>
                     </div>
                     )}
-                    <div className="mt-2 text-[10px] font-[600] text-[var(--c-6A6A66)] text-center">첫 기록 대비 소요 시간 비율 · 낮을수록 빨라진 거예요</div>
-                    <div className="mt-4 grid grid-cols-3 gap-2">
-                      <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">500m Best</div>
-                        <div className="mt-1 font-[800] text-[14px] gold-text">{best500.time}</div>
-                      </div>
-                      <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">500m Avg 5</div>
-                        <div className="mt-1 font-[800] text-[14px] text-[var(--c-F5F1E8)]">{time500List.length? (time500List.slice(-5).reduce((a,b)=>a+b.seconds,0)/Math.min(5,time500List.length)).toFixed(2) : '-'}</div>
-                      </div>
-                      <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">500m Target</div>
-                        <div className="mt-1 font-[800] text-[14px] text-[var(--c-D4AF37)]">50.00</div>
-                      </div>
-                    </div>
+                    <div className="mt-2 text-[10px] font-[600] text-[var(--c-6A6A66)] text-center">첫 기록 대비 속도 지수 · 높을수록 빨라진 거예요</div>
                   </div>
                   <div className="space-y-4">
                     <div className="card p-5">
