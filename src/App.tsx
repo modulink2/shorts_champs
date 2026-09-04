@@ -381,8 +381,8 @@ export default function App() {
   const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=> logTypes(l).includes(searchType)), [logs, searchType]);
 
   const bestByDistance = useMemo(()=>{
-    const map: Record<number, { time:string; sec:number }> = {};
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(!map[r.distance] || r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds }; } }));
+    const map: Record<number, { time:string; sec:number; date:string }> = {};
+    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(!map[r.distance] || r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds, date:l.date }; } }));
     return map;
   },[logs]);
 
@@ -1280,6 +1280,7 @@ export default function App() {
                       <div key={rt.id} className="rounded-[12px] subcard p-3">
                         <div className="label-caps">Best {rt.distance}m</div>
                         <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
+                        {bestByDistance[rt.distance] && <div className="mt-0.5 text-[10px] font-[600] text-[var(--c-6A6A66)]">{bestByDistance[rt.distance].date.slice(5).replace('-','/')}</div>}
                       </div>
                     ))}
                     {recordTypes.filter(rt=>rt.distance!==500).length===0 && <div className="col-span-full text-center py-4 text-[11px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요</div>}
