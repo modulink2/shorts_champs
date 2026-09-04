@@ -20,7 +20,7 @@ function MemberManagement() {
       </div>
       <div className="mt-5 space-y-2">
         {sorted.map(p=>(
-          <div key={p.uid} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-3.5 flex items-center gap-3">
+          <div key={p.uid} className="subcard rounded-[14px] p-3.5 flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[14px] shrink-0">{p.role==='coach' ? '🧑‍🏫' : '⛸️'}</div>
             <div className="flex-1 min-w-0">
               {editingUid===p.uid ? (
@@ -120,7 +120,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
           ) : (
             <div className="mt-4 space-y-4">
               {selectedLog.noteIce || (selectedLog.iceItems && selectedLog.iceItems.length>0) ? (
-                <div className="rounded-[14px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4">
+                <div className="subcard rounded-[14px] p-4">
                   <div className="label-caps text-[var(--c-D4AF37)]">⛸️ 빙상 훈련</div>
                   {selectedLog.noteIce && <p className="mt-2 text-[13px] leading-[1.6] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteIce}</p>}
                   {selectedLog.iceItems && selectedLog.iceItems.length>0 && (
@@ -131,7 +131,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
                 </div>
               ) : null}
               {selectedLog.noteDry || (selectedLog.dryItems && selectedLog.dryItems.length>0) ? (
-                <div className="rounded-[14px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4">
+                <div className="subcard rounded-[14px] p-4">
                   <div className="label-caps text-[var(--c-D4AF37)]">🏋️ 육상 훈련</div>
                   {selectedLog.noteDry && <p className="mt-2 text-[13px] leading-[1.6] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteDry}</p>}
                   {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
@@ -142,10 +142,10 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
                 </div>
               ) : null}
               {selectedLog.isRest && (
-                <div className="rounded-[14px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4 text-center text-[13px] text-[var(--c-9A9A93)]">🌑 리커버리 데이{selectedLog.sleepHours!=null && ` · 수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
+                <div className="subcard rounded-[14px] p-4 text-center text-[13px] text-[var(--c-9A9A93)]">🌑 리커버리 데이{selectedLog.sleepHours!=null && ` · 수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
               )}
               {selectedLog.laps || (selectedLog.timeRecords && selectedLog.timeRecords.length>0) ? (
-                <div className="rounded-[14px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-4 flex flex-wrap gap-4">
+                <div className="subcard rounded-[14px] p-4 flex flex-wrap gap-4">
                   {selectedLog.laps && <div><div className="label-caps">바퀴수</div><div className="mt-1 font-[800] text-[16px]">{selectedLog.laps}바퀴</div></div>}
                   {selectedLog.timeRecords?.map((r,i)=>(
                     <div key={i}><div className="label-caps">{r.distance}m</div><div className="mt-1 font-[800] text-[16px] text-[var(--c-D4AF37)]">{r.time}</div></div>
@@ -161,7 +161,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
             <div className="font-[700] text-[13px] flex items-center gap-2"><MessageSquare size={14} className="text-[var(--c-D4AF37)]"/> 코멘트</div>
             <div className="mt-3 space-y-2.5">
               {comments.map(c=>(
-                <div key={c.id} className="rounded-[12px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3">
+                <div key={c.id} className="subcard rounded-[12px] p-3">
                   <div className="flex items-center justify-between">
                     <span className="text-[11px] font-[700] text-[var(--c-D4AF37)]">{c.authorName}</span>
                     <span className="text-[10px] text-[var(--c-6A6A66)]">{new Date(c.createdAt).toLocaleDateString('ko-KR')}</span>
@@ -204,7 +204,7 @@ function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSe
       </div>
       <div className="mt-5 grid sm:grid-cols-2 gap-3">
         {athletes.map(p=>(
-          <button key={p.uid} onClick={()=>onSelect(p)} className="rounded-[16px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-4 text-left hover:border-[var(--c-3A3520)] transition-all flex items-center gap-3">
+          <button key={p.uid} onClick={()=>onSelect(p)} className="subcard rounded-[16px] p-4 text-left transition-all flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[16px]">⛸️</div>
             <div className="min-w-0">
               <div className="text-[13px] font-[800] truncate">{p.displayName || p.email}</div>
