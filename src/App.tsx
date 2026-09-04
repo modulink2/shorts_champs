@@ -7,6 +7,7 @@ import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
 import { useWeeklyPlan } from './useWeeklyPlan';
 import { useAwards } from './useAwards';
+import Logo from './Logo';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
@@ -477,7 +478,7 @@ export default function App() {
         {/* Sidebar - desktop */}
         <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/70 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] sticky top-0 h-screen">
           <div className="h-[72px] px-6 flex items-center gap-3 border-b border-[var(--c-1C1A12)]">
-            <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-060608)] font-[900] text-[16px] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]">S</div>
+            <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-060608)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={36}/></div>
             <div>
               <div className="font-[800] text-[13px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
               <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1">CHAMPION EDITION</div>
@@ -540,7 +541,7 @@ export default function App() {
           <header className="sticky top-0 z-20 backdrop-blur-[20px] bg-[var(--c-060608)]/80 border-b border-[var(--c-1C1A12)]">
             <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-060608)] font-[900]">S</div>
+                <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-060608)]"><Logo size={32}/></div>
                 <div>
                   <div className="flex items-center gap-2.5">
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Crown } from 'lucide-react';
 import { useAuth } from './AuthContext';
+import Logo from './Logo';
 
 function mapError(code: string): string {
   switch (code) {
@@ -41,13 +42,19 @@ export default function AuthForm() {
   return (
     <div className="min-h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] antialiased flex items-center justify-center px-4">
       <div className="pointer-events-none fixed inset-0 z-0">
+        <img
+          src="/images/login-hero.jpg" alt=""
+          onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }}
+          className="absolute inset-0 w-full h-full object-cover opacity-45"
+        />
+        <div className="absolute inset-0 bg-[var(--c-060608)]/70" />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),0.10),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),0.06),transparent_50%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
 
       <div className="relative z-10 w-full max-w-[380px]">
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-[14px] gold-gradient flex items-center justify-center text-[var(--c-060608)] font-[900] text-[20px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)]">S</div>
+          <div className="w-12 h-12 rounded-[14px] gold-gradient flex items-center justify-center text-[var(--c-060608)] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={48}/></div>
           <div className="text-center">
             <div className="font-[800] text-[16px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
             <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1.5">CHAMPION EDITION</div>
