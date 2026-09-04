@@ -45,9 +45,9 @@ export default function AuthForm() {
         <img
           src="/images/login-hero.jpg" alt=""
           onError={(e)=>{ (e.currentTarget as HTMLImageElement).style.display='none'; }}
-          className="absolute inset-0 w-full h-full object-cover opacity-45"
+          className="absolute inset-0 w-full h-full object-cover object-[32%_45%]"
         />
-        <div className="absolute inset-0 bg-[var(--c-060608)]/70" />
+        <div className="absolute inset-0 bg-[var(--c-060608)]/25" />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),0.10),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),0.06),transparent_50%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
