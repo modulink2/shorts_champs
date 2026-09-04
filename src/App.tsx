@@ -1090,7 +1090,7 @@ export default function App() {
                                         <span className="truncate">{selectedLog.instaUrl}</span>
                                       </div>
                                     </div>
-                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-white transition-colors">
+                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors">
                                       <Link2 size={14}/> 인스타그램 열기 <ExternalLink size={12}/>
                                     </a>
                                     <div className="mt-3 text-[10px] font-[500] text-[var(--c-6A6A66)] text-center">외부 링크 · 새 탭에서 열립니다</div>
@@ -1498,7 +1498,7 @@ export default function App() {
       <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
 
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/30">
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[rgba(var(--c-D4AF37-rgb),0.22)] backdrop-blur-xl text-[var(--c-F5F1E8)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/60">
           <span className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center text-[12px]">👑</span>{toast}
         </div>
       )}
