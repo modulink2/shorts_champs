@@ -1,42 +1,87 @@
 @import "tailwindcss";
 
-* { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
-html, body { overflow-x: hidden; background: #060608; }
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 999px; }
-::-webkit-scrollbar-track { background: #101012; }
+/* Theme tokens — default (no data-theme attribute yet, or explicitly
+   "crystalblue") is Crystal Blue; data-theme="blackgold" restores the
+   original palette. Applied on <html> via document.documentElement.dataset.theme. */
+:root {
+  --c-060608: #050B14; --c-08080A: #060D18; --c-0C0C0E: #0A121F; --c-0E0E10: #0B1524;
+  --c-101012: #0D1828; --c-121214: #0F1B2E; --c-151519: #122036; --c-151518: #122036;
+  --c-15151A: #132238; --c-18181B: #16283F; --c-1A1A1E: #182B45; --c-1C1C20: #1A2E4A;
+  --c-1A1912: #10263D; --c-1E1C14: #123049; --c-1C1A12: #112B44; --c-2A2A20: #1B4363;
+  --c-2C2A20: #1D4A6E; --c-3A3520: #2E6690;
+  --c-1E1E22: #1B2A40; --c-232326: #203349; --c-2A2A2E: #263C56;
+  --c-F5F1E8: #EAF6FF; --c-E8E2D2: #DCEEFA; --c-CFCFC8: #C3DCEC; --c-9A9A93: #85A8C2;
+  --c-6A6A66: #5A7C97; --c-4A4A4E: #445E76;
+  --c-D4AF37: #3FD0F2; --c-FFD700: #7CE8FF; --c-FFC700: #57DCF5; --c-FFE55C: #B3F5FF; --c-C9A86A: #6FA8C9;
+  --c-D4AF37-rgb: 63,208,242; --c-C9A86A-rgb: 111,168,201; --c-2C2A20-rgb: 29,74,110;
+  --c-F5F1E8-rgb: 234,246,255; --c-121214-rgb: 15,27,46; --c-3A3520-rgb: 46,102,144;
+}
+:root[data-theme="blackgold"] {
+  --c-060608: #060608; --c-08080A: #08080A; --c-0C0C0E: #0C0C0E; --c-0E0E10: #0E0E10;
+  --c-101012: #101012; --c-121214: #121214; --c-151519: #151519; --c-151518: #151518;
+  --c-15151A: #15151A; --c-18181B: #18181B; --c-1A1A1E: #1A1A1E; --c-1C1C20: #1C1C20;
+  --c-1A1912: #1A1912; --c-1E1C14: #1E1C14; --c-1C1A12: #1C1A12; --c-2A2A20: #2A2A20;
+  --c-2C2A20: #2C2A20; --c-3A3520: #3A3520;
+  --c-1E1E22: #1E1E22; --c-232326: #232326; --c-2A2A2E: #2A2A2E;
+  --c-F5F1E8: #F5F1E8; --c-E8E2D2: #E8E2D2; --c-CFCFC8: #CFCFC8; --c-9A9A93: #9A9A93;
+  --c-6A6A66: #6A6A66; --c-4A4A4E: #4A4A4E;
+  --c-D4AF37: #D4AF37; --c-FFD700: #FFD700; --c-FFC700: #FFC700; --c-FFE55C: #FFE55C; --c-C9A86A: #C9A86A;
+  --c-D4AF37-rgb: 212,175,55; --c-C9A86A-rgb: 201,168,106; --c-2C2A20-rgb: 44,42,32;
+  --c-F5F1E8-rgb: 245,241,232; --c-121214-rgb: 18,18,20; --c-3A3520-rgb: 58,53,32;
+}
+/* Crystal Blue leans further into a glassy, floating feel than the base
+   .card gives every theme. */
+:root:not([data-theme="blackgold"]) .card {
+  background: rgba(var(--c-121214-rgb),0.4);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 8px 32px rgba(0,0,0,0.4), 0 0 40px rgba(var(--c-D4AF37-rgb),0.05);
+}
+:root:not([data-theme="blackgold"]) .card:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 0 0 1px rgba(var(--c-D4AF37-rgb),0.18) inset, 0 8px 36px rgba(0,0,0,0.5), 0 0 32px rgba(var(--c-D4AF37-rgb),0.14);
+}
+:root:not([data-theme="blackgold"]) .card-gold {
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+}
 
-.gold-gradient { background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFC700 100%); }
+* { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
+html, body { overflow-x: hidden; background: var(--c-060608); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--c-2A2A2E); border-radius: 999px; }
+::-webkit-scrollbar-track { background: var(--c-101012); }
+
+.gold-gradient { background: linear-gradient(135deg, var(--c-D4AF37) 0%, var(--c-FFD700) 50%, var(--c-FFC700) 100%); }
 .gold-text {
-  background: linear-gradient(135deg, #D4AF37 0%, #FFD700 50%, #FFE55C 100%);
+  background: linear-gradient(135deg, var(--c-D4AF37) 0%, var(--c-FFD700) 50%, var(--c-FFE55C) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.gold-border { border-color: #3A3520; }
+.gold-border { border-color: var(--c-3A3520); }
 .card {
-  background: rgba(18,18,20,0.55);
+  background: rgba(var(--c-121214-rgb),0.55);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(44,42,32,0.65);
+  border: 1px solid rgba(var(--c-2C2A20-rgb),0.65);
   border-radius: 20px;
   position: relative;
   transition: all 0.3s ease;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04), 0 8px 24px rgba(0,0,0,0.35);
 }
-.card:hover { border-color: rgba(58,53,32,0.9); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(212,175,55,0.12) inset, 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(212,175,55,0.08); }
+.card:hover { border-color: rgba(var(--c-3A3520-rgb),0.9); box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(var(--c-D4AF37-rgb),0.12) inset, 0 8px 32px rgba(0,0,0,0.6), 0 0 24px rgba(var(--c-D4AF37-rgb),0.08); }
 .card-gold {
-  background: radial-gradient(120% 120% at 0% 0%, rgba(212,175,55,0.12) 0%, transparent 50%), rgba(18,18,20,0.55);
+  background: radial-gradient(120% 120% at 0% 0%, rgba(var(--c-D4AF37-rgb),0.12) 0%, transparent 50%), rgba(var(--c-121214-rgb),0.55);
   backdrop-filter: blur(20px) saturate(160%);
   -webkit-backdrop-filter: blur(20px) saturate(160%);
-  border: 1px solid rgba(44,42,32,0.65);
+  border: 1px solid rgba(var(--c-2C2A20-rgb),0.65);
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
-.soft-glow { box-shadow: 0 0 20px rgba(212,175,55,0.12); }
+.soft-glow { box-shadow: 0 0 20px rgba(var(--c-D4AF37-rgb),0.12); }
 .big-num { font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; }
-.label-caps { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #9A9A93; }
-.noise { position: absolute; inset: 0; pointer-events: none; opacity: 0.025; background-image: radial-gradient(rgba(212,175,55,0.8) 1px, transparent 1px); background-size: 22px 22px; }
+.label-caps { font-size: 10px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--c-9A9A93); }
+.noise { position: absolute; inset: 0; pointer-events: none; opacity: 0.025; background-image: radial-gradient(rgba(var(--c-D4AF37-rgb),0.8) 1px, transparent 1px); background-size: 22px 22px; }
 
 @keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 24px rgba(212,175,55,0.35), 0 0 0 1px rgba(212,175,55,0.4); }
-  50% { box-shadow: 0 0 44px rgba(212,175,55,0.65), 0 0 0 1px rgba(212,175,55,0.7); }
+  0%, 100% { box-shadow: 0 0 24px rgba(var(--c-D4AF37-rgb),0.35), 0 0 0 1px rgba(var(--c-D4AF37-rgb),0.4); }
+  50% { box-shadow: 0 0 44px rgba(var(--c-D4AF37-rgb),0.65), 0 0 0 1px rgba(var(--c-D4AF37-rgb),0.7); }
 }
 .glow-pulse { animation: glow-pulse 1.8s ease-in-out infinite; }
