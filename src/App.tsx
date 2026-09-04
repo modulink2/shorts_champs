@@ -393,7 +393,9 @@ export default function App() {
     }));
     return Object.values(rows).sort((a:any,b:any)=> a.date.localeCompare(b.date)).slice(-20);
   },[logs]);
-  const DISTANCE_COLORS = ['var(--c-D4AF37)','var(--c-FFD700)','var(--c-FFC700)','var(--c-FFE55C)','var(--c-C9A86A)','var(--c-9A9A93)'];
+  // Fixed, theme-independent hues so distances stay visually distinct even
+  // in themes where the accent-tinted tokens above are all close in hue.
+  const DISTANCE_COLORS = ['#F5A623','#4FC3F7','#FF6B9D','#66D9A0','#B388FF','#FFD54F','#FF7043','#4DD0E1'];
 
   const typeDist = useMemo(()=>{
     const ice = logs.filter(l=>l.noteIce && l.noteIce.trim()).length;
