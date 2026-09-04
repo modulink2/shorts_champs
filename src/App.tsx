@@ -366,10 +366,6 @@ export default function App() {
   const todayStr = toLocalDateStr(new Date());
 
   const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=> logTypes(l).includes(searchType)), [logs, searchType]);
-  const thisWeekLogs = useMemo(()=>{
-    const now=new Date(); const start=new Date(now); const dayIdx=(now.getDay()+6)%7; start.setDate(now.getDate()-dayIdx);
-    return logs.filter(l=>{ const d=new Date(l.date); return d>=start; });
-  },[logs]);
 
   const bestByDistance = useMemo(()=>{
     const map: Record<number, { time:string; sec:number }> = {};
@@ -711,22 +707,6 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                {/* KPI */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
-                  <div className="card p-4 lg:p-5">
-                    <div className="flex items-start justify-between">
-                      <span className="label-caps">Weekly Days</span>
-                      <div className="w-7 h-7 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] flex items-center justify-center"><Calendar size={14} className="text-[var(--c-D4AF37)]"/></div>
-                    </div>
-                    <div className="mt-3 big-num text-[32px] lg:text-[38px] gold-text">{thisWeekLogs.length}<span className="text-[16px] text-[var(--c-9A9A93)] ml-1 font-[600]">일</span></div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full bg-[var(--c-1A1A1E)] overflow-hidden"><div className="h-full gold-gradient rounded-full" style={{width:`${Math.min(100, thisWeekLogs.length/5*100)}%`}}/></div>
-                      <span className="text-[10px] font-[700] text-[var(--c-9A9A93)]">목표 5일</span>
-                    </div>
-                  </div>
-                </div>
-
-
                 <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6 items-start">
                   {/* Recent trainings */}
                   <div className="card p-5 lg:p-6">
