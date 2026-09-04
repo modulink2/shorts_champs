@@ -109,6 +109,9 @@ html, body { overflow-x: hidden; background: var(--c-060608); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--c-2A2A2E); border-radius: 999px; }
 ::-webkit-scrollbar-track { background: var(--c-101012); }
+/* Keeps the element scrollable while hiding its own scrollbar chrome. */
+.no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 .gold-gradient {
   background: linear-gradient(135deg, rgba(var(--c-D4AF37-rgb),0.94) 0%, rgba(var(--c-FFD700-rgb),0.94) 50%, rgba(var(--c-FFC700-rgb),0.94) 100%);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, Legend } from 'recharts';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
@@ -377,12 +377,6 @@ export default function App() {
     return map;
   },[logs]);
 
-  const time500List = useMemo(()=>{
-    const arr: { date:string; seconds:number; time:string }[]=[];
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(r.distance===500) arr.push({date:l.date, seconds:r.seconds, time:r.time}); }));
-    return arr.sort((a,b)=> a.date.localeCompare(b.date)).slice(-12);
-  },[logs]);
-
   // One row per date with every distance's time as % of that distance's own
   // first recorded time, so distances with very different absolute times
   // (111m vs 1500m) can share one y-axis and still show growth trend.
@@ -406,11 +400,6 @@ export default function App() {
     const dry = logs.filter(l=>l.noteDry && l.noteDry.trim()).length;
     const rest = logs.filter(l=>l.isRest).length;
     return [{ name:'빙상', value:ice, color:'var(--c-D4AF37)' }, { name:'육상', value:dry, color:'var(--c-C9A86A)' }, { name:'휴식', value:rest, color:'var(--c-2A2A2E)' }];
-  },[logs]);
-
-  const lapAnalysis = useMemo(()=>{
-    const iceLogs = logs.filter(l=>l.laps).slice(-10);
-    return iceLogs.map(l=>({ date:l.date.slice(5).replace('-','/'), laps:l.laps||0, km:l.km||0 }));
   },[logs]);
 
   const calendarDays = useMemo(()=>{
@@ -637,7 +626,7 @@ export default function App() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+          <main className="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
@@ -1246,17 +1235,6 @@ export default function App() {
                   </div>
                   <div className="space-y-4">
                     <div className="card p-5">
-                      <div className="font-[700] text-[13px]">Personal Best Timeline</div>
-                      <div className="mt-3 space-y-2">
-                        {time500List.slice().reverse().slice(0,5).map((r,i)=>(
-                          <div key={i} className="h-12 rounded-[12px] subcard px-3 flex items-center justify-between group hover:border-[var(--c-2C2A20)] transition-all">
-                            <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">{r.date.slice(5).replace('-','/')}</span>
-                            <span className="font-[800] text-[13px] text-[var(--c-F5F1E8)]">{r.time}<span className="ml-1 text-[10px] font-[600] text-[var(--c-D4AF37)]">{i===0?'PB':''}</span></span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="card p-5">
                       <div className="font-[700] text-[13px]">훈련 분포 · Donut</div>
                       <div className="mt-3 h-[140px] flex items-center">
                         <ResponsiveContainer width="60%" height="100%">
@@ -1276,31 +1254,16 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
-                  <div className="card p-5 lg:p-6">
-                    <div className="font-[700] text-[13px]">Lap Analysis · 최근 10회 빙상</div>
-                    <div className="mt-5 h-[160px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={lapAnalysis}>
-                          <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }}/>
-                          <YAxis hide />
-                          <Tooltip contentStyle={{ background:'var(--c-121214)', border:'1px solid var(--c-2C2A20)', borderRadius:12, fontSize:11 }} />
-                          <Bar dataKey="laps" fill="var(--c-D4AF37)" radius={[6,6,0,0]} barSize={18} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </div>
-                  <div className="card p-5 lg:p-6">
-                    <div className="font-[700] text-[13px]">거리별 베스트 기록</div>
-                    <div className="mt-4 grid grid-cols-2 gap-2">
-                      {recordTypes.filter(rt=>rt.distance!==500).map(rt=>(
-                        <div key={rt.id} className="rounded-[12px] subcard p-3">
-                          <div className="label-caps">Best {rt.distance}m</div>
-                          <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
-                        </div>
-                      ))}
-                      {recordTypes.filter(rt=>rt.distance!==500).length===0 && <div className="col-span-2 text-center py-4 text-[11px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요</div>}
-                    </div>
+                <div className="card p-5 lg:p-6">
+                  <div className="font-[700] text-[13px]">거리별 베스트 기록</div>
+                  <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                    {recordTypes.filter(rt=>rt.distance!==500).map(rt=>(
+                      <div key={rt.id} className="rounded-[12px] subcard p-3">
+                        <div className="label-caps">Best {rt.distance}m</div>
+                        <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
+                      </div>
+                    ))}
+                    {recordTypes.filter(rt=>rt.distance!==500).length===0 && <div className="col-span-full text-center py-4 text-[11px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요</div>}
                   </div>
                 </div>
               </div>
