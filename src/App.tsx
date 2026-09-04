@@ -6,6 +6,7 @@ import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
 import { useWeeklyPlan } from './useWeeklyPlan';
+import { useAwards } from './useAwards';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
@@ -25,6 +26,8 @@ export interface TrainingLog {
   youtubeUrl?: string; instaUrl?: string;
 }
 export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
+// A competition result entered under 수상이력.
+export interface Award { id: string; competitionName: string; event: string; rank: string; createdAt: number; }
 // A user-managed item type (name + unit) available in the ice or dry item picker.
 export interface ItemType { id: string; category: 'ice' | 'dry'; name: string; unit: string; }
 
@@ -283,6 +286,8 @@ export default function App() {
   const { planItems, savePlanItem, deletePlanItem } = useWeeklyPlan(user?.uid);
   const [planForm, setPlanForm] = useState<{ day: WeekDay; time: PlanTimeSlot; content: string } | null>(null);
   const todayWeekDay: WeekDay = WEEKDAYS[(new Date().getDay()+6)%7].key;
+  const { awards, saveAward, deleteAward } = useAwards(user?.uid);
+  const [awardForm, setAwardForm] = useState<{ competitionName: string; event: string; rank: string } | null>(null);
   const iceItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='ice'), [itemTypes]);
   const dryItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='dry'), [itemTypes]);
   const [view, setView] = useState<ViewType>('dashboard');
@@ -728,8 +733,26 @@ export default function App() {
                         {goals.length===0 && <div className="text-center py-6 text-[11px] text-[#6A6A66]">마이페이지 탭에서 시즌 목표를 등록해보세요</div>}
                       </div>
                     </div>
+                    <div className="card p-5 lg:p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="font-[700] text-[14px] flex items-center gap-2"><Award size={16} className="text-[#D4AF37]"/> 수상이력</div>
+                        <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[#1A1912] border border-[#3A3520] text-[#D4AF37] inline-flex items-center">{awards.length} AWARDS</span>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        {awards.slice(0,4).map(a=>(
+                          <div key={a.id} className="rounded-[12px] bg-[#101012] border border-[#1E1E22] p-3 flex items-center gap-2.5">
+                            <span className="text-[16px] shrink-0">🏅</span>
+                            <div className="min-w-0">
+                              <div className="text-[12px] font-[700] truncate">{a.competitionName}</div>
+                              <div className="text-[10px] font-[600] text-[#9A9A93] truncate">{a.event} · {a.rank}</div>
+                            </div>
+                          </div>
+                        ))}
+                        {awards.length===0 && <div className="text-center py-6 text-[11px] text-[#6A6A66]">마이페이지 탭에서 수상이력을 등록해보세요</div>}
+                      </div>
+                    </div>
                     <div className="card p-4 flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center"><Award size={18} className="text-[#D4AF37]"/></div>
+                      <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center"><Crown size={18} className="text-[#D4AF37]"/></div>
                       <div>
                         <div className="text-[12px] font-[700]">챔피언 마인드셋</div>
                         <div className="text-[11px] font-[500] text-[#9A9A93] leading-[1.3] mt-0.5">기록보다 루틴. 매일 같은 시간, 같은 집중.</div>
@@ -1363,6 +1386,47 @@ export default function App() {
                     <div className="flex gap-2">
                       <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] disabled:opacity-40">저장</button>
                       <button onClick={()=>setGoalForm(null)} className="h-10 px-4 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#9A9A93]">취소</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {view==='growth' && (
+              <div className="card p-5 lg:p-6">
+                <div className="flex items-center justify-between">
+                  <div className="font-[700] text-[14px]">수상이력</div>
+                  <button onClick={()=>setAwardForm({ competitionName:'', event:'', rank:'' })} className="h-8 px-3.5 rounded-full gold-gradient text-[#060608] text-[11px] font-[800]">+ 수상 등록</button>
+                </div>
+                <div className="mt-5 space-y-2.5">
+                  {awards.map(a=>(
+                    <div key={a.id} className="rounded-[14px] bg-[#101012] border border-[#1E1C14] p-3.5 flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center text-[18px] shrink-0">🏅</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[12px] font-[700] truncate">{a.competitionName}</div>
+                        <div className="text-[11px] text-[#9A9A93] truncate">{a.event} · {a.rank}</div>
+                      </div>
+                      <button onClick={()=>deleteAward(a.id)} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] text-[#9A9A93] hover:text-[#F5F1E8] shrink-0">×</button>
+                    </div>
+                  ))}
+                  {awards.length===0 && !awardForm && <div className="text-center py-8 text-[12px] text-[#6A6A66]">아직 등록된 수상이력이 없어요 · 위 버튼으로 추가해보세요</div>}
+                </div>
+                {awardForm && (
+                  <div className="mt-5 rounded-[16px] bg-[#0E0E10] border border-[#1E1C14] p-4 space-y-3">
+                    <input
+                      autoFocus value={awardForm.competitionName} onChange={e=>setAwardForm({ ...awardForm, competitionName:e.target.value })}
+                      placeholder="대회명 (예: 전국동계체전)" className="w-full h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <input value={awardForm.event} onChange={e=>setAwardForm({ ...awardForm, event:e.target.value })} placeholder="참가종목 (예: 500m)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                      <input value={awardForm.rank} onChange={e=>setAwardForm({ ...awardForm, rank:e.target.value })} placeholder="순위 (예: 1위)" className="h-10 rounded-[10px] bg-[#121214] border border-[#1E1E22] px-3 text-[13px] font-[600] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"/>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={()=>{ saveAward({ id:crypto.randomUUID(), competitionName:awardForm.competitionName.trim(), event:awardForm.event.trim(), rank:awardForm.rank.trim(), createdAt:Date.now() }); setAwardForm(null); }}
+                        disabled={!awardForm.competitionName.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[#060608] font-[800] text-[12px] disabled:opacity-40"
+                      >저장</button>
+                      <button onClick={()=>setAwardForm(null)} className="h-10 px-4 rounded-full bg-[#18181B] border border-[#232326] text-[12px] font-[700] text-[#9A9A93]">취소</button>
                     </div>
                   </div>
                 )}
