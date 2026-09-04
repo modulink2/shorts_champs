@@ -513,7 +513,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
+    <div className="no-auto-blur h-dvh w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* animated track-ring canvas background + subtle radial gold vignette */}
       <div className="pointer-events-none fixed inset-0 z-0" style={{background:'radial-gradient(120% 120% at 50% 30%, #0f172a 0%, #1e293b 40%, #0f172a 100%)'}}>
         <TrackBackground />

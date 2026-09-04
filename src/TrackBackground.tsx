@@ -35,8 +35,9 @@ export default function TrackBackground() {
       { rx: 370, ry: 215, dir: -1, headAngle: 2, speed: 0.005, trail: 1.7 },
       { rx: 440, ry: 255, dir: -1, headAngle: 4, speed: 0.0045, trail: 1.4 },
     ];
-    const particles = Array.from({ length: 38 }, (_, i) => ({
-      angle: (i / 38) * Math.PI * 2,
+    const particleCount = 60;
+    const particles = Array.from({ length: particleCount }, (_, i) => ({
+      angle: (i / particleCount) * Math.PI * 2,
       r: 380 + Math.random() * 280,
       ryRatio: 0.55 + Math.random() * 0.15,
       speed: 0.0004 + Math.random() * 0.0008,
