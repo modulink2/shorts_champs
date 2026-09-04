@@ -92,14 +92,14 @@
    the frosted-glass backdrop blur — covers badges, inputs, icon circles,
    list rows, nav items and buttons alike, with zero JSX changes needed
    whenever a new one is added. .card/.card-gold set their own (stronger). */
-[class*="[var(--c-"]:not(.card):not(.card-gold):not([class*="min-h-screen"]) {
+[class*="bg-[var(--c-"]:not(.card):not(.card-gold):not([class*="min-h-screen"]) {
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
 }
 /* Buttons and toggle/selection pills get an extra-visible glass pass —
    a bit more blur/saturation than plain surfaces, so unselected/selected
    states both read as frosted material rather than a flat fill. */
-button[class*="[var(--c-"]:not(.card):not(.card-gold) {
+button[class*="bg-[var(--c-"]:not(.card):not(.card-gold) {
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
