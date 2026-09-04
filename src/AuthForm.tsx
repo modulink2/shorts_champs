@@ -54,7 +54,7 @@ export default function AuthForm() {
 
       <div className="relative z-10 w-full max-w-[380px]">
         <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-[14px] gold-gradient flex items-center justify-center text-[var(--c-060608)] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={48}/></div>
+          <div className="w-12 h-12 rounded-[14px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={48}/></div>
           <div className="text-center">
             <div className="font-[800] text-[16px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
             <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1.5">CHAMPION EDITION</div>
@@ -68,7 +68,7 @@ export default function AuthForm() {
                 key={m}
                 type="button"
                 onClick={() => { setMode(m); setError(''); }}
-                className={`flex-1 h-9 rounded-full text-[12px] font-[700] transition-all ${mode === m ? 'gold-gradient text-[var(--c-060608)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.25)]' : 'text-[var(--c-9A9A93)]'}`}
+                className={`flex-1 h-9 rounded-full text-[12px] font-[700] transition-all ${mode === m ? 'gold-gradient text-[var(--c-on-accent)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.25)]' : 'text-[var(--c-9A9A93)]'}`}
               >
                 {m === 'login' ? '로그인' : '회원가입'}
               </button>
@@ -92,7 +92,7 @@ export default function AuthForm() {
                     {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
                       <button
                         key={val} type="button" onClick={()=>setRole(val)}
-                        className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-060608)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
+                        className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
                       >{label}</button>
                     ))}
                   </div>
@@ -123,7 +123,7 @@ export default function AuthForm() {
 
             <button
               type="submit" disabled={busy}
-              className="w-full h-[48px] rounded-[14px] gold-gradient text-[var(--c-060608)] font-[800] text-[13px] flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all disabled:opacity-50"
+              className="w-full h-[48px] rounded-[14px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <Crown size={14} /> {busy ? '처리 중...' : mode === 'login' ? '로그인' : '가입하고 시작하기'}
             </button>

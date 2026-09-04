@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import App from './App';
 import AuthForm from './AuthForm';
 import { useAuth } from './AuthContext';
@@ -5,6 +6,13 @@ import { isFirebaseConfigured } from './firebase';
 
 export default function Root() {
   const { user, loading } = useAuth();
+
+  // App.tsx sets data-theme to the logged-in user's chosen theme; once they
+  // log out, clear it so the login screen always shows its own dark default
+  // instead of inheriting whatever theme the last session had picked.
+  useEffect(() => {
+    if (!user) delete document.documentElement.dataset.theme;
+  }, [user]);
 
   if (!isFirebaseConfigured) {
     return (

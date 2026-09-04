@@ -213,7 +213,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
       <div className="flex flex-wrap gap-2">
         {itemTypes.map(t=>(
           <div key={t.id} className="relative group">
-            <button type="button" onClick={()=>{ setActiveTypeId(t.id); setValue(''); }} className={`h-9 pl-3.5 pr-3.5 rounded-full border text-[12px] font-[700] transition-all ${activeTypeId===t.id? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-060608)]' : 'bg-[var(--c-18181B)] border-[var(--c-232326)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]'}`}>{t.name}</button>
+            <button type="button" onClick={()=>{ setActiveTypeId(t.id); setValue(''); }} className={`h-9 pl-3.5 pr-3.5 rounded-full border text-[12px] font-[700] transition-all ${activeTypeId===t.id? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-18181B)] border-[var(--c-232326)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]'}`}>{t.name}</button>
             <button type="button" onClick={()=>onDeleteType(t.id)} title="항목 삭제" className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-[var(--c-232326)] border border-[var(--c-3A3520)] text-[9px] text-[var(--c-9A9A93)] opacity-0 group-hover:opacity-100 flex items-center justify-center leading-none">×</button>
           </div>
         ))}
@@ -226,7 +226,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
           <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-2 text-[12px] font-[700] outline-none">
             {ITEM_UNITS.map(u=><option key={u} value={u}>{u}</option>)}
           </select>
-          <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px]">추가</button>
+          <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">추가</button>
         </div>
       )}
 
@@ -235,7 +235,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
           <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">{activeType.name}</span>
           <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="w-20 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center font-[700] outline-none"/>
           <span className="text-[12px] font-[600] text-[var(--c-6A6A66)]">{activeType.unit}</span>
-          <button type="button" onClick={()=>{ const n=parseFloat(value); if(n>0){ onAddItem({type:activeType.name, value:n, unit:activeType.unit}); setActiveTypeId(null); setValue(''); } }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px]">등록</button>
+          <button type="button" onClick={()=>{ const n=parseFloat(value); if(n>0){ onAddItem({type:activeType.name, value:n, unit:activeType.unit}); setActiveTypeId(null); setValue(''); } }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
         </div>
       )}
 
@@ -486,7 +486,7 @@ export default function App() {
         {/* Sidebar - desktop */}
         <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/70 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] sticky top-0 h-screen">
           <div className="h-[72px] px-6 flex items-center gap-3 border-b border-[var(--c-1C1A12)]">
-            <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-060608)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={36}/></div>
+            <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={36}/></div>
             <div>
               <div className="font-[800] text-[13px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
               <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1">CHAMPION EDITION</div>
@@ -505,7 +505,7 @@ export default function App() {
               return (
                 <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`group w-full h-[56px] rounded-[14px] flex items-center gap-3 px-3.5 text-left transition-all border ${active?'bg-[var(--c-121214)] border-[var(--c-3A3520)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.12)]':'bg-transparent border-transparent hover:bg-[var(--c-121214)] hover:border-[var(--c-2A2A2E)]'}`}>
                   <div className={`w-[1.5px] self-stretch rounded-full -ml-3.5 mr-1 transition-all ${active?'bg-[var(--c-D4AF37)] shadow-[0_0_8px_var(--c-D4AF37)]':'bg-transparent group-hover:bg-[var(--c-2A2A2E)]'}`} />
-                  <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center border transition-all ${active?'gold-gradient text-[var(--c-060608)] border-[var(--c-D4AF37)]/30 shadow-[0_0_12px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-151519)] border-[var(--c-232326)] text-[var(--c-9A9A93)] group-hover:text-[var(--c-F5F1E8)]'}`}>
+                  <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center border transition-all ${active?'gold-gradient text-[var(--c-on-accent)] border-[var(--c-D4AF37)]/30 shadow-[0_0_12px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-151519)] border-[var(--c-232326)] text-[var(--c-9A9A93)] group-hover:text-[var(--c-F5F1E8)]'}`}>
                     <Icon size={18} strokeWidth={active?2.5:1.8}/>
                   </div>
                   <div className="flex-1 min-w-0">
@@ -549,7 +549,7 @@ export default function App() {
           <header className="sticky top-0 z-20 backdrop-blur-[20px] bg-[var(--c-060608)]/80 border-b border-[var(--c-1C1A12)]">
             <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-060608)]"><Logo size={32}/></div>
+                <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)]"><Logo size={32}/></div>
                 <div>
                   <div className="flex items-center gap-2.5">
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">
@@ -570,11 +570,11 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)]">
-                  <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center"><Flame size={12} className="text-[var(--c-060608)]"/></div>
+                  <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center"><Flame size={12} className="text-[var(--c-on-accent)]"/></div>
                   <span className="text-[11px] font-[700] text-[var(--c-F5F1E8)]">스트릭 12일</span>
-                  <span className="h-6 px-2.5 rounded-full gold-gradient text-[var(--c-060608)] text-[11px] font-[800] flex items-center">LVL 8</span>
+                  <span className="h-6 px-2.5 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800] flex items-center">LVL 8</span>
                 </div>
-                <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
+                <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
                   <span className="hidden sm:inline">✦</span> 기록하기
                 </button>
                 <button onClick={logOut} title="로그아웃" className="lg:hidden w-9 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] flex items-center justify-center text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] transition-colors">
@@ -593,7 +593,7 @@ export default function App() {
               ].map(tab=>{
                 const active=view===tab.id;
                 return (
-                  <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`whitespace-nowrap h-8 px-4 rounded-full text-[12px] font-[700] border transition-all ${active?'gold-gradient text-[var(--c-060608)] border-[var(--c-D4AF37)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-101012)] border-[var(--c-2A2A2E)] text-[var(--c-9A9A93)]'}`}>{tab.label}</button>
+                  <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`whitespace-nowrap h-8 px-4 rounded-full text-[12px] font-[700] border transition-all ${active?'gold-gradient text-[var(--c-on-accent)] border-[var(--c-D4AF37)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-101012)] border-[var(--c-2A2A2E)] text-[var(--c-9A9A93)]'}`}>{tab.label}</button>
                 );
               })}
             </div>
@@ -606,9 +606,9 @@ export default function App() {
                 {hasNewComment && latestComment && (
                   <button
                     onClick={()=>{ setSelectedDate(latestComment.date); setView('diary'); dismissComment(); }}
-                    className="glow-pulse w-full text-left rounded-[20px] p-5 lg:p-6 gold-gradient text-[var(--c-060608)] flex items-center gap-4 active:scale-[0.99] transition-transform"
+                    className="glow-pulse w-full text-left rounded-[20px] p-5 lg:p-6 gold-gradient text-[var(--c-on-accent)] flex items-center gap-4 active:scale-[0.99] transition-transform"
                   >
-                    <div className="w-12 h-12 rounded-full bg-[var(--c-060608)]/15 flex items-center justify-center shrink-0"><MessageSquare size={22}/></div>
+                    <div className="w-12 h-12 rounded-full bg-[var(--c-on-accent)]/15 flex items-center justify-center shrink-0"><MessageSquare size={22}/></div>
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {latestComment.authorName} 코치님의 피드백이 도착했어요</div>
                       <div className="mt-1 text-[15px] lg:text-[16px] font-[800] truncate">"{latestComment.text}"</div>
@@ -705,7 +705,7 @@ export default function App() {
                       <div className="font-[700] text-[14px]">최근 훈련</div>
                       <div className="flex gap-1.5">
                         {(['all','ice','dry','rest'] as const).map(t=>(
-                          <button key={t} onClick={()=>setSearchType(t)} className={`h-6 px-2.5 rounded-full text-[11px] font-[700] border transition-all ${searchType===t?'gold-gradient text-[var(--c-060608)] border-[var(--c-D4AF37)]':'bg-[var(--c-18181B)] border-[var(--c-232326)] text-[var(--c-9A9A93)] hover:text-[var(--c-F5F1E8)]'}`}>{t==='all'?'전체': TYPE_META[t as TrainingType].label}</button>
+                          <button key={t} onClick={()=>setSearchType(t)} className={`h-6 px-2.5 rounded-full text-[11px] font-[700] border transition-all ${searchType===t?'gold-gradient text-[var(--c-on-accent)] border-[var(--c-D4AF37)]':'bg-[var(--c-18181B)] border-[var(--c-232326)] text-[var(--c-9A9A93)] hover:text-[var(--c-F5F1E8)]'}`}>{t==='all'?'전체': TYPE_META[t as TrainingType].label}</button>
                         ))}
                       </div>
                     </div>
@@ -745,7 +745,7 @@ export default function App() {
                           <div key={g.id} className="rounded-[14px] bg-[var(--c-121214)] border border-[var(--c-1E1C14)] p-3.5">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words min-w-0">{g.title}</span></div>
-                              <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-060608)] inline-flex items-center">{g.progress}%</span>
+                              <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-on-accent)] inline-flex items-center">{g.progress}%</span>
                             </div>
                             <div className="mt-3 h-1.5 rounded-full bg-[var(--c-1E1E22)] overflow-hidden"><div className="h-full rounded-full gold-gradient" style={{width:`${g.progress}%`}}/></div>
                             <div className="mt-2 flex justify-between text-[10px] font-[600] text-[var(--c-9A9A93)]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
@@ -824,11 +824,11 @@ export default function App() {
                         const isSel=ds===selectedDate;
                         return (
                           <div key={i} className="h-[32px] flex items-center justify-center">
-                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[var(--c-F5F1E8)] text-[var(--c-060608)] border-[var(--c-F5F1E8)] shadow-[0_2px_10px_rgba(var(--c-F5F1E8-rgb),0.25)]' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
+                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] border-[var(--c-F5F1E8)] shadow-[0_2px_10px_rgba(var(--c-F5F1E8-rgb),0.25)]' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
                               <span className="leading-none">{d.getDate()}</span>
                               {log && (
                                 <span className="mt-[1px] flex gap-[2px]">
-                                  {logTypes(log).map(t=> <span key={t} className={`w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-060608)]' : t==='ice' ? 'bg-[var(--c-D4AF37)]' : t==='dry' ? 'bg-[var(--c-C9A86A)]' : 'bg-[var(--c-4A4A4E)]'}`} />)}
+                                  {logTypes(log).map(t=> <span key={t} className={`w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-on-accent)]' : t==='ice' ? 'bg-[var(--c-D4AF37)]' : t==='dry' ? 'bg-[var(--c-C9A86A)]' : 'bg-[var(--c-4A4A4E)]'}`} />)}
                                 </span>
                               )}
                             </button>
@@ -875,7 +875,7 @@ export default function App() {
                       {recentLogsWithRecord.map(l=>{
                         const isActive=l.date===selectedDate;
                         return (
-                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)] shadow-[0_2px_12px_rgba(var(--c-F5F1E8-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
+                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)] shadow-[0_2px_12px_rgba(var(--c-F5F1E8-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
                             <span className="text-[11px] font-[700] text-[var(--c-6A6A66)] w-[36px]">{l.date.slice(5)}</span>
                             <span className="text-[14px]">{logTypes(l).map(t=>TYPE_META[t].emoji).join('') || '📝'}</span>
                             <span className="text-[12px] font-[700] flex-1 truncate">{logSummary(l) || logTypes(l).map(t=>TYPE_META[t].label).join(', ')}</span>
@@ -911,7 +911,7 @@ export default function App() {
 
                         <div className="mt-8 space-y-10">
                           <div>
-                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                               <span className="text-[22px] leading-none">🌑</span>
                               <span className="text-[14px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                               <span className={`w-11 h-6 rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editing.isRest? 'left-[22px]' : 'left-0.5'}`}/></span>
@@ -979,7 +979,7 @@ export default function App() {
                           </div>
 
                           <div className="flex gap-3 pt-2">
-                            <button onClick={saveLog} className="flex-1 h-[56px] rounded-[16px] gold-gradient text-[var(--c-060608)] font-[800] text-[16px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
+                            <button onClick={saveLog} className="flex-1 h-[56px] rounded-[16px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[16px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
                             <button onClick={()=>setDiaryEditMode(false)} className="h-[56px] px-8 rounded-[16px] bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px] font-[700] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]">취소</button>
                           </div>
                         </div>
@@ -991,7 +991,7 @@ export default function App() {
                           <div className="flex items-center gap-5">
                             <div className="w-[72px] h-[72px] rounded-[18px] bg-[var(--c-18181B)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[36px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">{logTypes(selectedLog).map(t=>TYPE_META[t].emoji).join(' ') || '📝'}</div>
                             <div>
-                              <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[var(--c-060608)] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]">{logTypes(selectedLog).map(t=>TYPE_META[t].label).join(' + ') || '기록'} · {selectedLog.date}</div>
+                              <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]">{logTypes(selectedLog).map(t=>TYPE_META[t].label).join(' + ') || '기록'} · {selectedLog.date}</div>
                               <div className="mt-3 font-[800] text-[20px] leading-[1.2]">오늘의 챔피언 로그</div>
                               {(selectedLog.focus!=null || selectedLog.sleepHours!=null) && (
                                 <div className="mt-1 text-[13px] font-[500] text-[var(--c-9A9A93)]">{selectedLog.focus!=null && `집중 ${selectedLog.focus}/5`}{selectedLog.focus!=null && selectedLog.sleepHours!=null && ' · '}{selectedLog.sleepHours!=null && `수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
@@ -1090,7 +1090,7 @@ export default function App() {
                                         <span className="truncate">{selectedLog.instaUrl}</span>
                                       </div>
                                     </div>
-                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-060608)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-white transition-colors">
+                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-white transition-colors">
                                       <Link2 size={14}/> 인스타그램 열기 <ExternalLink size={12}/>
                                     </a>
                                     <div className="mt-3 text-[10px] font-[500] text-[var(--c-6A6A66)] text-center">외부 링크 · 새 탭에서 열립니다</div>
@@ -1121,7 +1121,7 @@ export default function App() {
                           <button onClick={()=>{
                             setEditing({...selectedLog});
                             setDiaryEditMode(true);
-                          }} className="h-[48px] px-8 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-060608)] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
+                          }} className="h-[48px] px-8 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]">삭제</button>
                           <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)]">{themeLabel} · {selectedLog.date}</span>
@@ -1132,7 +1132,7 @@ export default function App() {
                         <div className="w-[88px] h-[88px] mx-auto rounded-full bg-[radial-gradient(60%_60%_at_50%_30%,rgba(var(--c-D4AF37-rgb),0.18),transparent_70%),var(--c-121214)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[36px] shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.12)]">📝</div>
                         <h3 className="mt-6 text-[24px] font-[800] tracking-[-0.02em]">이 날의 기록을 남겨보세요</h3>
                         <p className="mt-3 text-[15px] font-[500] leading-[1.6] text-[var(--c-9A9A93)] max-w-[360px] mx-auto">선택한 날짜에 훈련 기록이 없어요. 챔피언의 하루를 블로그처럼 남겨보자. 작은 디테일이 큰 차이를 만든다.</p>
-                        <button onClick={()=>openLog(selectedDate)} className="mt-8 h-[52px] px-10 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[15px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.35)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all inline-flex items-center gap-2"><span className="text-[16px]">✦</span> 훈련 기록하기</button>
+                        <button onClick={()=>openLog(selectedDate)} className="mt-8 h-[52px] px-10 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[15px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.35)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all inline-flex items-center gap-2"><span className="text-[16px]">✦</span> 훈련 기록하기</button>
                         <div className="mt-10 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-2A2A20)] to-transparent max-w-[320px] mx-auto"/>
                         <div className="mt-6 text-[11px] font-[600] tracking-[0.08em] text-[var(--c-6A6A66)]">TIP: 매일 같은 시간에 기록하면 루틴이 된다</div>
                       </div>
@@ -1164,14 +1164,14 @@ export default function App() {
                         />
                         <button
                           onClick={()=>{ const n=parseInt(newDistance); if(n>0){ saveRecordType({ id:crypto.randomUUID(), distance:n }); setNewDistance(''); setShowAddDistance(false); } }}
-                          disabled={!newDistance} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px] disabled:opacity-40"
+                          disabled={!newDistance} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] disabled:opacity-40"
                         >추가</button>
                       </div>
                     )}
                     <TimeInputsEditor recordTypes={recordTypes} timeInputs={recordTimeInputs} onChange={(d,v)=>setRecordTimeInputs({...recordTimeInputs, [d]:v})} onDelete={deleteRecordType} />
                     {recordTypes.length===0 && <div className="text-center py-6 text-[12px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요 · 위 버튼으로 추가해보세요</div>}
                   </div>
-                  <button onClick={saveRecordEntry} className="mt-5 w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-060608)] font-[800] text-[14px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
+                  <button onClick={saveRecordEntry} className="mt-5 w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[14px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
@@ -1192,7 +1192,7 @@ export default function App() {
                           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} tickFormatter={(v:string)=>v.slice(5)} />
                           <YAxis domain={['dataMin - 1','dataMax + 1']} axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} width={40} />
                           <Tooltip contentStyle={{ background:'var(--c-121214)', border:'1px solid var(--c-2C2A20)', borderRadius:12, fontSize:11 }} />
-                          <Area type="monotone" dataKey="seconds" stroke="var(--c-D4AF37)" strokeWidth={2.5} fill="url(#goldFill)" dot={{ r:3, fill:'var(--c-060608)', stroke:'var(--c-D4AF37)', strokeWidth:2 }} />
+                          <Area type="monotone" dataKey="seconds" stroke="var(--c-D4AF37)" strokeWidth={2.5} fill="url(#goldFill)" dot={{ r:3, fill:'var(--c-on-accent)', stroke:'var(--c-D4AF37)', strokeWidth:2 }} />
                         </AreaChart>
                       </ResponsiveContainer>
                     </div>
@@ -1299,7 +1299,7 @@ export default function App() {
                       {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
                         <button
                           key={val} onClick={()=>saveProfile(user!.uid, { role: val })}
-                          className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${myProfile?.role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-060608)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
+                          className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${myProfile?.role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
                         >{label}</button>
                       ))}
                     </div>
@@ -1312,7 +1312,7 @@ export default function App() {
                         return (
                           <button
                             key={t.key} onClick={()=>saveProfile(user!.uid, { theme: t.key })}
-                            className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${active? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-060608)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
+                            className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${active? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
                           >{t.label}</button>
                         );
                       })}
@@ -1380,7 +1380,7 @@ export default function App() {
                           <div className="mt-2.5 rounded-[10px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-2.5 space-y-2">
                             <div className="grid grid-cols-3 gap-1.5">
                               {PLAN_TIME_SLOTS.map(t=>(
-                                <button key={t} onClick={()=>setPlanForm({ ...planForm, time:t })} className={`h-8 rounded-[8px] text-[11px] font-[700] ${planForm.time===t? 'gold-gradient text-[var(--c-060608)]' : 'bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[var(--c-9A9A93)]'}`}>{t}</button>
+                                <button key={t} onClick={()=>setPlanForm({ ...planForm, time:t })} className={`h-8 rounded-[8px] text-[11px] font-[700] ${planForm.time===t? 'gold-gradient text-[var(--c-on-accent)]' : 'bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[var(--c-9A9A93)]'}`}>{t}</button>
                               ))}
                             </div>
                             <input
@@ -1391,7 +1391,7 @@ export default function App() {
                             <div className="flex gap-1.5">
                               <button
                                 onClick={()=>{ if(planForm.content.trim()){ savePlanItem(user!.uid, { id:crypto.randomUUID(), day:planForm.day, time:planForm.time, content:planForm.content.trim() }); setPlanForm(null); } }}
-                                disabled={!planForm.content.trim()} className="flex-1 h-8 rounded-full gold-gradient text-[var(--c-060608)] text-[11px] font-[800] disabled:opacity-40"
+                                disabled={!planForm.content.trim()} className="flex-1 h-8 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800] disabled:opacity-40"
                               >추가</button>
                               <button onClick={()=>setPlanForm(null)} className="h-8 px-3 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[11px] font-[700] text-[var(--c-9A9A93)]">취소</button>
                             </div>
@@ -1408,7 +1408,7 @@ export default function App() {
               <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
-                  <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] text-[11px] font-[800]">+ 목표 추가</button>
+                  <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800]">+ 목표 추가</button>
                 </div>
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {goals.map(g=>(
@@ -1442,7 +1442,7 @@ export default function App() {
                       <input type="range" min={0} max={100} value={goalForm.progress} onChange={e=>setGoalForm({...goalForm, progress: parseInt(e.target.value)})} className="mt-2 w-full accent-[var(--c-D4AF37)]"/>
                     </div>
                     <div className="flex gap-2">
-                      <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px] disabled:opacity-40">저장</button>
+                      <button onClick={()=>{ saveGoalRemote(goalForm); setGoalForm(null); }} disabled={!goalForm.title.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] disabled:opacity-40">저장</button>
                       <button onClick={()=>setGoalForm(null)} className="h-10 px-4 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] text-[var(--c-9A9A93)]">취소</button>
                     </div>
                   </div>
@@ -1454,7 +1454,7 @@ export default function App() {
               <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="font-[700] text-[14px]">수상이력</div>
-                  <button onClick={()=>setAwardForm({ competitionName:'', event:'', rank:'' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] text-[11px] font-[800]">+ 수상 등록</button>
+                  <button onClick={()=>setAwardForm({ competitionName:'', event:'', rank:'' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800]">+ 수상 등록</button>
                 </div>
                 <div className="mt-5 space-y-2.5">
                   {awards.map(a=>(
@@ -1482,7 +1482,7 @@ export default function App() {
                     <div className="flex gap-2">
                       <button
                         onClick={()=>{ saveAward({ id:crypto.randomUUID(), competitionName:awardForm.competitionName.trim(), event:awardForm.event.trim(), rank:awardForm.rank.trim(), createdAt:Date.now() }); setAwardForm(null); }}
-                        disabled={!awardForm.competitionName.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px] disabled:opacity-40"
+                        disabled={!awardForm.competitionName.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] disabled:opacity-40"
                       >저장</button>
                       <button onClick={()=>setAwardForm(null)} className="h-10 px-4 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] text-[var(--c-9A9A93)]">취소</button>
                     </div>
@@ -1495,10 +1495,10 @@ export default function App() {
       </div>
 
       {/* Floating action mobile */}
-      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
+      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
 
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[var(--c-F5F1E8)] text-[var(--c-060608)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/30">
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/30">
           <span className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center text-[12px]">👑</span>{toast}
         </div>
       )}
@@ -1506,18 +1506,18 @@ export default function App() {
       {/* Modal - pro form */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
-          <div className="absolute inset-0 bg-[var(--c-060608)]/80 backdrop-blur-[12px]" onClick={()=>setShowModal(false)}/>
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[12px]" onClick={()=>setShowModal(false)}/>
           <div className="relative w-full lg:max-w-[640px] max-h-[92vh] lg:max-h-[88vh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
             <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)]/90 backdrop-blur-xl border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
               <div>
-                <div className="font-[800] text-[15px] tracking-[-0.02em] flex items-center gap-2"><span className="w-6 h-6 rounded-full gold-gradient flex items-center justify-center text-[var(--c-060608)] text-[12px]">✦</span>{editing.date} 훈련 기록</div>
+                <div className="font-[800] text-[15px] tracking-[-0.02em] flex items-center gap-2"><span className="w-6 h-6 rounded-full gold-gradient flex items-center justify-center text-[var(--c-on-accent)] text-[12px]">✦</span>{editing.date} 훈련 기록</div>
                 <div className="text-[11px] font-[500] text-[var(--c-9A9A93)] mt-1">챔피언은 기록한다 · 디테일이 차이를 만든다</div>
               </div>
               <button onClick={()=>setShowModal(false)} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center hover:border-[var(--c-3A3520)]"><X size={16}/></button>
             </div>
 
             <div className="p-6 space-y-6">
-              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                 <span className="text-[18px] leading-none">🌑</span>
                 <span className="text-[13px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                 <span className={`w-10 h-[22px] rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all ${editing.isRest? 'left-[20px]' : 'left-0.5'}`}/></span>
@@ -1545,7 +1545,7 @@ export default function App() {
                 </>
               )}
 
-              <button onClick={saveLog} className="w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-060608)] font-[800] text-[14px] tracking-[-0.01em] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+              <button onClick={saveLog} className="w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[14px] tracking-[-0.01em] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                 <Crown size={16}/> 기록 저장 · 챔피언의 하루 추가
               </button>
               <div className="text-center text-[10px] font-[500] text-[var(--c-6A6A66)] pb-2 tracking-[0.04em]">{themeLabel} EDITION · FOR FUTURE OLYMPIAN</div>

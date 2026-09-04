@@ -93,9 +93,9 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
             const isSel=ds===selectedDate;
             return (
               <div key={i} className="h-[30px] flex items-center justify-center">
-                <button onClick={()=>setSelectedDate(ds)} className={`w-[26px] h-[26px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] ${isSel? 'bg-[var(--c-F5F1E8)] text-[var(--c-060608)] border-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)]'}`}>
+                <button onClick={()=>setSelectedDate(ds)} className={`w-[26px] h-[26px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] ${isSel? 'bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] border-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)]'}`}>
                   <span className="leading-none">{d.getDate()}</span>
-                  {log && <span className={`mt-[1px] w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-060608)]' : 'bg-[var(--c-D4AF37)]'}`}/>}
+                  {log && <span className={`mt-[1px] w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-on-accent)]' : 'bg-[var(--c-D4AF37)]'}`}/>}
                 </button>
               </div>
             );
@@ -178,7 +178,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
                 placeholder="선수에게 코멘트 남기기"
                 className="flex-1 h-10 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
               />
-              <button onClick={submitComment} className="h-10 px-4 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[12px]">남기기</button>
+              <button onClick={submitComment} className="h-10 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">남기기</button>
             </div>
           </div>
         )}
@@ -230,7 +230,7 @@ export default function CoachAdminView({ role }: { role: 'coach' | 'admin' }) {
       {role==='admin' && (
         <div className="flex gap-1.5 p-1 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] w-fit">
           {([['roster','선수 기록'],['members','회원 관리']] as const).map(([val,label])=>(
-            <button key={val} onClick={()=>{ setTab(val); setSelectedAthlete(null); }} className={`h-9 px-4 rounded-full text-[12px] font-[700] transition-all ${tab===val? 'gold-gradient text-[var(--c-060608)]' : 'text-[var(--c-9A9A93)]'}`}>{label}</button>
+            <button key={val} onClick={()=>{ setTab(val); setSelectedAthlete(null); }} className={`h-9 px-4 rounded-full text-[12px] font-[700] transition-all ${tab===val? 'gold-gradient text-[var(--c-on-accent)]' : 'text-[var(--c-9A9A93)]'}`}>{label}</button>
           ))}
         </div>
       )}
