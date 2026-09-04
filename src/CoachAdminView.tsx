@@ -28,7 +28,7 @@ function MemberManagement() {
                   autoFocus value={draftName} onChange={e=>setDraftName(e.target.value)}
                   onBlur={()=>{ if(draftName.trim()) saveProfile(p.uid, { displayName: draftName.trim() }); setEditingUid(null); }}
                   onKeyDown={e=>{ if(e.key==='Enter') (e.target as HTMLInputElement).blur(); }}
-                  className="w-full h-8 rounded-[8px] bg-[var(--c-121214)] border border-[var(--c-3A3520)] px-2 text-[13px] font-[700] outline-none"
+                  className="field w-full h-8 rounded-[8px] bg-[var(--c-121214)] border border-[var(--c-3A3520)] px-2 text-[13px] font-[700] outline-none"
                 />
               ) : (
                 <button onClick={()=>{ setEditingUid(p.uid); setDraftName(p.displayName||''); }} className="text-[13px] font-[700] text-left hover:text-[var(--c-D4AF37)] transition-colors truncate block">{p.displayName || p.email}</button>
@@ -37,7 +37,7 @@ function MemberManagement() {
             </div>
             <select
               value={p.role} onChange={e=>saveProfile(p.uid, { role: e.target.value as 'athlete'|'coach' })}
-              className="h-8 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[11px] font-[700] text-[var(--c-F5F1E8)] px-2 outline-none shrink-0"
+              className="field h-8 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[11px] font-[700] text-[var(--c-F5F1E8)] px-2 outline-none shrink-0"
             >
               <option value="athlete">선수</option>
               <option value="coach">코치</option>
@@ -176,7 +176,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
                 value={commentText} onChange={e=>setCommentText(e.target.value)}
                 onKeyDown={e=>{ if(e.key==='Enter') submitComment(); }}
                 placeholder="선수에게 코멘트 남기기"
-                className="flex-1 h-10 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                className="field flex-1 h-10 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
               />
               <button onClick={submitComment} className="h-10 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">남기기</button>
             </div>
@@ -200,7 +200,7 @@ function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSe
     <div className="card p-5 lg:p-6">
       <div className="flex items-center justify-between gap-3">
         <div className="font-[700] text-[14px] flex items-center gap-2"><Users size={16} className="text-[var(--c-D4AF37)]"/> {role==='admin' ? '전체 선수' : '내 선수'}</div>
-        <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="이름 검색" className="h-8 w-[140px] rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] px-3 text-[12px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+        <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="이름 검색" className="field h-8 w-[140px] rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] px-3 text-[12px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
       </div>
       <div className="mt-5 grid sm:grid-cols-2 gap-3">
         {athletes.map(p=>(

@@ -83,7 +83,7 @@ export default function AuthForm() {
                   <input
                     required value={name} onChange={(e) => setName(e.target.value)}
                     placeholder="예: 서윤" autoComplete="name"
-                    className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                    className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
                   />
                 </div>
                 <div>
@@ -104,7 +104,7 @@ export default function AuthForm() {
               <input
                 required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
                 placeholder="parent@example.com" autoComplete="email"
-                className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
               />
             </div>
             <div>
@@ -113,7 +113,7 @@ export default function AuthForm() {
                 required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
                 placeholder="6자 이상" minLength={6}
                 autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
               />
             </div>
 

@@ -184,7 +184,7 @@ function TimeInputsEditor({ recordTypes, timeInputs, onChange, onDelete }: { rec
           <input
             value={timeInputs[rt.distance]||''} onChange={e=>onChange(rt.distance, e.target.value)}
             placeholder={rt.distance>=1000 ? 'm:ss.ss' : 'ss.ss'} inputMode="decimal"
-            className="mt-3 w-full h-11 rounded-[10px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-3 text-[14px] font-[700] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+            className="field mt-3 w-full h-11 rounded-[10px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-3 text-[14px] font-[700] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
           />
         </div>
       ))}
@@ -222,8 +222,8 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
 
       {showAddType && (
         <div className="mt-3 flex items-center gap-2">
-          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="항목 이름" className="flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
-          <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-2 text-[12px] font-[700] outline-none">
+          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="항목 이름" className="field flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+          <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="field h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-2 text-[12px] font-[700] outline-none">
             {ITEM_UNITS.map(u=><option key={u} value={u}>{u}</option>)}
           </select>
           <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">추가</button>
@@ -233,7 +233,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
       {activeType && (
         <div className="mt-3 flex items-center gap-2">
           <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">{activeType.name}</span>
-          <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="w-20 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center font-[700] outline-none"/>
+          <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="field w-20 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center font-[700] outline-none"/>
           <span className="text-[12px] font-[600] text-[var(--c-6A6A66)]">{activeType.unit}</span>
           <button type="button" onClick={()=>{ const n=parseFloat(value); if(n>0){ onAddItem({type:activeType.name, value:n, unit:activeType.unit}); setActiveTypeId(null); setValue(''); } }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
         </div>
@@ -599,7 +599,7 @@ export default function App() {
             </div>
           </header>
 
-          <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px] mx-auto">
+          <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
@@ -930,7 +930,7 @@ export default function App() {
                               <div>
                                 <div className="label-caps text-[var(--c-D4AF37)] text-[11px]">⛸️ 빙상 훈련 · 오늘의 디테일</div>
                                 <div className="mt-4"><ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} /></div>
-                                <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요? 코너 진입 각도, 스타트 느낌 등을 자유롭게 적어보세요." className="mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
+                                <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요? 코너 진입 각도, 스타트 느낌 등을 자유롭게 적어보세요." className="field mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                                 <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)]">{(editing.noteIce||'').length}/200 · 훈련이 없었다면 비워두세요</div>
                               </div>
 
@@ -938,7 +938,7 @@ export default function App() {
                               <div>
                                 <div className="label-caps text-[var(--c-D4AF37)] text-[11px]">🏋️ 육상 훈련 · 오늘의 디테일</div>
                                 <div className="mt-4"><ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} /></div>
-                                <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
+                                <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="field mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                                 <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)]">{(editing.noteDry||'').length}/200 · 훈련이 없었다면 비워두세요</div>
                               </div>
                             </>
@@ -959,7 +959,7 @@ export default function App() {
                                   <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">유튜브 영상</span>
                                   <span className="text-[10px] font-[600] text-[var(--c-6A6A66)]">선택</span>
                                 </div>
-                                <input type="url" value={editing.youtubeUrl||''} onChange={e=>setEditing({...editing, youtubeUrl:e.target.value})} placeholder="유튜브 공유 링크를 붙여넣으세요" className="w-full h-[48px] rounded-[12px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                                <input type="url" value={editing.youtubeUrl||''} onChange={e=>setEditing({...editing, youtubeUrl:e.target.value})} placeholder="유튜브 공유 링크를 붙여넣으세요" className="field w-full h-[48px] rounded-[12px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                                 {editing.youtubeUrl && extractYouTubeId(editing.youtubeUrl) && (
                                   <div className="mt-3 text-[11px] font-[600] text-[var(--c-D4AF37)] flex items-center gap-1"><Play size={10}/> 미리보기 가능 · ID: {extractYouTubeId(editing.youtubeUrl)}</div>
                                 )}
@@ -970,7 +970,7 @@ export default function App() {
                                   <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">인스타그램</span>
                                   <span className="text-[10px] font-[600] text-[var(--c-6A6A66)]">선택</span>
                                 </div>
-                                <input type="url" value={editing.instaUrl||''} onChange={e=>setEditing({...editing, instaUrl:e.target.value})} placeholder="인스타그램 공유 링크를 붙여넣으세요" className="w-full h-[48px] rounded-[12px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                                <input type="url" value={editing.instaUrl||''} onChange={e=>setEditing({...editing, instaUrl:e.target.value})} placeholder="인스타그램 공유 링크를 붙여넣으세요" className="field w-full h-[48px] rounded-[12px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                                 {editing.instaUrl && isValidInstaUrl(editing.instaUrl) && (
                                   <div className="mt-3 text-[11px] font-[600] text-[var(--c-C9A86A)]">✓ 인스타그램 링크 감지됨</div>
                                 )}
@@ -1148,7 +1148,7 @@ export default function App() {
                 <div className="card p-5 lg:p-6">
                   <div className="flex items-center justify-between">
                     <div className="font-[700] text-[14px] flex items-center gap-2"><Trophy size={16} className="text-[var(--c-D4AF37)]"/> 기록 입력</div>
-                    <input type="date" value={recordDate} onChange={e=>setRecordDate(e.target.value)} className="h-9 px-3 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] text-[12px] font-[700] text-[var(--c-F5F1E8)] outline-none"/>
+                    <input type="date" value={recordDate} onChange={e=>setRecordDate(e.target.value)} className="field h-9 px-3 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] text-[12px] font-[700] text-[var(--c-F5F1E8)] outline-none"/>
                   </div>
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-3">
@@ -1160,7 +1160,7 @@ export default function App() {
                         <input
                           type="number" inputMode="numeric" value={newDistance} onChange={e=>setNewDistance(e.target.value)}
                           placeholder="거리(m) · 예: 300" autoFocus
-                          className="flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                          className="field flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
                         />
                         <button
                           onClick={()=>{ const n=parseInt(newDistance); if(n>0){ saveRecordType({ id:crypto.randomUUID(), distance:n }); setNewDistance(''); setShowAddDistance(false); } }}
@@ -1284,7 +1284,7 @@ export default function App() {
                         autoFocus value={nameDraft} onChange={e=>setNameDraft(e.target.value)}
                         onBlur={()=>{ if(nameDraft.trim()) saveProfile(user!.uid, { displayName: nameDraft.trim() }); setNameEditing(false); }}
                         onKeyDown={e=>{ if(e.key==='Enter') (e.target as HTMLInputElement).blur(); }}
-                        className="mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-3A3520)] px-4 text-[13px] font-[600] outline-none"
+                        className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-3A3520)] px-4 text-[13px] font-[600] outline-none"
                       />
                     ) : (
                       <button onClick={()=>{ setNameEditing(true); setNameDraft(myProfile?.displayName || user?.displayName || ''); }} className="mt-1.5 w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
@@ -1334,7 +1334,7 @@ export default function App() {
                   <div className="mt-3">
                     <div className="relative">
                       <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--c-6A6A66)]"/>
-                      <input value={coachSearch} onChange={e=>setCoachSearch(e.target.value)} placeholder="코치 이름 검색" className="w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={coachSearch} onChange={e=>setCoachSearch(e.target.value)} placeholder="코치 이름 검색" className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                     </div>
                     {coachSearch.trim() && (
                       <div className="mt-2 space-y-1.5">
@@ -1386,7 +1386,7 @@ export default function App() {
                             <input
                               autoFocus value={planForm.content} onChange={e=>setPlanForm({ ...planForm, content:e.target.value })}
                               onKeyDown={e=>{ if(e.key==='Enter' && planForm.content.trim()){ savePlanItem(user!.uid, { id:crypto.randomUUID(), day:planForm.day, time:planForm.time, content:planForm.content.trim() }); setPlanForm(null); } }}
-                              placeholder="예: 코너 드릴 30분" className="w-full h-9 rounded-[8px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                              placeholder="예: 코너 드릴 30분" className="field w-full h-9 rounded-[8px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
                             />
                             <div className="flex gap-1.5">
                               <button
@@ -1430,12 +1430,12 @@ export default function App() {
                 {goalForm && (
                   <div className="mt-5 rounded-[16px] subcard p-4 space-y-3">
                     <div className="grid grid-cols-[56px_1fr] gap-2">
-                      <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center text-[18px] outline-none"/>
-                      <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center text-[18px] outline-none"/>
+                      <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <input value={goalForm.current} onChange={e=>setGoalForm({...goalForm, current:e.target.value})} placeholder="현재 (예: 52.14)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
-                      <input value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target:e.target.value})} placeholder="목표 (예: 50.00)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={goalForm.current} onChange={e=>setGoalForm({...goalForm, current:e.target.value})} placeholder="현재 (예: 52.14)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={goalForm.target} onChange={e=>setGoalForm({...goalForm, target:e.target.value})} placeholder="목표 (예: 50.00)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                     </div>
                     <div>
                       <div className="flex items-center justify-between text-[11px] font-[600] text-[var(--c-9A9A93)]"><span>달성률</span><span className="text-[var(--c-D4AF37)] font-[800]">{goalForm.progress}%</span></div>
@@ -1473,11 +1473,11 @@ export default function App() {
                   <div className="mt-5 rounded-[16px] subcard p-4 space-y-3">
                     <input
                       autoFocus value={awardForm.competitionName} onChange={e=>setAwardForm({ ...awardForm, competitionName:e.target.value })}
-                      placeholder="대회명 (예: 전국동계체전)" className="w-full h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                      placeholder="대회명 (예: 전국동계체전)" className="field w-full h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
                     />
                     <div className="grid grid-cols-2 gap-2">
-                      <input value={awardForm.event} onChange={e=>setAwardForm({ ...awardForm, event:e.target.value })} placeholder="참가종목 (예: 500m)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
-                      <input value={awardForm.rank} onChange={e=>setAwardForm({ ...awardForm, rank:e.target.value })} placeholder="순위 (예: 1위)" className="h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={awardForm.event} onChange={e=>setAwardForm({ ...awardForm, event:e.target.value })} placeholder="참가종목 (예: 500m)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                      <input value={awardForm.rank} onChange={e=>setAwardForm({ ...awardForm, rank:e.target.value })} placeholder="순위 (예: 1위)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -1535,12 +1535,12 @@ export default function App() {
                   <div className="card !p-4">
                     <div className="label-caps mb-3">⛸️ 빙상 훈련 · 오늘의 디테일</div>
                     <ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} compact />
-                    <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요?" className="mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
+                    <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요?" className="field mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                   </div>
                   <div className="card !p-4">
                     <div className="label-caps mb-3">🏋️ 육상 훈련 · 오늘의 디테일</div>
                     <ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} compact />
-                    <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
+                    <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="field mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                   </div>
                 </>
               )}
