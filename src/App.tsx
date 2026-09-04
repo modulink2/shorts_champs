@@ -5,6 +5,7 @@ import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
 import { useItemTypes } from './useItemTypes';
+import { useWeeklyPlan } from './useWeeklyPlan';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import CoachAdminView from './CoachAdminView';
 import { downloadTrainingReport } from './reportPdf';
@@ -26,6 +27,16 @@ export interface TrainingLog {
 export interface Goal { id:string; title:string; target:string; current:string; progress:number; icon:string; }
 // A user-managed item type (name + unit) available in the ice or dry item picker.
 export interface ItemType { id: string; category: 'ice' | 'dry'; name: string; unit: string; }
+
+// A single entry in the weekly training plan (e.g. "월요일 오전 - 코너 드릴").
+export const WEEKDAYS = [
+  { key:'mon', label:'월' }, { key:'tue', label:'화' }, { key:'wed', label:'수' },
+  { key:'thu', label:'목' }, { key:'fri', label:'금' }, { key:'sat', label:'토' }, { key:'sun', label:'일' },
+] as const;
+export type WeekDay = typeof WEEKDAYS[number]['key'];
+export const PLAN_TIME_SLOTS = ['새벽', '오전', '오후'] as const;
+export type PlanTimeSlot = typeof PLAN_TIME_SLOTS[number];
+export interface PlanItem { id: string; day: WeekDay; time: PlanTimeSlot; content: string; }
 
 // Roles & profiles ---------------------------------------------------------
 // 'admin' is never stored — it's derived purely from the account email so
@@ -268,6 +279,9 @@ export default function App() {
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
+  const { planItems, savePlanItem, deletePlanItem } = useWeeklyPlan(user?.uid);
+  const [planForm, setPlanForm] = useState<{ day: WeekDay; time: PlanTimeSlot; content: string } | null>(null);
+  const todayWeekDay: WeekDay = WEEKDAYS[(new Date().getDay()+6)%7].key;
   const iceItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='ice'), [itemTypes]);
   const dryItemTypes = useMemo(()=> itemTypes.filter(t=>t.category==='dry'), [itemTypes]);
   const [view, setView] = useState<ViewType>('dashboard');
@@ -456,7 +470,7 @@ export default function App() {
               { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
               { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
               { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
-              { id:'growth', label:'성장리포트', icon:TrendingUp, desc:'GROWTH' },
+              { id:'growth', label:'마이페이지', icon:TrendingUp, desc:'MY PAGE' },
               ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':'ATHLETES' }] : []),
             ].map(tab=>{
               const active=view===tab.id;
@@ -515,7 +529,7 @@ export default function App() {
                       {view==='dashboard' && '대시보드'}
                       {view==='diary' && '훈련일지'}
                       {view==='records' && '기록입력/분석'}
-                      {view==='growth' && '성장리포트'}
+                      {view==='growth' && '마이페이지'}
                       {view==='roster' && (myRole==='admin' ? '회원 관리' : '내 선수')}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[#1A1912] border border-[#3A3520] text-[10px] font-[700] tracking-[0.1em] text-[#D4AF37] items-center">BLACK & GOLD</span>
@@ -547,7 +561,7 @@ export default function App() {
                 { id:'dashboard', label:'대시보드' },
                 { id:'diary', label:'훈련일지' },
                 { id:'records', label:'기록입력/분석' },
-                { id:'growth', label:'성장리포트' },
+                { id:'growth', label:'마이페이지' },
                 ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수' }] : []),
               ].map(tab=>{
                 const active=view===tab.id;
@@ -575,6 +589,34 @@ export default function App() {
                     <ChevronRight size={22} className="shrink-0"/>
                   </button>
                 )}
+                {/* Weekly plan */}
+                <div className="card p-5 lg:p-6">
+                  <div className="flex items-center justify-between">
+                    <span className="label-caps flex items-center gap-1.5"><Calendar size={12}/> 이번 주 훈련 계획</span>
+                  </div>
+                  {planItems.length===0 ? (
+                    <div className="mt-4 text-center py-6 text-[11px] text-[#6A6A66]">마이페이지 탭에서 주별 훈련 계획을 등록해보세요</div>
+                  ) : (
+                    <div className="mt-4 space-y-2">
+                      {WEEKDAYS.map(d=>{
+                        const items = planItems.filter(p=>p.day===d.key).sort((a,b)=>PLAN_TIME_SLOTS.indexOf(a.time)-PLAN_TIME_SLOTS.indexOf(b.time));
+                        const isToday = d.key===todayWeekDay;
+                        return (
+                          <div key={d.key} className={`rounded-[14px] p-3 flex items-start gap-3 border ${isToday?'bg-[#1A1912] border-[#3A3520]':'bg-[#101012] border-[#1E1C14]'}`}>
+                            <div className={`w-8 shrink-0 text-center text-[12px] font-[800] pt-0.5 ${isToday?'text-[#D4AF37]':'text-[#9A9A93]'}`}>{d.label}</div>
+                            <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 pt-0.5">
+                              {items.length===0 ? <span className="text-[11px] text-[#4A4A4E] py-0.5">휴식</span> : items.map(it=>(
+                                <span key={it.id} className="px-2.5 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] font-[600] text-[#CFCFC8] inline-flex items-center gap-1">
+                                  <span className="text-[#D4AF37] font-[700]">{it.time}</span>{it.content}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
                 {/* KPI */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 lg:gap-5">
                   <div className="card p-4 lg:p-5">
@@ -644,7 +686,7 @@ export default function App() {
                             <div className="mt-2 flex justify-between text-[10px] font-[600] text-[#9A9A93]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
                           </div>
                         ))}
-                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[#6A6A66]">성장리포트 탭에서 시즌 목표를 등록해보세요</div>}
+                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[#6A6A66]">마이페이지 탭에서 시즌 목표를 등록해보세요</div>}
                       </div>
                     </div>
                     <div className="card p-4 flex items-center gap-3">
@@ -1189,6 +1231,56 @@ export default function App() {
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {view==='growth' && (
+              <div className="card p-5 lg:p-6">
+                <div className="font-[700] text-[14px]">주별 훈련 계획서</div>
+                <div className="mt-4 space-y-2">
+                  {WEEKDAYS.map(d=>{
+                    const items = planItems.filter(p=>p.day===d.key).sort((a,b)=>PLAN_TIME_SLOTS.indexOf(a.time)-PLAN_TIME_SLOTS.indexOf(b.time));
+                    return (
+                      <div key={d.key} className="rounded-[14px] bg-[#101012] border border-[#1E1C14] p-3.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[13px] font-[800] text-[#F5F1E8]">{d.label}요일</span>
+                          <button onClick={()=>setPlanForm({ day:d.key, time:'오전', content:'' })} className="w-6 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[12px] text-[#D4AF37] flex items-center justify-center">+</button>
+                        </div>
+                        {items.length>0 && (
+                          <div className="mt-2.5 space-y-1.5">
+                            {items.map(it=>(
+                              <div key={it.id} className="flex items-center justify-between rounded-[10px] bg-[#0E0E10] px-3 h-9">
+                                <span className="text-[12px] font-[600] text-[#CFCFC8]"><span className="text-[#D4AF37] font-[700] mr-1.5">{it.time}</span>{it.content}</span>
+                                <button onClick={()=>deletePlanItem(user!.uid, it.id)} className="text-[#6A6A66] hover:text-[#D4AF37] text-[13px] w-6 h-6 flex items-center justify-center shrink-0">×</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {planForm?.day===d.key && (
+                          <div className="mt-2.5 rounded-[10px] bg-[#0E0E10] border border-[#1E1C14] p-2.5 space-y-2">
+                            <div className="grid grid-cols-3 gap-1.5">
+                              {PLAN_TIME_SLOTS.map(t=>(
+                                <button key={t} onClick={()=>setPlanForm({ ...planForm, time:t })} className={`h-8 rounded-[8px] text-[11px] font-[700] ${planForm.time===t? 'gold-gradient text-[#060608]' : 'bg-[#18181B] border border-[#232326] text-[#9A9A93]'}`}>{t}</button>
+                              ))}
+                            </div>
+                            <input
+                              autoFocus value={planForm.content} onChange={e=>setPlanForm({ ...planForm, content:e.target.value })}
+                              onKeyDown={e=>{ if(e.key==='Enter' && planForm.content.trim()){ savePlanItem(user!.uid, { id:crypto.randomUUID(), day:planForm.day, time:planForm.time, content:planForm.content.trim() }); setPlanForm(null); } }}
+                              placeholder="예: 코너 드릴 30분" className="w-full h-9 rounded-[8px] bg-[#121214] border border-[#1E1E22] px-3 text-[12px] outline-none focus:border-[#3A3520] placeholder:text-[#4A4A4E]"
+                            />
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={()=>{ if(planForm.content.trim()){ savePlanItem(user!.uid, { id:crypto.randomUUID(), day:planForm.day, time:planForm.time, content:planForm.content.trim() }); setPlanForm(null); } }}
+                                disabled={!planForm.content.trim()} className="flex-1 h-8 rounded-full gold-gradient text-[#060608] text-[11px] font-[800] disabled:opacity-40"
+                              >추가</button>
+                              <button onClick={()=>setPlanForm(null)} className="h-8 px-3 rounded-full bg-[#18181B] border border-[#232326] text-[11px] font-[700] text-[#9A9A93]">취소</button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
