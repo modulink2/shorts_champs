@@ -27,10 +27,13 @@ export default function TrackBackground() {
     const themeObserver = new MutationObserver(readAccent);
     themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
+    // Short track speed skating always races counterclockwise, so every
+    // ring/particle turns the same way (decreasing angle = CCW in canvas
+    // coordinates, since y grows downward).
     const tracks = [
-      { rx: 300, ry: 175, dir: 1, headAngle: 0, speed: 0.006, trail: 2.0 },
+      { rx: 300, ry: 175, dir: -1, headAngle: 0, speed: 0.006, trail: 2.0 },
       { rx: 370, ry: 215, dir: -1, headAngle: 2, speed: 0.005, trail: 1.7 },
-      { rx: 440, ry: 255, dir: 1, headAngle: 4, speed: 0.0045, trail: 1.4 },
+      { rx: 440, ry: 255, dir: -1, headAngle: 4, speed: 0.0045, trail: 1.4 },
     ];
     const particles = Array.from({ length: 38 }, (_, i) => ({
       angle: (i / 38) * Math.PI * 2,
@@ -93,7 +96,7 @@ export default function TrackBackground() {
       const cw = W / dpr, ch = H / dpr;
       pCtx.clearRect(0, 0, cw, ch);
       particles.forEach(p => {
-        p.angle += p.speed * 0.35;
+        p.angle -= p.speed * 0.35;
         const x = cw / 2 + Math.cos(p.angle) * p.r;
         const y = ch / 2 + Math.sin(p.angle) * p.r * p.ryRatio;
         pCtx.beginPath();
