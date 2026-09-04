@@ -546,7 +546,7 @@ export default function App() {
         {/* Main */}
         <div className="flex-1 min-w-0">
           {/* Top bar mobile + desktop header */}
-          <header className="sticky top-0 z-20 backdrop-blur-[20px] bg-[var(--c-060608)]/80 border-b border-[var(--c-1C1A12)]">
+          <header className="sticky top-0 z-20 backdrop-blur-[20px] bg-[var(--c-0C0C0E)]/85 border-b border-[var(--c-1C1A12)]">
             <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)]"><Logo size={32}/></div>
