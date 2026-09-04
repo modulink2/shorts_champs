@@ -47,10 +47,11 @@ export interface PlanItem { id: string; day: WeekDay; time: PlanTimeSlot; conten
 // 'admin' is never stored — it's derived purely from the account email so
 // there's nothing in the data to accidentally grant/revoke.
 export type UserRole = 'athlete' | 'coach' | 'admin';
-export type ThemeName = 'blackgold' | 'crystalblue';
+export type ThemeName = 'blackgold' | 'crystalblue' | 'glasspink';
 export const THEMES: { key: ThemeName; label: string }[] = [
   { key:'crystalblue', label:'크리스탈블루' },
   { key:'blackgold', label:'블랙골드' },
+  { key:'glasspink', label:'글래스핑크' },
 ];
 export interface UserProfile {
   uid: string; email: string; displayName: string; role: 'athlete'|'coach';
@@ -264,11 +265,12 @@ export default function App() {
   const [nameDraft, setNameDraft] = useState('');
 
   // Crystal Blue is the default look (no attribute = crystalblue per CSS);
-  // only Black & Gold needs the attribute set explicitly.
+  // the other themes need the attribute set explicitly.
+  const myTheme: ThemeName = myProfile?.theme === 'blackgold' || myProfile?.theme === 'glasspink' ? myProfile.theme : 'crystalblue';
   useEffect(() => {
-    document.documentElement.dataset.theme = myProfile?.theme === 'blackgold' ? 'blackgold' : 'crystalblue';
-  }, [myProfile?.theme]);
-  const themeLabel = myProfile?.theme === 'blackgold' ? 'BLACK & GOLD' : 'CRYSTAL BLUE';
+    document.documentElement.dataset.theme = myTheme;
+  }, [myTheme]);
+  const themeLabel = myTheme==='blackgold' ? 'BLACK & GOLD' : myTheme==='glasspink' ? 'GLASS PINK' : 'CRYSTAL BLUE';
 
   // Accounts created before the role system existed (or that only ever wrote
   // a partial profile via the coach-picker) may have no `role` — which makes
@@ -324,7 +326,6 @@ export default function App() {
   const [goalForm, setGoalForm] = useState<Goal | null>(null);
   const [pdfBusy, setPdfBusy] = useState(false);
   const [recordDate, setRecordDate] = useState(()=> toLocalDateStr(new Date()));
-  const [recordLaps, setRecordLaps] = useState(0);
   const [recordTimeInputs, setRecordTimeInputs] = useState<Record<number,string>>({});
 
   useEffect(()=>{ if(toast){ const t=setTimeout(()=>setToast(''),2600); return ()=>clearTimeout(t);} },[toast]);
@@ -335,7 +336,6 @@ export default function App() {
     // Only reload when the date picker changes, never on every `logs` update —
     // otherwise Firestore's post-write resync would wipe out unsaved typing.
     const existing = logs.find(l=>l.date===recordDate);
-    setRecordLaps(existing?.laps || 0);
     const inputs: Record<number,string> = {};
     const distances = new Set([...recordTypes.map(rt=>rt.distance), ...(existing?.timeRecords?.map(r=>r.distance) || [])]);
     distances.forEach(d=>{ inputs[d] = existing?.timeRecords?.find(r=>r.distance===d)?.time || ''; });
@@ -454,11 +454,9 @@ export default function App() {
       const p = parseTimeInput(recordTimeInputs[d]||'');
       return p ? { distance:d, time:p.display, seconds:p.sec } : null;
     }).filter((r): r is TimeRecord => r !== null);
-    const laps = recordLaps || undefined;
-    const km = laps ? +(laps*111.12/1000).toFixed(2) : undefined;
     const merged: TrainingLog = prevLog
-      ? { ...prevLog, laps, km, timeRecords: timeRecs }
-      : { id: recordDate, date: recordDate, isRest: false, laps, km, timeRecords: timeRecs };
+      ? { ...prevLog, timeRecords: timeRecs }
+      : { id: recordDate, date: recordDate, isRest: false, timeRecords: timeRecs };
     saveLogRemote(merged);
     setToast('기록이 저장됐어요 · 분석에 반영됩니다');
   };
@@ -1151,18 +1149,6 @@ export default function App() {
                   <div className="flex items-center justify-between">
                     <div className="font-[700] text-[14px] flex items-center gap-2"><Trophy size={16} className="text-[var(--c-D4AF37)]"/> 기록 입력</div>
                     <input type="date" value={recordDate} onChange={e=>setRecordDate(e.target.value)} className="h-9 px-3 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] text-[12px] font-[700] text-[var(--c-F5F1E8)] outline-none"/>
-                  </div>
-                  <div className="mt-5 rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] p-5">
-                    <div className="label-caps">바퀴수 선택 · LAPS</div>
-                    <div className="mt-4 flex items-center gap-3">
-                      <button onClick={()=>setRecordLaps(Math.max(0,recordLaps-5))} className="w-11 h-11 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] font-[800] text-[18px]">−</button>
-                      <div className="flex-1 h-[56px] rounded-[14px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] flex items-center justify-center gap-2">
-                        <input type="number" inputMode="numeric" value={recordLaps} onChange={e=>setRecordLaps(parseInt(e.target.value)||0)} className="w-[80px] bg-transparent text-center font-[800] text-[26px] outline-none"/>
-                        <span className="text-[12px] font-[700] text-[var(--c-6A6A66)]">바퀴</span>
-                      </div>
-                      <button onClick={()=>setRecordLaps(recordLaps+5)} className="w-11 h-11 rounded-full gold-gradient text-[var(--c-060608)] font-[800] text-[18px]">+</button>
-                    </div>
-                    <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)] text-center">{(recordLaps*111.12/1000).toFixed(2)}km · 111.12m 기준</div>
                   </div>
                   <div className="mt-4">
                     <div className="flex items-center justify-between mb-3">

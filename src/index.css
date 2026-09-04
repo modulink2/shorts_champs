@@ -9,20 +9,36 @@
    below. Page background (--c-060608) and text/accent tokens stay opaque
    so nothing important loses contrast. */
 :root {
-  --c-060608: #050B14;
-  --c-08080A: rgba(6,13,24,0.6); --c-0C0C0E: rgba(10,18,31,0.6); --c-0E0E10: rgba(11,21,36,0.55);
-  --c-101012: rgba(13,24,40,0.55); --c-121214: rgba(15,27,46,0.55); --c-151519: rgba(18,32,54,0.55);
-  --c-151518: rgba(18,32,54,0.55); --c-15151A: rgba(19,34,56,0.55); --c-18181B: rgba(22,40,63,0.55);
-  --c-1A1A1E: rgba(24,43,69,0.55); --c-1C1C20: rgba(26,46,74,0.55);
-  --c-1A1912: rgba(16,38,61,0.5); --c-1E1C14: rgba(18,48,73,0.5); --c-1C1A12: rgba(17,43,68,0.5);
-  --c-2A2A20: rgba(27,67,99,0.55); --c-2C2A20: rgba(29,74,110,0.6); --c-3A3520: rgba(46,102,144,0.7);
-  --c-1E1E22: rgba(27,42,64,0.6); --c-232326: rgba(32,51,73,0.6); --c-2A2A2E: rgba(38,60,86,0.65);
-  --c-F5F1E8: #EAF6FF; --c-E8E2D2: #DCEEFA; --c-CFCFC8: #C3DCEC; --c-9A9A93: #85A8C2;
-  --c-6A6A66: #5A7C97; --c-4A4A4E: #445E76;
+  --c-060608: #1B222C;
+  --c-08080A: rgba(30,38,49,0.6); --c-0C0C0E: rgba(34,43,55,0.6); --c-0E0E10: rgba(36,46,59,0.55);
+  --c-101012: rgba(40,51,65,0.55); --c-121214: rgba(44,56,71,0.55); --c-151519: rgba(49,62,78,0.55);
+  --c-151518: rgba(49,62,78,0.55); --c-15151A: rgba(53,67,84,0.55); --c-18181B: rgba(58,73,91,0.55);
+  --c-1A1A1E: rgba(63,79,98,0.55); --c-1C1C20: rgba(68,85,105,0.55);
+  --c-1A1912: rgba(42,58,78,0.5); --c-1E1C14: rgba(48,68,88,0.5); --c-1C1A12: rgba(45,63,82,0.5);
+  --c-2A2A20: rgba(56,86,112,0.55); --c-2C2A20: rgba(60,93,122,0.6); --c-3A3520: rgba(80,130,163,0.7);
+  --c-1E1E22: rgba(50,64,82,0.6); --c-232326: rgba(56,71,90,0.6); --c-2A2A2E: rgba(64,80,100,0.65);
+  --c-F5F1E8: #E7F1F8; --c-E8E2D2: #DCE7EF; --c-CFCFC8: #C3D2DE; --c-9A9A93: #93A9BA;
+  --c-6A6A66: #6E8598; --c-4A4A4E: #5A6E80;
   --c-D4AF37: #3FD0F2; --c-FFD700: #7CE8FF; --c-FFC700: #57DCF5; --c-FFE55C: #B3F5FF; --c-C9A86A: #6FA8C9;
-  --c-D4AF37-rgb: 63,208,242; --c-C9A86A-rgb: 111,168,201; --c-2C2A20-rgb: 29,74,110;
-  --c-F5F1E8-rgb: 234,246,255; --c-121214-rgb: 15,27,46; --c-3A3520-rgb: 46,102,144;
+  --c-D4AF37-rgb: 63,208,242; --c-C9A86A-rgb: 111,168,201; --c-2C2A20-rgb: 60,93,122;
+  --c-F5F1E8-rgb: 231,241,248; --c-121214-rgb: 44,56,71; --c-3A3520-rgb: 80,130,163;
   --c-FFD700-rgb: 124,232,255; --c-FFC700-rgb: 87,220,245;
+}
+:root[data-theme="glasspink"] {
+  --c-060608: #241A20;
+  --c-08080A: rgba(38,28,34,0.6); --c-0C0C0E: rgba(43,32,39,0.6); --c-0E0E10: rgba(47,35,43,0.55);
+  --c-101012: rgba(52,39,47,0.55); --c-121214: rgba(58,43,52,0.55); --c-151519: rgba(64,47,58,0.55);
+  --c-151518: rgba(64,47,58,0.55); --c-15151A: rgba(69,51,62,0.55); --c-18181B: rgba(76,56,68,0.55);
+  --c-1A1A1E: rgba(83,61,74,0.55); --c-1C1C20: rgba(90,66,80,0.55);
+  --c-1A1912: rgba(58,38,46,0.5); --c-1E1C14: rgba(68,45,54,0.5); --c-1C1A12: rgba(63,42,50,0.5);
+  --c-2A2A20: rgba(92,55,70,0.55); --c-2C2A20: rgba(102,58,77,0.6); --c-3A3520: rgba(150,75,105,0.7);
+  --c-1E1E22: rgba(66,50,58,0.6); --c-232326: rgba(74,56,65,0.6); --c-2A2A2E: rgba(84,64,74,0.65);
+  --c-F5F1E8: #F8ECF1; --c-E8E2D2: #EEDDE4; --c-CFCFC8: #DCC7D0; --c-9A9A93: #BB99A8;
+  --c-6A6A66: #8F6D7C; --c-4A4A4E: #6E5462;
+  --c-D4AF37: #DC7FA0; --c-FFD700: #F2A8C2; --c-FFC700: #E890B3; --c-FFE55C: #FAD3E3; --c-C9A86A: #B98098;
+  --c-D4AF37-rgb: 220,127,160; --c-C9A86A-rgb: 185,128,152; --c-2C2A20-rgb: 102,58,77;
+  --c-F5F1E8-rgb: 248,236,241; --c-121214-rgb: 58,43,52; --c-3A3520-rgb: 150,75,105;
+  --c-FFD700-rgb: 242,168,194; --c-FFC700-rgb: 232,144,179;
 }
 :root[data-theme="blackgold"] {
   --c-060608: #060608;
@@ -47,6 +63,13 @@
 [class*="[var(--c-"]:not(.card):not(.card-gold) {
   backdrop-filter: blur(14px) saturate(160%);
   -webkit-backdrop-filter: blur(14px) saturate(160%);
+}
+/* Buttons and toggle/selection pills get an extra-visible glass pass —
+   a bit more blur/saturation than plain surfaces, so unselected/selected
+   states both read as frosted material rather than a flat fill. */
+button[class*="[var(--c-"]:not(.card):not(.card-gold) {
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
 }
 
 * { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
