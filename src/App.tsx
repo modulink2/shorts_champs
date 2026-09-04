@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
 import { useGoals } from './useGoals';
@@ -55,7 +55,25 @@ export const THEMES: { key: ThemeName; label: string }[] = [
 ];
 export interface UserProfile {
   uid: string; email: string; displayName: string; role: 'athlete'|'coach';
-  coachId?: string; coachName?: string; createdAt?: number; theme?: ThemeName;
+  coachId?: string; coachName?: string; createdAt?: number; theme?: ThemeName; avatarId?: string;
+}
+// Filenames under public/images/avatar, offered as a picker in 마이페이지.
+export const AVATAR_FILES = [
+  'avatar_01_boy_8.png','avatar_02_girl_8.png','avatar_03_teen_boy_14.png','avatar_04_teen_girl_15.png',
+  'avatar_05_male_20s.png','avatar_06_female_20s.png','avatar_07_male_30s_beard.png','avatar_08_female_30s.png',
+  'avatar_09_male_40s.png','avatar_10_female_40s.png','avatar_11_male_60s.png','avatar_12_female_60s.png',
+  'avatar_13_male_blonde.png','avatar_14_female_brown.png','avatar_15_boy_6_cute.png','avatar_16_girl_7_cute.png',
+  'avatar_17_boy_glasses.png','avatar_18_girl_bob.png','avatar_19_coach_female.png','avatar_20_coach_male.png',
+  'ms_hs_01_boy_happy.png','ms_hs_02_girl_wink.png','ms_hs_03_boy_cool.png','ms_hs_04_girl_confident.png',
+  'ms_hs_05_boy_shy.png','ms_hs_06_girl_braces.png','ms_hs_07_boy_energetic.png','ms_hs_08_girl_calm.png',
+  'ms_hs_09_boy_smirk.png','ms_hs_10_girl_tongue.png','ms_hs_11_boy_intense.png','ms_hs_12_girl_shy.png',
+  'ms_hs_13_boy_joyful.png','ms_hs_14_girl_cool.png','ms_hs_15_boy_thoughtful.png','ms_hs_16_girl_fierce.png',
+  'ms_hs_17_girl_medal.png','ms_hs_18_boy_headphones.png','ms_hs_19_girl_stretch.png','ms_hs_20_boy_surprised.png',
+];
+// Renders a profile's chosen avatar image, falling back to an emoji when none is picked yet.
+export function Avatar({ avatarId, fallback, className }: { avatarId?: string; fallback: string; className: string }) {
+  if (avatarId) return <img src={`/images/avatar/${avatarId}`} alt="" className={`${className} object-cover`} />;
+  return <div className={`${className} flex items-center justify-center`}>{fallback}</div>;
 }
 export const ADMIN_EMAIL = 'llsk2507@gmail.com';
 export function effectiveRole(email: string|null|undefined, profile: UserProfile|null): UserRole {
@@ -364,6 +382,22 @@ export default function App() {
     return arr.sort((a,b)=> a.date.localeCompare(b.date)).slice(-12);
   },[logs]);
 
+  // One row per date with every distance's time as % of that distance's own
+  // first recorded time, so distances with very different absolute times
+  // (111m vs 1500m) can share one y-axis and still show growth trend.
+  const distanceGrowthData = useMemo(()=>{
+    const baseline: Record<number, number> = {};
+    const rows: Record<string, any> = {};
+    logs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=> l.timeRecords?.forEach(r=>{
+      if (baseline[r.distance] === undefined) baseline[r.distance] = r.seconds;
+      if (!rows[l.date]) rows[l.date] = { date: l.date };
+      rows[l.date][r.distance] = (r.seconds / baseline[r.distance]) * 100;
+      rows[l.date][`t${r.distance}`] = r.time;
+    }));
+    return Object.values(rows).sort((a:any,b:any)=> a.date.localeCompare(b.date)).slice(-20);
+  },[logs]);
+  const DISTANCE_COLORS = ['var(--c-D4AF37)','var(--c-FFD700)','var(--c-FFC700)','var(--c-FFE55C)','var(--c-C9A86A)','var(--c-9A9A93)'];
+
   const typeDist = useMemo(()=>{
     const ice = logs.filter(l=>l.noteIce && l.noteIce.trim()).length;
     const dry = logs.filter(l=>l.noteDry && l.noteDry.trim()).length;
@@ -476,8 +510,9 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-x-hidden">
-      {/* subtle radial gold vignette */}
+      {/* subtle radial gold vignette + faint background photo */}
       <div className="pointer-events-none fixed inset-0 z-0">
+        <div className="absolute inset-0 bg-[url('/images/main_bg.jpg')] bg-cover bg-center opacity-[0.16]" />
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),var(--glow-1)),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),var(--glow-2)),transparent_50%),radial-gradient(50%_45%_at_5%_60%,rgba(var(--c-D4AF37-rgb),var(--glow-3)),transparent_55%),radial-gradient(45%_40%_at_85%_90%,rgba(var(--c-C9A86A-rgb),var(--glow-4)),transparent_55%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
@@ -533,9 +568,9 @@ export default function App() {
           </div>
           <div className="p-4 border-t border-[var(--c-1C1A12)]">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] flex items-center justify-center text-[14px]">⛸️</div>
+              <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] text-[14px]" />
               <div className="min-w-0">
-                <div className="text-[12px] font-[700] truncate">{user?.displayName || '챔피언'}</div>
+                <div className="text-[12px] font-[700] truncate">{myProfile?.displayName || user?.displayName || '챔피언'}</div>
                 <div className="text-[10px] font-[500] text-[var(--c-9A9A93)] truncate">{user?.email}</div>
               </div>
               <button onClick={logOut} className="ml-auto text-[10px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] transition-colors shrink-0">로그아웃</button>
@@ -628,7 +663,7 @@ export default function App() {
                       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {myAthletes.map(p=>(
                           <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] subcard p-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
-                            <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[15px] shrink-0">⛸️</div>
+                            <Avatar avatarId={p.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[15px] shrink-0" />
                             <div className="flex-1 min-w-0">
                               <div className="text-[12px] font-[700] truncate">{p.displayName || p.email}</div>
                               <div className="text-[10px] text-[var(--c-6A6A66)] truncate">{p.email}</div>
@@ -698,7 +733,7 @@ export default function App() {
                 </div>
 
 
-                <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6 items-start">
                   {/* Recent trainings */}
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
@@ -709,7 +744,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
-                    <div className="mt-4 space-y-2.5 max-h-[320px] overflow-auto pr-1">
+                    <div className="mt-4 space-y-2.5">
                       {filteredLogs.slice(-8).reverse().map(log=>{
                         const types=logTypes(log);
                         return (
@@ -1177,36 +1212,45 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
-                      <div className="font-[700] text-[14px] flex items-center gap-2"><TrendingUp size={16} className="text-[var(--c-D4AF37)]"/> 500m 기록 흐름 · PB 추적</div>
-                      <span className="text-[10px] font-[700] px-2.5 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">최근 12회</span>
+                      <div className="font-[700] text-[14px] flex items-center gap-2"><TrendingUp size={16} className="text-[var(--c-D4AF37)]"/> 거리별 기록 흐름 · 성장 추적</div>
+                      <span className="text-[10px] font-[700] px-2.5 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">최근 20회</span>
                     </div>
-                    <div className="mt-6 h-[200px]">
+                    {distanceGrowthData.length===0 ? (
+                      <div className="mt-6 py-10 text-center text-[12px] text-[var(--c-6A6A66)]">기록을 입력하면 거리별 성장 추이가 여기 그래프로 표시돼요</div>
+                    ) : (
+                    <div className="mt-6 h-[220px]">
                       <ResponsiveContainer width="100%" height="100%">
-                        <AreaChart data={time500List}>
-                          <defs>
-                            <linearGradient id="goldFill" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="var(--c-D4AF37)" stopOpacity={0.28}/>
-                              <stop offset="100%" stopColor="var(--c-D4AF37)" stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
+                        <LineChart data={distanceGrowthData}>
                           <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} tickFormatter={(v:string)=>v.slice(5)} />
-                          <YAxis domain={['dataMin - 1','dataMax + 1']} axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} width={40} />
-                          <Tooltip contentStyle={{ background:'var(--c-121214)', border:'1px solid var(--c-2C2A20)', borderRadius:12, fontSize:11 }} />
-                          <Area type="monotone" dataKey="seconds" stroke="var(--c-D4AF37)" strokeWidth={2.5} fill="url(#goldFill)" dot={{ r:3, fill:'var(--c-on-accent)', stroke:'var(--c-D4AF37)', strokeWidth:2 }} />
-                        </AreaChart>
+                          <YAxis domain={['dataMin - 3','dataMax + 3']} axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} width={40} tickFormatter={(v:number)=>`${v.toFixed(0)}%`} />
+                          <Tooltip
+                            contentStyle={{ background:'var(--c-121214)', border:'1px solid var(--c-2C2A20)', borderRadius:12, fontSize:11 }}
+                            formatter={(value:any, name:any, entry:any)=>{
+                              const dist = String(name).replace('m','');
+                              const t = entry?.payload?.[`t${dist}`];
+                              return [t ? `${t} (${Number(value).toFixed(1)}%)` : `${Number(value).toFixed(1)}%`, name];
+                            }}
+                          />
+                          <Legend wrapperStyle={{ fontSize:11 }} />
+                          {recordTypes.map((rt,i)=>(
+                            <Line key={rt.id} type="monotone" dataKey={String(rt.distance)} name={`${rt.distance}m`} stroke={DISTANCE_COLORS[i%DISTANCE_COLORS.length]} strokeWidth={2} dot={{ r:3 }} connectNulls />
+                          ))}
+                        </LineChart>
                       </ResponsiveContainer>
                     </div>
+                    )}
+                    <div className="mt-2 text-[10px] font-[600] text-[var(--c-6A6A66)] text-center">첫 기록 대비 소요 시간 비율 · 낮을수록 빨라진 거예요</div>
                     <div className="mt-4 grid grid-cols-3 gap-2">
                       <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">Best</div>
+                        <div className="label-caps">500m Best</div>
                         <div className="mt-1 font-[800] text-[14px] gold-text">{best500.time}</div>
                       </div>
                       <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">Avg 5</div>
+                        <div className="label-caps">500m Avg 5</div>
                         <div className="mt-1 font-[800] text-[14px] text-[var(--c-F5F1E8)]">{time500List.length? (time500List.slice(-5).reduce((a,b)=>a+b.seconds,0)/Math.min(5,time500List.length)).toFixed(2) : '-'}</div>
                       </div>
                       <div className="rounded-[12px] subcard p-3 text-center">
-                        <div className="label-caps">Target</div>
+                        <div className="label-caps">500m Target</div>
                         <div className="mt-1 font-[800] text-[14px] text-[var(--c-D4AF37)]">50.00</div>
                       </div>
                     </div>
@@ -1292,6 +1336,23 @@ export default function App() {
                         <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">수정</span>
                       </button>
                     )}
+                  </div>
+                  <div>
+                    <label className="label-caps">아바타</label>
+                    <div className="mt-1.5 flex items-center gap-3">
+                      <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-14 h-14 rounded-full bg-[var(--c-18181B)] border border-[var(--c-3A3520)] text-[24px]" />
+                      <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">아래에서 골라보세요</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-[220px] overflow-auto pr-1">
+                      {AVATAR_FILES.map(f=>(
+                        <button
+                          key={f} onClick={()=>saveProfile(user!.uid, { avatarId: f })}
+                          className={`aspect-square rounded-full overflow-hidden border-2 transition-all ${myProfile?.avatarId===f ? 'border-[var(--c-D4AF37)] shadow-[0_0_0_2px_rgba(var(--c-D4AF37-rgb),0.3)]' : 'border-[var(--c-232326)] hover:border-[var(--c-3A3520)]'}`}
+                        >
+                          <img src={`/images/avatar/${f}`} alt="" className="w-full h-full object-cover" />
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   <div>
                     <label className="label-caps">회원 분류</label>

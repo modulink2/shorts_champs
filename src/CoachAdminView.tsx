@@ -3,7 +3,7 @@ import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight } from 'lucide
 import { useAuth } from './AuthContext';
 import { useAllProfiles, saveProfile, useComments } from './useProfile';
 import { useTrainingLogs } from './useTrainingLogs';
-import { TYPE_META, logTypes, toLocalDateStr, type UserProfile, type UserRole } from './App';
+import { TYPE_META, logTypes, toLocalDateStr, Avatar, type UserProfile, type UserRole } from './App';
 
 // Admin-only: list every account, edit their display name and 선수/코치 role.
 function MemberManagement() {
@@ -21,7 +21,7 @@ function MemberManagement() {
       <div className="mt-5 space-y-2">
         {sorted.map(p=>(
           <div key={p.uid} className="subcard rounded-[14px] p-3.5 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[14px] shrink-0">{p.role==='coach' ? '🧑‍🏫' : '⛸️'}</div>
+            <Avatar avatarId={p.avatarId} fallback={p.role==='coach' ? '🧑‍🏫' : '⛸️'} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px] shrink-0" />
             <div className="flex-1 min-w-0">
               {editingUid===p.uid ? (
                 <input
@@ -205,7 +205,7 @@ function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSe
       <div className="mt-5 grid sm:grid-cols-2 gap-3">
         {athletes.map(p=>(
           <button key={p.uid} onClick={()=>onSelect(p)} className="subcard rounded-[16px] p-4 text-left transition-all flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[16px]">⛸️</div>
+            <Avatar avatarId={p.avatarId} fallback="⛸️" className="w-10 h-10 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[16px]" />
             <div className="min-w-0">
               <div className="text-[13px] font-[800] truncate">{p.displayName || p.email}</div>
               <div className="text-[11px] text-[var(--c-6A6A66)] truncate">{p.email}</div>
