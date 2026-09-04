@@ -641,15 +641,6 @@ export default function App() {
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
-                {myProfile?.startYearMonth && (
-                  <div className="card p-4 lg:p-5 flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center shrink-0"><Flame size={18} className="text-[var(--c-D4AF37)]"/></div>
-                    <div>
-                      <div className="label-caps">쇼트트랙 경력</div>
-                      <div className="mt-0.5 text-[16px] font-[800] gold-text">{formatCareer(myProfile.startYearMonth)}</div>
-                    </div>
-                  </div>
-                )}
                 {hasNewComment && latestComment && (
                   <button
                     onClick={()=>{ setSelectedDate(latestComment.date); setView('diary'); dismissComment(); }}
@@ -684,10 +675,34 @@ export default function App() {
                         ))}
                       </div>
                     )}
+                    {myProfile?.startYearMonth && (
+                      <>
+                        <div className="mt-4 h-[1px] bg-[var(--c-2A2A20)]" />
+                        <div className="mt-4 flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center shrink-0"><Flame size={18} className="text-[var(--c-D4AF37)]"/></div>
+                          <div>
+                            <div className="label-caps">쇼트트랙 경력</div>
+                            <div className="mt-0.5 text-[16px] font-[800] gold-text">{formatCareer(myProfile.startYearMonth)}</div>
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="card p-5 lg:p-6">
-                    <span className="label-caps flex items-center gap-1.5"><Crown size={12}/> 내 코치</span>
+                    {myProfile?.startYearMonth && (
+                      <>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center shrink-0"><Flame size={18} className="text-[var(--c-D4AF37)]"/></div>
+                          <div>
+                            <div className="label-caps">쇼트트랙 경력</div>
+                            <div className="mt-0.5 text-[16px] font-[800] gold-text">{formatCareer(myProfile.startYearMonth)}</div>
+                          </div>
+                        </div>
+                        <div className="mt-4 h-[1px] bg-[var(--c-2A2A20)]" />
+                      </>
+                    )}
+                    <div className="label-caps flex items-center gap-1.5"><Crown size={12}/> 내 코치</div>
                     {myProfile?.coachName ? (
                       <div className="mt-4 flex items-center gap-3 rounded-[14px] subcard p-3.5">
                         <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center text-[16px] shrink-0">🧑‍🏫</div>
