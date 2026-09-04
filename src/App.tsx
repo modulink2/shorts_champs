@@ -509,7 +509,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-x-hidden">
+    <div className="min-h-screen h-screen w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* subtle radial gold vignette + faint background photo */}
       <div className="pointer-events-none fixed inset-0 z-0">
         <div className="absolute inset-0 bg-[url('/images/main_bg.jpg')] bg-cover bg-center opacity-[0.16]" />
@@ -517,9 +517,9 @@ export default function App() {
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex min-h-screen">
+      <div className="relative z-10 flex h-full overflow-hidden">
         {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/70 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] sticky top-0 h-screen">
+        <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/35 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] h-full">
           <div className="h-[72px] px-6 flex items-center gap-3 border-b border-[var(--c-1C1A12)]">
             <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={36}/></div>
             <div>
@@ -567,21 +567,21 @@ export default function App() {
             </div>
           </div>
           <div className="p-4 border-t border-[var(--c-1C1A12)]">
-            <div className="flex items-center gap-3">
-              <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] text-[14px]" />
+            <div className="flex flex-col items-center text-center gap-2">
+              <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-16 h-16 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] text-[28px]" />
               <div className="min-w-0">
                 <div className="text-[12px] font-[700] truncate">{myProfile?.displayName || user?.displayName || '챔피언'}</div>
                 <div className="text-[10px] font-[500] text-[var(--c-9A9A93)] truncate">{user?.email}</div>
               </div>
-              <button onClick={logOut} className="ml-auto text-[10px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] transition-colors shrink-0">로그아웃</button>
+              <button onClick={logOut} className="text-[10px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] transition-colors">로그아웃</button>
             </div>
           </div>
         </aside>
 
         {/* Main */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
           {/* Top bar mobile + desktop header */}
-          <header className="sticky top-0 z-20 backdrop-blur-[20px] bg-[var(--c-0C0C0E)]/85 border-b border-[var(--c-1C1A12)]">
+          <header className="shrink-0 z-20 backdrop-blur-[20px] bg-[var(--c-0C0C0E)]/45 border-b border-[var(--c-1C1A12)]">
             <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)]"><Logo size={32}/></div>
@@ -634,7 +634,7 @@ export default function App() {
             </div>
           </header>
 
-          <main className="px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+          <main className="flex-1 overflow-y-auto px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
@@ -839,7 +839,7 @@ export default function App() {
             {view==='diary' && (
               <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 items-start">
                 {/* LEFT 320px sticky */}
-                <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-[88px] space-y-4">
+                <div className="w-full lg:w-[320px] shrink-0 lg:sticky lg:top-0 space-y-4">
                   {/* Mini Calendar */}
                   <div className="card p-4">
                     <div className="flex items-center justify-between">
