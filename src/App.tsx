@@ -56,6 +56,19 @@ export const THEMES: { key: ThemeName; label: string }[] = [
 export interface UserProfile {
   uid: string; email: string; displayName: string; role: 'athlete'|'coach';
   coachId?: string; coachName?: string; createdAt?: number; theme?: ThemeName; avatarId?: string;
+  startYearMonth?: string; // "YYYY-MM" — when this athlete started short track
+}
+// "YYYY-MM" -> "3년 2개월째" / "5개월째" / "이번 달 시작"
+export function formatCareer(startYearMonth: string): string {
+  const [sy, sm] = startYearMonth.split('-').map(Number);
+  const now = new Date();
+  const totalMonths = (now.getFullYear() - sy) * 12 + (now.getMonth()+1 - sm);
+  if (totalMonths < 1) return '이번 달 시작';
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  if (years === 0) return `${months}개월째`;
+  if (months === 0) return `${years}년째`;
+  return `${years}년 ${months}개월째`;
 }
 // Filenames under public/images/avatar, offered as a picker in 마이페이지.
 export const AVATAR_FILES = [
@@ -628,6 +641,15 @@ export default function App() {
             {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
             {view==='dashboard' && (
               <>
+                {myProfile?.startYearMonth && (
+                  <div className="card p-4 lg:p-5 flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] flex items-center justify-center shrink-0"><Flame size={18} className="text-[var(--c-D4AF37)]"/></div>
+                    <div>
+                      <div className="label-caps">쇼트트랙 경력</div>
+                      <div className="mt-0.5 text-[16px] font-[800] gold-text">{formatCareer(myProfile.startYearMonth)}</div>
+                    </div>
+                  </div>
+                )}
                 {hasNewComment && latestComment && (
                   <button
                     onClick={()=>{ setSelectedDate(latestComment.date); setView('diary'); dismissComment(); }}
@@ -1298,6 +1320,15 @@ export default function App() {
                         >{label}</button>
                       ))}
                     </div>
+                  </div>
+                  <div>
+                    <label className="label-caps">쇼트트랙 시작</label>
+                    <input
+                      type="month" value={myProfile?.startYearMonth || ''}
+                      onChange={e=>saveProfile(user!.uid, { startYearMonth: e.target.value })}
+                      max={toLocalDateStr(new Date()).slice(0,7)}
+                      className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)]"
+                    />
                   </div>
                   <div>
                     <label className="label-caps">디자인 테마</label>
