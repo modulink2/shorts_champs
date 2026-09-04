@@ -25,10 +25,31 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
       </tr>`).join('')
     : `<tr><td colspan="3" style="padding:16px;color:#999;text-align:center;">기록 없음</td></tr>`;
 
-  const itemsChips = (items: typeof log.dryItems) => (items || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string')
-    .map(it => `<span style="display:inline-block;box-sizing:border-box;height:34px;line-height:32px;vertical-align:middle;margin:0 8px 8px 0;padding:0 16px;border:1px solid #D4AF37;border-radius:999px;font-size:13px;font-weight:600;color:#8a6d1c;background:#fffdf6;white-space:nowrap;">${escapeHtml(it.type)} ${it.value}${escapeHtml(it.unit)}</span>`).join('');
-  const iceItemsHtml = itemsChips(log.iceItems);
-  const dryItemsHtml = itemsChips(log.dryItems);
+  // Plain <table> grid instead of inline pills — html2canvas rasterizes
+  // flex/inline-block vertical-centering unreliably, but table cells
+  // (a much older, simpler layout mode) center content correctly.
+  const COLS = 3;
+  const itemsGrid = (items: typeof log.dryItems) => {
+    const valid = (items || []).filter(it => it && typeof it === 'object' && typeof it.type === 'string');
+    if (!valid.length) return '';
+    const cell = (it: typeof valid[number]) => `
+      <td style="width:${100/COLS}%;padding:4px;">
+        <div style="border:1px solid #D4AF37;border-radius:10px;padding:10px 12px;background:#fffdf6;text-align:center;">
+          <div style="font-size:13px;font-weight:700;color:#333;">${escapeHtml(it.type)}</div>
+          <div style="margin-top:2px;font-size:13px;font-weight:800;color:#8a6d1c;">${it.value}${escapeHtml(it.unit)}</div>
+        </div>
+      </td>`;
+    const emptyCell = `<td style="width:${100/COLS}%;"></td>`;
+    const rows: string[] = [];
+    for (let i = 0; i < valid.length; i += COLS) {
+      const rowItems = valid.slice(i, i + COLS);
+      const cells = rowItems.map(cell).join('') + emptyCell.repeat(COLS - rowItems.length);
+      rows.push(`<tr>${cells}</tr>`);
+    }
+    return `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">${rows.join('')}</table>`;
+  };
+  const iceItemsHtml = itemsGrid(log.iceItems);
+  const dryItemsHtml = itemsGrid(log.dryItems);
 
   const types = logTypes(log);
   const typeLabel = types.length ? types.map(t => TYPE_META[t].label).join(' + ') : '기록 없음';
