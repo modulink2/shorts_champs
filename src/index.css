@@ -49,7 +49,7 @@
   --c-F5F1E8-rgb: 22,35,46; --c-121214-rgb: 247,251,254; --c-3A3520-rgb: 143,192,232;
   --c-FFD700-rgb: 79,195,247; --c-FFC700-rgb: 41,182,246;
   --glow-1: 0.34; --glow-2: 0.22; --glow-3: 0.18; --glow-4: 0.15;
-  --card-alpha: 0.62; --subcard-alpha: 0.72; --shadow-rgb: 30,64,110; --card-sheen: 0.55; --card-haze: 0.35;
+  --card-alpha: 0.32; --subcard-alpha: 0.42; --shadow-rgb: 30,64,110; --card-sheen: 0.55; --card-haze: 0.35;
 }
 /* Glass Pink — bright, low-saturation dusty rose. Same light-glass
    structure as Crystal Blue, warmed toward pink instead of blue. */
@@ -69,7 +69,7 @@
   --c-F5F1E8-rgb: 46,27,35; --c-121214-rgb: 254,248,251; --c-3A3520-rgb: 222,132,172;
   --c-FFD700-rgb: 232,131,172; --c-FFC700-rgb: 221,107,156;
   --glow-1: 0.32; --glow-2: 0.21; --glow-3: 0.17; --glow-4: 0.14;
-  --card-alpha: 0.60; --subcard-alpha: 0.70; --shadow-rgb: 120,50,80; --card-sheen: 0.5; --card-haze: 0.32;
+  --card-alpha: 0.30; --subcard-alpha: 0.40; --shadow-rgb: 120,50,80; --card-sheen: 0.5; --card-haze: 0.32;
 }
 :root[data-theme="blackgold"] {
   --c-060608: #060608; --c-on-accent: #060608;
