@@ -31,45 +31,44 @@
   --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
   --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
 }
-/* Crystal Blue — bright, airy, low-saturation sky blue. Cards are
-   near-white translucent glass floating on a soft blue page. */
+/* Crystal Blue / Glass Pink — identical base (background, cards, glass,
+   glow) to Black Gold; only the accent tokens (buttons, logo, highlights)
+   swap to the theme's own hue. */
 :root[data-theme="crystalblue"] {
-  --c-060608: #5995C0; --c-on-accent: #FFFFFF;
-  --c-08080A: rgba(255,255,255,0.55); --c-0C0C0E: rgba(255,255,255,0.6); --c-0E0E10: rgba(255,255,255,0.55);
-  --c-101012: rgba(255,255,255,0.55); --c-121214: rgba(255,255,255,0.6); --c-151519: rgba(255,255,255,0.62);
-  --c-151518: rgba(255,255,255,0.62); --c-15151A: rgba(255,255,255,0.64); --c-18181B: rgba(255,255,255,0.66);
-  --c-1A1A1E: rgba(255,255,255,0.7); --c-1C1C20: rgba(255,255,255,0.74);
-  --c-1A1912: rgba(214,233,247,0.55); --c-1E1C14: rgba(207,228,245,0.5); --c-1C1A12: rgba(210,230,246,0.5);
-  --c-2A2A20: rgba(194,219,242,0.55); --c-2C2A20: rgba(186,213,240,0.6); --c-3A3520: rgba(143,192,232,0.7);
-  --c-1E1E22: rgba(216,228,238,0.65); --c-232326: rgba(210,224,236,0.65); --c-2A2A2E: rgba(201,217,231,0.7);
-  --c-F5F1E8: #16232E; --c-E8E2D2: #24303C; --c-CFCFC8: #3A4652; --c-9A9A93: #5B6E82;
-  --c-6A6A66: #7A8CA0; --c-4A4A4E: #96A6B8;
+  --c-060608: #060608; --c-on-accent: #FFFFFF;
+  --c-08080A: rgba(8,8,10,0.6); --c-0C0C0E: rgba(12,12,14,0.6); --c-0E0E10: rgba(14,14,16,0.55);
+  --c-101012: rgba(16,16,18,0.55); --c-121214: rgba(18,18,20,0.55); --c-151519: rgba(21,21,25,0.55);
+  --c-151518: rgba(21,21,24,0.55); --c-15151A: rgba(21,21,26,0.55); --c-18181B: rgba(24,24,27,0.55);
+  --c-1A1A1E: rgba(26,26,30,0.55); --c-1C1C20: rgba(28,28,32,0.55);
+  --c-1A1912: rgba(26,25,18,0.5); --c-1E1C14: rgba(30,28,20,0.5); --c-1C1A12: rgba(28,26,18,0.5);
+  --c-2A2A20: rgba(42,42,32,0.55); --c-2C2A20: rgba(44,42,32,0.6); --c-3A3520: rgba(58,53,32,0.7);
+  --c-1E1E22: rgba(30,30,34,0.6); --c-232326: rgba(35,35,38,0.6); --c-2A2A2E: rgba(42,42,46,0.65);
+  --c-F5F1E8: #F5F1E8; --c-E8E2D2: #E8E2D2; --c-CFCFC8: #CFCFC8; --c-9A9A93: #9A9A93;
+  --c-6A6A66: #6A6A66; --c-4A4A4E: #4A4A4E;
   --c-D4AF37: #1C8FE0; --c-FFD700: #4FC3F7; --c-FFC700: #29B6F6; --c-FFE55C: #7FDBFB; --c-C9A86A: #5B9BD1;
-  --c-D4AF37-rgb: 28,143,224; --c-C9A86A-rgb: 91,155,209; --c-2C2A20-rgb: 186,213,240;
-  --c-F5F1E8-rgb: 22,35,46; --c-121214-rgb: 247,251,254; --c-3A3520-rgb: 143,192,232;
+  --c-D4AF37-rgb: 28,143,224; --c-C9A86A-rgb: 91,155,209; --c-2C2A20-rgb: 44,42,32;
+  --c-F5F1E8-rgb: 245,241,232; --c-121214-rgb: 18,18,20; --c-3A3520-rgb: 58,53,32;
   --c-FFD700-rgb: 79,195,247; --c-FFC700-rgb: 41,182,246;
-  --glow-1: 0.34; --glow-2: 0.22; --glow-3: 0.18; --glow-4: 0.15;
-  --card-alpha: 0.32; --subcard-alpha: 0.42; --shadow-rgb: 30,64,110; --card-sheen: 0.55; --card-haze: 0.35;
+  --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
+  --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
 }
-/* Glass Pink — bright, low-saturation dusty rose. Same light-glass
-   structure as Crystal Blue, warmed toward pink instead of blue. */
 :root[data-theme="glasspink"] {
-  --c-060608: #C0597B; --c-on-accent: #FFFFFF;
-  --c-08080A: rgba(255,255,255,0.55); --c-0C0C0E: rgba(255,255,255,0.6); --c-0E0E10: rgba(255,255,255,0.55);
-  --c-101012: rgba(255,255,255,0.55); --c-121214: rgba(255,255,255,0.6); --c-151519: rgba(255,255,255,0.62);
-  --c-151518: rgba(255,255,255,0.62); --c-15151A: rgba(255,255,255,0.64); --c-18181B: rgba(255,255,255,0.66);
-  --c-1A1A1E: rgba(255,255,255,0.7); --c-1C1C20: rgba(255,255,255,0.74);
-  --c-1A1912: rgba(246,217,228,0.55); --c-1E1C14: rgba(242,206,220,0.5); --c-1C1A12: rgba(244,211,223,0.5);
-  --c-2A2A20: rgba(238,190,210,0.55); --c-2C2A20: rgba(234,176,200,0.6); --c-3A3520: rgba(222,132,172,0.7);
-  --c-1E1E22: rgba(241,221,229,0.65); --c-232326: rgba(238,214,224,0.65); --c-2A2A2E: rgba(233,203,216,0.7);
-  --c-F5F1E8: #2E1B23; --c-E8E2D2: #3B2530; --c-CFCFC8: #4F3540; --c-9A9A93: #7A5A67;
-  --c-6A6A66: #8F7078; --c-4A4A4E: #A88E96;
+  --c-060608: #060608; --c-on-accent: #FFFFFF;
+  --c-08080A: rgba(8,8,10,0.6); --c-0C0C0E: rgba(12,12,14,0.6); --c-0E0E10: rgba(14,14,16,0.55);
+  --c-101012: rgba(16,16,18,0.55); --c-121214: rgba(18,18,20,0.55); --c-151519: rgba(21,21,25,0.55);
+  --c-151518: rgba(21,21,24,0.55); --c-15151A: rgba(21,21,26,0.55); --c-18181B: rgba(24,24,27,0.55);
+  --c-1A1A1E: rgba(26,26,30,0.55); --c-1C1C20: rgba(28,28,32,0.55);
+  --c-1A1912: rgba(26,25,18,0.5); --c-1E1C14: rgba(30,28,20,0.5); --c-1C1A12: rgba(28,26,18,0.5);
+  --c-2A2A20: rgba(42,42,32,0.55); --c-2C2A20: rgba(44,42,32,0.6); --c-3A3520: rgba(58,53,32,0.7);
+  --c-1E1E22: rgba(30,30,34,0.6); --c-232326: rgba(35,35,38,0.6); --c-2A2A2E: rgba(42,42,46,0.65);
+  --c-F5F1E8: #F5F1E8; --c-E8E2D2: #E8E2D2; --c-CFCFC8: #CFCFC8; --c-9A9A93: #9A9A93;
+  --c-6A6A66: #6A6A66; --c-4A4A4E: #4A4A4E;
   --c-D4AF37: #D6558E; --c-FFD700: #E883AC; --c-FFC700: #DD6B9C; --c-FFE55C: #F2A8C8; --c-C9A86A: #B06E8C;
-  --c-D4AF37-rgb: 214,85,142; --c-C9A86A-rgb: 176,110,140; --c-2C2A20-rgb: 234,176,200;
-  --c-F5F1E8-rgb: 46,27,35; --c-121214-rgb: 254,248,251; --c-3A3520-rgb: 222,132,172;
+  --c-D4AF37-rgb: 214,85,142; --c-C9A86A-rgb: 176,110,140; --c-2C2A20-rgb: 44,42,32;
+  --c-F5F1E8-rgb: 245,241,232; --c-121214-rgb: 18,18,20; --c-3A3520-rgb: 58,53,32;
   --c-FFD700-rgb: 232,131,172; --c-FFC700-rgb: 221,107,156;
-  --glow-1: 0.32; --glow-2: 0.21; --glow-3: 0.17; --glow-4: 0.14;
-  --card-alpha: 0.30; --subcard-alpha: 0.40; --shadow-rgb: 120,50,80; --card-sheen: 0.5; --card-haze: 0.32;
+  --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
+  --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
 }
 :root[data-theme="blackgold"] {
   --c-060608: #060608; --c-on-accent: #060608;
