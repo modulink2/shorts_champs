@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-* { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; }
+* { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
 html, body { overflow-x: hidden; background: #060608; }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: #2A2A2E; border-radius: 999px; }

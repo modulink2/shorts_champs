@@ -241,7 +241,8 @@ export default function App() {
   const { profile: myProfile, loaded: myProfileLoaded } = useProfile(user?.uid);
   const myRole = effectiveRole(user?.email, myProfile);
   const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
-  const allProfiles = useAllProfiles(myRole==='athlete');
+  const allProfiles = useAllProfiles(!!user);
+  const myAthletes = useMemo(()=> allProfiles.filter(p=>p.role==='athlete' && (myRole==='admin' || p.coachId===user?.uid)), [allProfiles, myRole, user]);
   const [coachSearch, setCoachSearch] = useState('');
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -589,6 +590,44 @@ export default function App() {
                     <ChevronRight size={22} className="shrink-0"/>
                   </button>
                 )}
+                {isCoachOrAdmin ? (
+                  <div className="card p-5 lg:p-6">
+                    <div className="flex items-center justify-between">
+                      <span className="label-caps flex items-center gap-1.5"><Users size={12}/> 내 선수</span>
+                      <span className="text-[10px] font-[700] px-2 h-5 rounded-full bg-[#1A1912] border border-[#3A3520] text-[#D4AF37] inline-flex items-center">{myAthletes.length}명</span>
+                    </div>
+                    {myAthletes.length===0 ? (
+                      <div className="mt-4 text-center py-6 text-[11px] text-[#6A6A66]">아직 배정된 선수가 없어요</div>
+                    ) : (
+                      <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
+                        {myAthletes.map(p=>(
+                          <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] bg-[#101012] border border-[#1E1E22] p-3 text-left hover:border-[#3A3520] transition-colors">
+                            <div className="w-9 h-9 rounded-full bg-[#18181B] border border-[#232326] flex items-center justify-center text-[15px] shrink-0">⛸️</div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] font-[700] truncate">{p.displayName || p.email}</div>
+                              <div className="text-[10px] text-[#6A6A66] truncate">{p.email}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="card p-5 lg:p-6">
+                    <span className="label-caps flex items-center gap-1.5"><Crown size={12}/> 내 코치</span>
+                    {myProfile?.coachName ? (
+                      <div className="mt-4 flex items-center gap-3 rounded-[14px] bg-[#101012] border border-[#1E1C14] p-3.5">
+                        <div className="w-10 h-10 rounded-full bg-[#1A1912] border border-[#3A3520] flex items-center justify-center text-[16px] shrink-0">🧑‍🏫</div>
+                        <div className="min-w-0">
+                          <div className="text-[13px] font-[800] truncate">{myProfile.coachName} 코치님</div>
+                          <div className="text-[10px] text-[#6A6A66]">담당 코치</div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button onClick={()=>setView('growth')} className="mt-4 w-full text-center py-6 text-[11px] text-[#6A6A66] hover:text-[#D4AF37] transition-colors">아직 담당 코치가 없어요 · 마이페이지에서 등록해보세요</button>
+                    )}
+                  </div>
+                )}
                 {/* Weekly plan */}
                 <div className="card p-5 lg:p-6">
                   <div className="flex items-center justify-between">
@@ -606,8 +645,8 @@ export default function App() {
                             <div className={`w-8 shrink-0 text-center text-[12px] font-[800] pt-0.5 ${isToday?'text-[#D4AF37]':'text-[#9A9A93]'}`}>{d.label}</div>
                             <div className="flex-1 min-w-0 flex flex-wrap gap-1.5 pt-0.5">
                               {items.length===0 ? <span className="text-[11px] text-[#4A4A4E] py-0.5">휴식</span> : items.map(it=>(
-                                <span key={it.id} className="px-2.5 h-6 rounded-full bg-[#18181B] border border-[#232326] text-[10px] font-[600] text-[#CFCFC8] inline-flex items-center gap-1">
-                                  <span className="text-[#D4AF37] font-[700]">{it.time}</span>{it.content}
+                                <span key={it.id} className="inline-block max-w-full px-2.5 py-1 rounded-full bg-[#18181B] border border-[#232326] text-[10px] font-[600] text-[#CFCFC8] break-words align-middle">
+                                  <span className="text-[#D4AF37] font-[700]">{it.time}</span> {it.content}
                                 </span>
                               ))}
                             </div>
@@ -1249,8 +1288,8 @@ export default function App() {
                         {items.length>0 && (
                           <div className="mt-2.5 space-y-1.5">
                             {items.map(it=>(
-                              <div key={it.id} className="flex items-center justify-between rounded-[10px] bg-[#0E0E10] px-3 h-9">
-                                <span className="text-[12px] font-[600] text-[#CFCFC8]"><span className="text-[#D4AF37] font-[700] mr-1.5">{it.time}</span>{it.content}</span>
+                              <div key={it.id} className="flex items-center justify-between gap-2 rounded-[10px] bg-[#0E0E10] px-3 py-2 min-h-9">
+                                <span className="text-[12px] font-[600] text-[#CFCFC8] min-w-0"><span className="text-[#D4AF37] font-[700] mr-1.5">{it.time}</span>{it.content}</span>
                                 <button onClick={()=>deletePlanItem(user!.uid, it.id)} className="text-[#6A6A66] hover:text-[#D4AF37] text-[13px] w-6 h-6 flex items-center justify-center shrink-0">×</button>
                               </div>
                             ))}
