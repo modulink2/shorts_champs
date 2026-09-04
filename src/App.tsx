@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
@@ -353,6 +353,8 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState<string>(()=> toLocalDateStr(new Date()));
   const [showModal, setShowModal] = useState(false);
   const [diaryEditMode, setDiaryEditMode] = useState(false);
+  const diaryEditRef = useRef<HTMLDivElement>(null);
+  useEffect(()=>{ if(diaryEditMode) diaryEditRef.current?.scrollIntoView({ behavior:'smooth', block:'start' }); },[diaryEditMode]);
   const [editing, setEditing] = useState<Partial<TrainingLog>>({});
   const [toast, setToast] = useState('');
   const [calendarMonth, setCalendarMonth] = useState(new Date());
@@ -949,7 +951,7 @@ export default function App() {
                     <div className="mt-8 h-[1px] bg-gradient-to-r from-[var(--c-D4AF37)]/20 via-[var(--c-2A2A20)] to-transparent"/>
 
                     {diaryEditMode ? (
-                      <div className="mt-8">
+                      <div className="mt-8" ref={diaryEditRef}>
                         <div className="flex items-center justify-between">
                           <h2 className="text-[24px] lg:text-[28px] font-[800] tracking-[-0.02em]">오늘의 훈련 기록하기</h2>
                           <button onClick={()=>setDiaryEditMode(false)} className="h-9 px-4 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] hover:border-[var(--c-3A3520)]">취소</button>
@@ -1550,7 +1552,7 @@ export default function App() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-[12px]" onClick={()=>setShowModal(false)}/>
-          <div className="relative w-full lg:max-w-[640px] max-h-[92vh] lg:max-h-[88vh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
+          <div className="relative w-full lg:max-w-[640px] max-h-[92dvh] lg:max-h-[88dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
             <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)]/90 backdrop-blur-xl border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
               <div>
                 <div className="font-[800] text-[15px] tracking-[-0.02em] flex items-center gap-2"><span className="w-6 h-6 rounded-full gold-gradient flex items-center justify-center text-[var(--c-on-accent)] text-[12px]">✦</span>{editing.date} 훈련 기록</div>
