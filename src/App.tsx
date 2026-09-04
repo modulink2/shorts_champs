@@ -824,11 +824,11 @@ export default function App() {
                         const isSel=ds===selectedDate;
                         return (
                           <div key={i} className="h-[32px] flex items-center justify-center">
-                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] border-[var(--c-F5F1E8)] shadow-[0_2px_10px_rgba(var(--c-F5F1E8-rgb),0.25)]' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
+                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[rgba(var(--c-D4AF37-rgb),0.22)] backdrop-blur-xl text-[var(--c-F5F1E8)] border-[var(--c-D4AF37)]/60 shadow-[0_2px_10px_rgba(var(--c-D4AF37-rgb),0.25)]' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
                               <span className="leading-none">{d.getDate()}</span>
                               {log && (
                                 <span className="mt-[1px] flex gap-[2px]">
-                                  {logTypes(log).map(t=> <span key={t} className={`w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-on-accent)]' : t==='ice' ? 'bg-[var(--c-D4AF37)]' : t==='dry' ? 'bg-[var(--c-C9A86A)]' : 'bg-[var(--c-4A4A4E)]'}`} />)}
+                                  {logTypes(log).map(t=> <span key={t} className={`w-1 h-1 rounded-full ${isSel? 'bg-[var(--c-F5F1E8)]' : t==='ice' ? 'bg-[var(--c-D4AF37)]' : t==='dry' ? 'bg-[var(--c-C9A86A)]' : 'bg-[var(--c-4A4A4E)]'}`} />)}
                                 </span>
                               )}
                             </button>
@@ -875,7 +875,7 @@ export default function App() {
                       {recentLogsWithRecord.map(l=>{
                         const isActive=l.date===selectedDate;
                         return (
-                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)] shadow-[0_2px_12px_rgba(var(--c-F5F1E8-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
+                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[rgba(var(--c-D4AF37-rgb),0.18)] backdrop-blur-xl border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] shadow-[0_2px_12px_rgba(var(--c-D4AF37-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
                             <span className="text-[11px] font-[700] text-[var(--c-6A6A66)] w-[36px]">{l.date.slice(5)}</span>
                             <span className="text-[14px]">{logTypes(l).map(t=>TYPE_META[t].emoji).join('') || '📝'}</span>
                             <span className="text-[12px] font-[700] flex-1 truncate">{logSummary(l) || logTypes(l).map(t=>TYPE_META[t].label).join(', ')}</span>
@@ -1121,7 +1121,7 @@ export default function App() {
                           <button onClick={()=>{
                             setEditing({...selectedLog});
                             setDiaryEditMode(true);
-                          }} className="h-[48px] px-8 rounded-full bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] font-[800] text-[14px] hover:bg-white transition-colors">수정하기</button>
+                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]">삭제</button>
                           <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)]">{themeLabel} · {selectedLog.date}</span>
