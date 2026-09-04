@@ -173,7 +173,7 @@ function logSummary(log: TrainingLog): string {
 
 function TimeInputsEditor({ recordTypes, timeInputs, onChange, onDelete }: { recordTypes: RecordType[]; timeInputs: Record<number,string>; onChange:(distance:number,value:string)=>void; onDelete:(id:string)=>void }) {
   return (
-    <div className="grid sm:grid-cols-3 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {recordTypes.map(rt=>(
         <div key={rt.id} className="rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-4">
           <div className="flex items-center justify-between">
@@ -627,7 +627,7 @@ export default function App() {
                     {myAthletes.length===0 ? (
                       <div className="mt-4 text-center py-6 text-[11px] text-[var(--c-6A6A66)]">아직 배정된 선수가 없어요</div>
                     ) : (
-                      <div className="mt-4 grid sm:grid-cols-2 gap-2.5">
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         {myAthletes.map(p=>(
                           <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] bg-[var(--c-101012)] border border-[var(--c-1E1E22)] p-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
                             <div className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[15px] shrink-0">⛸️</div>
@@ -700,7 +700,7 @@ export default function App() {
                 </div>
 
 
-                <div className="grid lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6">
                   {/* Recent trainings */}
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
@@ -746,7 +746,7 @@ export default function App() {
                         {goals.slice(0,3).map(g=>(
                           <div key={g.id} className="rounded-[14px] bg-[var(--c-121214)] border border-[var(--c-1E1C14)] p-3.5">
                             <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words">{g.title}</span></div>
+                              <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words min-w-0">{g.title}</span></div>
                               <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-060608)] inline-flex items-center">{g.progress}%</span>
                             </div>
                             <div className="mt-3 h-1.5 rounded-full bg-[var(--c-1E1E22)] overflow-hidden"><div className="h-full rounded-full gold-gradient" style={{width:`${g.progress}%`}}/></div>
@@ -954,7 +954,7 @@ export default function App() {
                               <div className="label-caps text-[var(--c-D4AF37)] text-[11px]">오늘의 영상 / 사진 링크</div>
                             </div>
                             <div className="mt-1 text-[11px] font-[500] text-[var(--c-6A6A66)]">훈련 영상을 붙이면 본문에서 바로 볼 수 있어요</div>
-                            <div className="mt-5 grid gap-4">
+                            <div className="mt-5 grid grid-cols-1 gap-4">
                               <div className="rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] p-5">
                                 <div className="flex items-center gap-2 mb-3">
                                   <div className="w-6 h-6 rounded-full bg-[#FF0000]/15 border border-[#FF0000]/20 flex items-center justify-center"><Play size={12} className="text-[#FF4D4D]" /></div>
@@ -1188,7 +1188,7 @@ export default function App() {
                   <button onClick={saveRecordEntry} className="mt-5 w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-060608)] font-[800] text-[14px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.3)] hover:shadow-[0_0_32px_rgba(var(--c-D4AF37-rgb),0.45)] active:scale-[0.98] transition-all">기록 저장</button>
                 </div>
 
-                <div className="grid lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
                       <div className="font-[700] text-[14px] flex items-center gap-2"><TrendingUp size={16} className="text-[var(--c-D4AF37)]"/> 500m 기록 흐름 · PB 추적</div>
@@ -1257,7 +1257,7 @@ export default function App() {
                   </div>
                 </div>
 
-                <div className="grid lg:grid-cols-2 gap-4 lg:gap-5">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-5">
                   <div className="card p-5 lg:p-6">
                     <div className="font-[700] text-[13px]">Lap Analysis · 최근 10회 빙상</div>
                     <div className="mt-5 h-[160px]">
@@ -1424,7 +1424,7 @@ export default function App() {
                   <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
                   <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-060608)] text-[11px] font-[800]">+ 목표 추가</button>
                 </div>
-                <div className="mt-5 grid sm:grid-cols-3 gap-3">
+                <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {goals.map(g=>(
                     <div key={g.id} className="rounded-[16px] bg-[var(--c-101012)] border border-[var(--c-1E1C14)] p-4">
                       <div className="flex items-start justify-between">
