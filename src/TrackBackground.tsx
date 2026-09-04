@@ -2,6 +2,9 @@ import { useEffect, useRef } from 'react';
 
 // Animated short-track oval rings + drifting particles, adapted from the
 // reference glassmorphism background (canvas-only, no image asset).
+// Each ring is drawn as a tapering comet trail (thick/opaque head fading to
+// a thin transparent tail) racing around a faint static baseline ellipse,
+// tinted with the active theme's accent color.
 export default function TrackBackground() {
   const trackRef = useRef<HTMLCanvasElement>(null);
   const particleRef = useRef<HTMLCanvasElement>(null);
@@ -12,12 +15,22 @@ export default function TrackBackground() {
     const tCtx = trackCanvas.getContext('2d')!;
     const pCtx = particleCanvas.getContext('2d')!;
     let W = 0, H = 0;
-    let dashOffset = 0;
     let raf = 0;
 
+    // Theme accent as "r,g,b", re-read whenever the theme attribute changes.
+    let accentRgb = '168,208,255';
+    const readAccent = () => {
+      const v = getComputedStyle(document.documentElement).getPropertyValue('--c-D4AF37-rgb').trim();
+      if (v) accentRgb = v;
+    };
+    readAccent();
+    const themeObserver = new MutationObserver(readAccent);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
     const tracks = [
-      { rx: 340, ry: 195, dash: [18, 22], width: 1.5, color: 'rgba(168,208,255,0.35)', dir: 1 },
-      { rx: 420, ry: 240, dash: [2, 28], width: 1.8, color: 'rgba(180,215,255,0.4)', dir: -1 },
+      { rx: 300, ry: 175, dir: 1, headAngle: 0, speed: 0.006, trail: 2.0 },
+      { rx: 370, ry: 215, dir: -1, headAngle: 2, speed: 0.005, trail: 1.7 },
+      { rx: 440, ry: 255, dir: 1, headAngle: 4, speed: 0.0045, trail: 1.4 },
     ];
     const particles = Array.from({ length: 38 }, (_, i) => ({
       angle: (i / 38) * Math.PI * 2,
@@ -46,23 +59,31 @@ export default function TrackBackground() {
       const dpr = window.devicePixelRatio || 1;
       const cw = W / dpr, ch = H / dpr;
       tCtx.clearRect(0, 0, cw, ch);
-      tracks.forEach((tr, idx) => {
+      tracks.forEach(tr => {
         tCtx.save();
         tCtx.translate(cw / 2, ch / 2);
-        tCtx.strokeStyle = tr.color;
-        tCtx.lineWidth = tr.width;
-        tCtx.setLineDash(tr.dash);
-        tCtx.lineDashOffset = dashOffset * tr.dir * (1 + idx * 0.3);
+
+        // faint static baseline so the full oval track stays visible
+        tCtx.globalAlpha = 0.08;
+        tCtx.strokeStyle = `rgba(${accentRgb},1)`;
+        tCtx.lineWidth = 0.6;
         tCtx.beginPath();
         tCtx.ellipse(0, 0, tr.rx, tr.ry, 0, 0, Math.PI * 2);
         tCtx.stroke();
-        tCtx.setLineDash([]);
-        tCtx.globalAlpha = 0.1;
-        tCtx.strokeStyle = '#8AB8E8';
-        tCtx.lineWidth = 0.6;
-        tCtx.beginPath();
-        tCtx.ellipse(0, 0, tr.rx * 0.92, tr.ry * 0.92, 0, 0, Math.PI * 2);
-        tCtx.stroke();
+
+        // comet trail: many short arcs behind the head, tapering width/alpha
+        const segments = 48;
+        for (let i = 0; i < segments; i++) {
+          const t = i / segments; // 0 at head, 1 at tail
+          const a0 = tr.headAngle - tr.dir * t * tr.trail;
+          const a1 = tr.headAngle - tr.dir * (t + 1 / segments) * tr.trail;
+          tCtx.globalAlpha = 0.42 * (1 - t);
+          tCtx.lineWidth = Math.max(0.3, 2.2 * (1 - t));
+          tCtx.strokeStyle = `rgba(${accentRgb},1)`;
+          tCtx.beginPath();
+          tCtx.ellipse(0, 0, tr.rx, tr.ry, 0, a0, a1, tr.dir > 0);
+          tCtx.stroke();
+        }
         tCtx.restore();
       });
     }
@@ -72,18 +93,18 @@ export default function TrackBackground() {
       const cw = W / dpr, ch = H / dpr;
       pCtx.clearRect(0, 0, cw, ch);
       particles.forEach(p => {
-        p.angle += p.speed * 0.2;
+        p.angle += p.speed * 0.35;
         const x = cw / 2 + Math.cos(p.angle) * p.r;
         const y = ch / 2 + Math.sin(p.angle) * p.r * p.ryRatio;
         pCtx.beginPath();
-        pCtx.fillStyle = `rgba(180,210,255,${p.opacity})`;
+        pCtx.fillStyle = `rgba(${accentRgb},${p.opacity})`;
         pCtx.arc(x, y, p.size, 0, Math.PI * 2);
         pCtx.fill();
       });
     }
 
     function loop() {
-      dashOffset += 0.15;
+      tracks.forEach(tr => { tr.headAngle += tr.dir * tr.speed; });
       drawTracks();
       drawParticles();
       raf = requestAnimationFrame(loop);
@@ -93,6 +114,7 @@ export default function TrackBackground() {
     return () => {
       cancelAnimationFrame(raf);
       window.removeEventListener('resize', resize);
+      themeObserver.disconnect();
     };
   }, []);
 
