@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare, Check, UserPlus } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
@@ -11,12 +11,15 @@ import { useRecordTypes } from './useRecordTypes';
 import Logo from './Logo';
 import TrackBackground from './TrackBackground';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
+import { useLastLoungeReply } from './useLounge';
 import CoachAdminView from './CoachAdminView';
+import FriendsView from './FriendsView';
+import LoungeView from './LoungeView';
 import { downloadTrainingReport } from './reportPdf';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
-type ViewType = 'dashboard' | 'diary' | 'records' | 'growth' | 'roster';
+type ViewType = 'dashboard' | 'diary' | 'records' | 'growth' | 'friends' | 'lounge' | 'roster';
 
 export interface TimeRecord { distance: number; time: string; seconds: number; }
 // A logged instance of a user-defined item type (e.g. "러닝 30분").
@@ -64,6 +67,7 @@ export interface UserProfile {
   startYearMonth?: string; // "YYYY-MM" — when this athlete started short track
   rinkAddress?: string; teamName?: string; skateInfo?: string; bladeInfo?: string;
   focusGoal?: FocusGoal;
+  infoPublic?: boolean; trainingPublic?: boolean;
 }
 // "YYYY-MM" -> "3년 2개월째" / "5개월째" / "이번 달 시작"
 export function formatCareer(startYearMonth: string): string {
@@ -346,6 +350,23 @@ export default function App() {
     setCommentBannerDismissed(true);
   };
 
+  // "New lounge reply" banner — unlike the coach-feedback banner above
+  // (dismissed forever after one click), this compares against the reply's
+  // own timestamp so a *new* reply re-triggers it even after an older one
+  // was seen.
+  const lastLoungeReply = useLastLoungeReply(user?.uid);
+  const [loungeSeenAt, setLoungeSeenAt] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    try { setLoungeSeenAt(Number(localStorage.getItem(`loungeSeenAt_${user.uid}`)) || 0); } catch { setLoungeSeenAt(0); }
+  }, [user?.uid]);
+  const hasNewLoungeReply = !!lastLoungeReply && lastLoungeReply.createdAt > loungeSeenAt;
+  const dismissLoungeReply = () => {
+    if (!user || !lastLoungeReply) return;
+    try { localStorage.setItem(`loungeSeenAt_${user.uid}`, String(lastLoungeReply.createdAt)); } catch {}
+    setLoungeSeenAt(lastLoungeReply.createdAt);
+  };
+
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
   const { goals, saveGoal: saveGoalRemote, deleteGoal: deleteGoalRemote } = useGoals(user?.uid);
   const { itemTypes, saveItemType, deleteItemType } = useItemTypes(user?.uid);
@@ -533,6 +554,8 @@ export default function App() {
     { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
     { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
     { id:'growth', label:'마이페이지', icon:TrendingUp, desc:'MY PAGE' },
+    { id:'friends', label:'내 친구', icon:UserPlus, desc:'FRIENDS' },
+    { id:'lounge', label:'링크 라운지', icon:MessageSquare, desc:'LOUNGE' },
     ...(hasRoster ? [{ id:'roster', label: myRole==='admin'?'회원 관리':myRole==='parent'?'내 아이':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':myRole==='parent'?'MY KIDS':'ATHLETES' }] : []),
   ] as const;
 
@@ -619,6 +642,8 @@ export default function App() {
                       {view==='diary' && '훈련일지'}
                       {view==='records' && '기록입력/분석'}
                       {view==='growth' && '마이페이지'}
+                      {view==='friends' && '내 친구'}
+                      {view==='lounge' && '링크 라운지'}
                       {view==='roster' && (myRole==='admin' ? '회원 관리' : myRole==='parent' ? '내 아이' : '내 선수')}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[10px] font-[700] tracking-[0.1em] text-[var(--c-D4AF37)] items-center">{themeLabel}</span>
@@ -631,11 +656,6 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <div className="hidden sm:flex items-center gap-2 pl-3 pr-1 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)]">
-                  <div className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center"><Flame size={12} className="text-[var(--c-on-accent)]"/></div>
-                  <span className="text-[11px] font-[700] text-[var(--c-F5F1E8)]">스트릭 12일</span>
-                  <span className="h-6 px-2.5 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800] flex items-center">LVL 8</span>
-                </div>
                 <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
                   <span className="hidden sm:inline">✦</span> 기록하기
                 </button>
@@ -648,6 +668,8 @@ export default function App() {
 
           <main className="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
             {view==='roster' && hasRoster && <CoachAdminView role={myRole as 'coach'|'admin'|'parent'} />}
+            {view==='friends' && <FriendsView />}
+            {view==='lounge' && <LoungeView />}
             {view==='dashboard' && (
               <>
                 {hasNewComment && latestComment && (
@@ -659,6 +681,19 @@ export default function App() {
                     <div className="flex-1 min-w-0">
                       <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {latestComment.authorName}님의 피드백이 도착했어요</div>
                       <div className="mt-1 text-[15px] lg:text-[16px] font-[800] truncate">"{latestComment.text}"</div>
+                    </div>
+                    <ChevronRight size={22} className="shrink-0"/>
+                  </button>
+                )}
+                {hasNewLoungeReply && lastLoungeReply && (
+                  <button
+                    onClick={()=>{ setView('lounge'); dismissLoungeReply(); }}
+                    className="glow-pulse w-full text-left rounded-[20px] p-5 lg:p-6 gold-gradient text-[var(--c-on-accent)] flex items-center gap-4 active:scale-[0.99] transition-transform"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-[var(--c-on-accent)]/15 flex items-center justify-center shrink-0"><MessageSquare size={22}/></div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {lastLoungeReply.authorName}님이 내 글에 답글을 남겼어요</div>
+                      <div className="mt-1 text-[15px] lg:text-[16px] font-[800] truncate">"{lastLoungeReply.replyText}"</div>
                     </div>
                     <ChevronRight size={22} className="shrink-0"/>
                   </button>
@@ -1514,6 +1549,23 @@ export default function App() {
                           </button>
                         );
                       })}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="label-caps">공개 설정</label>
+                    <div className="mt-1.5 space-y-2">
+                      <button onClick={()=>saveProfile(user!.uid, { infoPublic: !myProfile?.infoPublic })} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                        <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">친구에게 내 정보 공개</span>
+                        <span className={`w-9 h-5 rounded-full relative transition-colors ${myProfile?.infoPublic ? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-2A2A2E)]'}`}>
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${myProfile?.infoPublic ? 'left-[18px]' : 'left-0.5'}`}/>
+                        </span>
+                      </button>
+                      <button onClick={()=>saveProfile(user!.uid, { trainingPublic: !myProfile?.trainingPublic })} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                        <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">친구에게 내 훈련정보 공개</span>
+                        <span className={`w-9 h-5 rounded-full relative transition-colors ${myProfile?.trainingPublic ? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-2A2A2E)]'}`}>
+                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${myProfile?.trainingPublic ? 'left-[18px]' : 'left-0.5'}`}/>
+                        </span>
+                      </button>
                     </div>
                   </div>
                 </div>

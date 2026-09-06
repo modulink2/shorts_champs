@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, doc, setDoc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, onSnapshot, query, orderBy, where } from 'firebase/firestore';
 import { db } from './firebase';
 import type { UserProfile, LogComment, LatestComment } from './App';
 
@@ -80,4 +80,46 @@ export function useLatestComment(uid: string | undefined) {
     }, (err) => console.error('[useLatestComment]', err));
   }, [uid]);
   return latestComment;
+}
+
+export interface Friendship { id: string; uidA: string; uidB: string; requestedBy: string; status: 'pending' | 'accepted'; createdAt: number; }
+
+function friendPairId(a: string, b: string) {
+  return a < b ? `${a}_${b}` : `${b}_${a}`;
+}
+
+export function sendFriendRequest(myUid: string, targetUid: string) {
+  const [uidA, uidB] = myUid < targetUid ? [myUid, targetUid] : [targetUid, myUid];
+  return setDoc(doc(db, 'friendships', friendPairId(myUid, targetUid)), {
+    uidA, uidB, requestedBy: myUid, status: 'pending', createdAt: Date.now(),
+  });
+}
+export function acceptFriendRequest(myUid: string, otherUid: string) {
+  return updateDoc(doc(db, 'friendships', friendPairId(myUid, otherUid)), { status: 'accepted' });
+}
+export function removeFriendship(myUid: string, otherUid: string) {
+  return deleteDoc(doc(db, 'friendships', friendPairId(myUid, otherUid)));
+}
+
+// Every friendship doc touching me, split into accepted/incoming/outgoing uid lists.
+export function useFriendships(uid: string | undefined) {
+  const [rows, setRows] = useState<Friendship[]>([]);
+  useEffect(() => {
+    if (!uid) { setRows([]); return; }
+    const byA = new Map<string, Friendship>();
+    const byB = new Map<string, Friendship>();
+    const publish = () => setRows([...byA.values(), ...byB.values()]);
+    const unsubA = onSnapshot(query(collection(db, 'friendships'), where('uidA', '==', uid)), (snap) => {
+      byA.clear(); snap.docs.forEach((d) => byA.set(d.id, { ...d.data(), id: d.id } as Friendship)); publish();
+    }, (err) => console.error('[useFriendships:A]', err));
+    const unsubB = onSnapshot(query(collection(db, 'friendships'), where('uidB', '==', uid)), (snap) => {
+      byB.clear(); snap.docs.forEach((d) => byB.set(d.id, { ...d.data(), id: d.id } as Friendship)); publish();
+    }, (err) => console.error('[useFriendships:B]', err));
+    return () => { unsubA(); unsubB(); };
+  }, [uid]);
+
+  const friends = rows.filter(r => r.status === 'accepted').map(r => r.uidA === uid ? r.uidB : r.uidA);
+  const incoming = rows.filter(r => r.status === 'pending' && r.requestedBy !== uid).map(r => r.requestedBy);
+  const outgoing = rows.filter(r => r.status === 'pending' && r.requestedBy === uid).map(r => r.uidA === uid ? r.uidB : r.uidA);
+  return { friends, incoming, outgoing };
 }

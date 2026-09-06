@@ -12,6 +12,51 @@ service cloud.firestore {
       return request.auth != null &&
         get(/databases/$(database)/documents/profiles/$(athleteUid)).data.parentId == request.auth.uid;
     }
+    function friendPairId(otherUid) {
+      return otherUid < request.auth.uid ? otherUid + '_' + request.auth.uid : request.auth.uid + '_' + otherUid;
+    }
+    function isFriend(otherUid) {
+      return request.auth != null &&
+        exists(/databases/$(database)/documents/friendships/$(friendPairId(otherUid))) &&
+        get(/databases/$(database)/documents/friendships/$(friendPairId(otherUid))).data.status == 'accepted';
+    }
+
+    // One document per friend pair (id = sorted "uidA_uidB"). create = send
+    // request, update pending->accepted = the non-requester accepting,
+    // delete = cancel/decline/unfriend (symmetric, either side can delete).
+    match /friendships/{pairId} {
+      allow read: if request.auth != null && (request.auth.uid == resource.data.uidA || request.auth.uid == resource.data.uidB);
+      allow create: if request.auth != null
+        && request.resource.data.requestedBy == request.auth.uid
+        && (request.auth.uid == request.resource.data.uidA || request.auth.uid == request.resource.data.uidB)
+        && request.resource.data.status == 'pending'
+        && request.resource.data.uidA < request.resource.data.uidB
+        && pairId == request.resource.data.uidA + '_' + request.resource.data.uidB;
+      allow update: if request.auth != null
+        && (request.auth.uid == resource.data.uidA || request.auth.uid == resource.data.uidB)
+        && resource.data.status == 'pending'
+        && request.resource.data.status == 'accepted'
+        && request.auth.uid != resource.data.requestedBy;
+      allow delete: if request.auth != null && (request.auth.uid == resource.data.uidA || request.auth.uid == resource.data.uidB);
+    }
+
+    // Public board. Anyone can read; only the author can create/delete their
+    // own post; replyCount can be bumped by anyone (any reader adding a
+    // reply increments it on the post they're replying to).
+    match /loungePosts/{postId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.authorUid == request.auth.uid;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorUid;
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.authorUid ||
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['replyCount'])
+      );
+    }
+    match /loungePosts/{postId}/replies/{replyId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.resource.data.authorUid == request.auth.uid;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.authorUid;
+    }
 
     // Profile docs (name/email/role/coachId) — readable by any signed-in user
     // so athletes can search coaches and coaches/admin can see rosters, but
@@ -36,12 +81,16 @@ service cloud.firestore {
     // writes it (mirrors the comments-write rule above).
     match /notifications/{uid} {
       allow read: if request.auth != null && request.auth.uid == uid;
-      allow write: if isAdmin() || isAssignedCoach(uid) || isLinkedParent(uid);
+      allow write: if isAdmin() || isAssignedCoach(uid) || isLinkedParent(uid)
+        || (resource == null
+              ? request.resource.data.keys().hasOnly(['lastLoungeReply'])
+              : request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastLoungeReply']));
     }
 
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if isAdmin() || isAssignedCoach(userId) || isLinkedParent(userId);
+      allow read: if isAdmin() || isAssignedCoach(userId) || isLinkedParent(userId)
+        || (isFriend(userId) && get(/databases/$(database)/documents/profiles/$(userId)).data.trainingPublic == true);
     }
   }
 }
