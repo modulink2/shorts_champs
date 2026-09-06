@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare, Check } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
@@ -49,10 +49,10 @@ export interface PlanItem { id: string; day: WeekDay; time: PlanTimeSlot; conten
 // there's nothing in the data to accidentally grant/revoke.
 export type UserRole = 'athlete' | 'coach' | 'parent' | 'admin';
 export type ThemeName = 'blackgold' | 'crystalblue' | 'glasspink';
-export const THEMES: { key: ThemeName; label: string }[] = [
-  { key:'crystalblue', label:'크리스탈블루' },
-  { key:'blackgold', label:'블랙골드' },
-  { key:'glasspink', label:'글래스핑크' },
+export const THEMES: { key: ThemeName; label: string; dark: string; accent: string }[] = [
+  { key:'crystalblue', label:'크리스탈블루', dark:'#070B14', accent:'#1C8FE0' },
+  { key:'blackgold', label:'블랙골드', dark:'#0C0A05', accent:'#D4AF37' },
+  { key:'glasspink', label:'글래스핑크', dark:'#120810', accent:'#D6558E' },
 ];
 // A coach or parent's goal message for one athlete, shown on that athlete's
 // dashboard in place of the default motivational quote.
@@ -129,41 +129,6 @@ export const DEFAULT_ITEM_TYPES: { category: 'ice' | 'dry'; name: string; unit: 
   { category: 'dry', name: '스프린트', unit: '바퀴' },
   { category: 'dry', name: '밸런스', unit: '분' },
 ];
-
-// Korean address search via Daum's free Postcode widget — loaded lazily on
-// first use so the app doesn't pay for it until someone actually opens it.
-// Uses embed() into an overlay we control rather than .open()'s own popup
-// window, which popup blockers can silently swallow.
-function openAddressSearch(onComplete: (address: string) => void) {
-  const w = window as any;
-  const runEmbed = () => {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:24px;';
-    const panel = document.createElement('div');
-    panel.style.cssText = 'position:relative;width:100%;max-width:480px;height:560px;background:#fff;border-radius:16px;overflow:hidden;';
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = '×';
-    closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;z-index:1;font-size:28px;line-height:1;background:none;border:none;color:#333;cursor:pointer;padding:8px;';
-    const close = () => { if (overlay.parentElement) document.body.removeChild(overlay); };
-    closeBtn.onclick = close;
-    overlay.onclick = (e) => { if (e.target === overlay) close(); };
-    const container = document.createElement('div');
-    container.style.cssText = 'width:100%;height:100%;';
-    panel.appendChild(closeBtn);
-    panel.appendChild(container);
-    overlay.appendChild(panel);
-    document.body.appendChild(overlay);
-    new w.daum.Postcode({
-      oncomplete: (data: any) => { onComplete(data.roadAddress || data.jibunAddress); close(); },
-      width: '100%', height: '100%',
-    }).embed(container);
-  };
-  if (w.daum?.Postcode) { runEmbed(); return; }
-  const script = document.createElement('script');
-  script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
-  script.onload = runEmbed;
-  document.body.appendChild(script);
-}
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -1496,10 +1461,12 @@ export default function App() {
                       </div>
                       <div>
                         <label className="label-caps">소속 링크장</label>
-                        <button onClick={()=>openAddressSearch(addr=>saveProfile(user!.uid, { rinkAddress: addr }))} className="mt-1.5 w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
-                          <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)] truncate">{myProfile?.rinkAddress || '주소 검색으로 등록'}</span>
-                          <span className="text-[11px] font-[600] text-[var(--c-D4AF37)] shrink-0 ml-2">검색</span>
-                        </button>
+                        <input
+                          key={`rink-${myProfile?.rinkAddress}`} defaultValue={myProfile?.rinkAddress || ''} autoComplete="off"
+                          onBlur={e=>{ const v=e.target.value.trim(); if(v!==(myProfile?.rinkAddress||'')) saveProfile(user!.uid, { rinkAddress: v }); }}
+                          placeholder="예: OO 실내빙상장"
+                          className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                        />
                       </div>
                       <div>
                         <label className="label-caps">소속팀</label>
@@ -1532,14 +1499,19 @@ export default function App() {
                   )}
                   <div>
                     <label className="label-caps">디자인 테마</label>
-                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                    <div className="mt-1.5 grid grid-cols-3 gap-2">
                       {THEMES.map(t=>{
                         const active = (myProfile?.theme || 'crystalblue') === t.key;
                         return (
                           <button
                             key={t.key} onClick={()=>saveProfile(user!.uid, { theme: t.key })}
-                            className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${active? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
-                          >{t.label}</button>
+                            style={{ background: `radial-gradient(120% 140% at 50% 120%, ${t.accent} 0%, ${t.dark} 65%)` }}
+                            className={`relative aspect-square rounded-[14px] border flex flex-col items-center justify-center gap-1.5 transition-all overflow-hidden ${active? 'border-[2px] border-[var(--c-F5F1E8)]' : 'border-[var(--c-1E1E22)] opacity-60 hover:opacity-90'}`}
+                          >
+                            <span className="w-5 h-5 rounded-full" style={{ background: t.accent, boxShadow: `0 0 12px ${t.accent}` }} />
+                            <span className="text-[11px] font-[800] text-[var(--c-F5F1E8)]">{t.label}</span>
+                            {active && <Check size={14} strokeWidth={3} className="absolute top-1.5 right-1.5 text-[var(--c-F5F1E8)]" />}
+                          </button>
                         );
                       })}
                     </div>
