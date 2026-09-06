@@ -47,17 +47,23 @@ export interface PlanItem { id: string; day: WeekDay; time: PlanTimeSlot; conten
 // Roles & profiles ---------------------------------------------------------
 // 'admin' is never stored — it's derived purely from the account email so
 // there's nothing in the data to accidentally grant/revoke.
-export type UserRole = 'athlete' | 'coach' | 'admin';
+export type UserRole = 'athlete' | 'coach' | 'parent' | 'admin';
 export type ThemeName = 'blackgold' | 'crystalblue' | 'glasspink';
 export const THEMES: { key: ThemeName; label: string }[] = [
   { key:'crystalblue', label:'크리스탈블루' },
   { key:'blackgold', label:'블랙골드' },
   { key:'glasspink', label:'글래스핑크' },
 ];
+// A coach or parent's goal message for one athlete, shown on that athlete's
+// dashboard in place of the default motivational quote.
+export interface FocusGoal { text: string; emoji: string; authorName: string; done: boolean; updatedAt: number; }
 export interface UserProfile {
-  uid: string; email: string; displayName: string; role: 'athlete'|'coach';
-  coachId?: string; coachName?: string; createdAt?: number; theme?: ThemeName; avatarId?: string;
+  uid: string; email: string; displayName: string; role: 'athlete'|'coach'|'parent';
+  coachId?: string; coachName?: string; parentId?: string; parentName?: string;
+  createdAt?: number; theme?: ThemeName; avatarId?: string;
   startYearMonth?: string; // "YYYY-MM" — when this athlete started short track
+  rinkAddress?: string; teamName?: string; skateInfo?: string; bladeInfo?: string;
+  focusGoal?: FocusGoal;
 }
 // "YYYY-MM" -> "3년 2개월째" / "5개월째" / "이번 달 시작"
 export function formatCareer(startYearMonth: string): string {
@@ -123,6 +129,41 @@ export const DEFAULT_ITEM_TYPES: { category: 'ice' | 'dry'; name: string; unit: 
   { category: 'dry', name: '스프린트', unit: '바퀴' },
   { category: 'dry', name: '밸런스', unit: '분' },
 ];
+
+// Korean address search via Daum's free Postcode widget — loaded lazily on
+// first use so the app doesn't pay for it until someone actually opens it.
+// Uses embed() into an overlay we control rather than .open()'s own popup
+// window, which popup blockers can silently swallow.
+function openAddressSearch(onComplete: (address: string) => void) {
+  const w = window as any;
+  const runEmbed = () => {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:24px;';
+    const panel = document.createElement('div');
+    panel.style.cssText = 'position:relative;width:100%;max-width:480px;height:560px;background:#fff;border-radius:16px;overflow:hidden;';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '×';
+    closeBtn.style.cssText = 'position:absolute;top:4px;right:8px;z-index:1;font-size:28px;line-height:1;background:none;border:none;color:#333;cursor:pointer;padding:8px;';
+    const close = () => { if (overlay.parentElement) document.body.removeChild(overlay); };
+    closeBtn.onclick = close;
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    const container = document.createElement('div');
+    container.style.cssText = 'width:100%;height:100%;';
+    panel.appendChild(closeBtn);
+    panel.appendChild(container);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    new w.daum.Postcode({
+      oncomplete: (data: any) => { onComplete(data.roadAddress || data.jibunAddress); close(); },
+      width: '100%', height: '100%',
+    }).embed(container);
+  };
+  if (w.daum?.Postcode) { runEmbed(); return; }
+  const script = document.createElement('script');
+  script.src = '//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js';
+  script.onload = runEmbed;
+  document.body.appendChild(script);
+}
 
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
@@ -292,9 +333,13 @@ export default function App() {
   const { profile: myProfile, loaded: myProfileLoaded } = useProfile(user?.uid);
   const myRole = effectiveRole(user?.email, myProfile);
   const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
+  const isParent = myRole==='parent';
+  const hasRoster = isCoachOrAdmin || isParent;
   const allProfiles = useAllProfiles(!!user);
   const myAthletes = useMemo(()=> allProfiles.filter(p=>p.role==='athlete' && (myRole==='admin' || p.coachId===user?.uid)), [allProfiles, myRole, user]);
+  const myChildren = useMemo(()=> allProfiles.filter(p=>p.role==='athlete' && p.parentId===user?.uid), [allProfiles, user]);
   const [coachSearch, setCoachSearch] = useState('');
+  const [parentSearch, setParentSearch] = useState('');
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
 
@@ -320,20 +365,20 @@ export default function App() {
     if (Object.keys(patch).length > 0) saveProfile(user.uid, patch);
   }, [user, myProfile, myProfileLoaded]);
 
-  // "New coach feedback" banner: compare the latest comment's timestamp
-  // against the last one this browser has seen (stored locally — this is a
-  // per-device convenience, not data that needs to sync anywhere else).
+  // "New coach feedback" banner: shown once until clicked, then dismissed
+  // for good on this device (not per-message — the athlete only needs the
+  // nudge to check 훈련일지 once, not a fresh popup for every new comment).
   const latestComment = useLatestComment(user?.uid);
-  const [seenCommentAt, setSeenCommentAt] = useState(0);
+  const [commentBannerDismissed, setCommentBannerDismissed] = useState(true);
   useEffect(() => {
     if (!user) return;
-    try { setSeenCommentAt(Number(localStorage.getItem(`seenCommentAt_${user.uid}`)) || 0); } catch { setSeenCommentAt(0); }
+    try { setCommentBannerDismissed(localStorage.getItem(`commentBannerDismissed_${user.uid}`) === '1'); } catch { setCommentBannerDismissed(false); }
   }, [user?.uid]);
-  const hasNewComment = !!latestComment && latestComment.createdAt > seenCommentAt;
+  const hasNewComment = !!latestComment && !commentBannerDismissed;
   const dismissComment = () => {
-    if (!user || !latestComment) return;
-    try { localStorage.setItem(`seenCommentAt_${user.uid}`, String(latestComment.createdAt)); } catch {}
-    setSeenCommentAt(latestComment.createdAt);
+    if (!user) return;
+    try { localStorage.setItem(`commentBannerDismissed_${user.uid}`, '1'); } catch {}
+    setCommentBannerDismissed(true);
   };
 
   const { logs, saveLog: saveLogRemote, deleteLog: deleteLogRemote } = useTrainingLogs(user?.uid);
@@ -518,6 +563,14 @@ export default function App() {
     }
   };
 
+  const navTabs = [
+    { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
+    { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
+    { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
+    { id:'growth', label:'마이페이지', icon:TrendingUp, desc:'MY PAGE' },
+    ...(hasRoster ? [{ id:'roster', label: myRole==='admin'?'회원 관리':myRole==='parent'?'내 아이':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':myRole==='parent'?'MY KIDS':'ATHLETES' }] : []),
+  ] as const;
+
   return (
     <div className="no-auto-blur h-dvh w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* animated track-ring canvas background + subtle radial gold vignette */}
@@ -530,21 +583,11 @@ export default function App() {
       <div className="relative z-10 flex h-full overflow-hidden">
         {/* Sidebar - desktop */}
         <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/35 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] h-full">
-          <div className="h-[72px] px-6 flex items-center gap-3 border-b border-[var(--c-1C1A12)]">
-            <div className="w-9 h-9 rounded-[12px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={36}/></div>
-            <div>
-              <div className="font-[800] text-[13px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
-              <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1">CHAMPION EDITION</div>
-            </div>
+          <div className="h-[72px] px-6 flex items-center justify-center border-b border-[var(--c-1C1A12)]">
+            <Logo size={40}/>
           </div>
           <div className="p-3 space-y-1.5 flex-1">
-            {[
-              { id:'dashboard', label:'대시보드', icon:BarChart3, desc:'OVERALL' },
-              { id:'diary', label:'훈련일지', icon:Calendar, desc:'LOGS' },
-              { id:'records', label:'기록입력/분석', icon:Trophy, desc:'RECORDS' },
-              { id:'growth', label:'마이페이지', icon:TrendingUp, desc:'MY PAGE' },
-              ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':'ATHLETES' }] : []),
-            ].map(tab=>{
+            {navTabs.map(tab=>{
               const active=view===tab.id;
               const Icon=tab.icon;
               return (
@@ -565,14 +608,20 @@ export default function App() {
               <div className="card-gold rounded-[16px] p-4 overflow-hidden">
                 <div className="flex items-center gap-2">
                   <Crown size={14} className="text-[var(--c-D4AF37)]" />
-                  <span className="label-caps text-[var(--c-D4AF37)]">Today's Focus</span>
+                  <span className="label-caps text-[var(--c-D4AF37)]">목표달성</span>
                 </div>
-                <div className="mt-2.5 text-[12px] font-[600] leading-[1.4] text-[var(--c-E8E2D2)] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
-                <div className="mt-3 h-[1px] bg-[var(--c-2A2A20)]" />
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[11px] font-[500] text-[var(--c-9A9A93)]">시즌 D-47</span>
-                  <span className="text-[11px] font-[700] text-[var(--c-D4AF37)]">72% 달성</span>
-                </div>
+                {myProfile?.focusGoal ? (
+                  <>
+                    <div className={`mt-2.5 text-[12px] font-[600] leading-[1.4] whitespace-pre-wrap ${myProfile.focusGoal.done ? 'text-[var(--c-6A6A66)] line-through' : 'text-[var(--c-E8E2D2)]'}`}>{myProfile.focusGoal.emoji} {myProfile.focusGoal.text}</div>
+                    <div className="mt-3 h-[1px] bg-[var(--c-2A2A20)]" />
+                    <div className="mt-3 flex items-center justify-between">
+                      <span className="text-[11px] font-[500] text-[var(--c-9A9A93)]">{myProfile.focusGoal.authorName}</span>
+                      <span className={`text-[11px] font-[700] ${myProfile.focusGoal.done ? 'text-[var(--c-D4AF37)]' : 'text-[var(--c-6A6A66)]'}`}>{myProfile.focusGoal.done ? '완료 ✓' : '응원 중'}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="mt-2.5 text-[12px] font-[600] leading-[1.4] text-[var(--c-E8E2D2)] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
+                )}
               </div>
             </div>
           </div>
@@ -592,9 +641,12 @@ export default function App() {
         <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
           {/* Top bar mobile + desktop header */}
           <header className="shrink-0 z-20 backdrop-blur-[20px] bg-[var(--c-0C0C0E)]/45 border-b border-[var(--c-1C1A12)]">
+            {/* Mobile: logo alone on its own row */}
+            <div className="lg:hidden h-[48px] flex items-center justify-center border-b border-[var(--c-1C1A12)]">
+              <Logo size={24}/>
+            </div>
             <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="lg:hidden w-8 h-8 rounded-[10px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)]"><Logo size={32}/></div>
                 <div>
                   <div className="flex items-center gap-2.5">
                     <h1 className="text-[18px] lg:text-[22px] font-[800] tracking-[-0.03em] leading-none">
@@ -602,7 +654,7 @@ export default function App() {
                       {view==='diary' && '훈련일지'}
                       {view==='records' && '기록입력/분석'}
                       {view==='growth' && '마이페이지'}
-                      {view==='roster' && (myRole==='admin' ? '회원 관리' : '내 선수')}
+                      {view==='roster' && (myRole==='admin' ? '회원 관리' : myRole==='parent' ? '내 아이' : '내 선수')}
                     </h1>
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[10px] font-[700] tracking-[0.1em] text-[var(--c-D4AF37)] items-center">{themeLabel}</span>
                   </div>
@@ -627,25 +679,10 @@ export default function App() {
                 </button>
               </div>
             </div>
-            {/* Mobile tabs */}
-            <div className="lg:hidden px-4 pb-3 flex gap-1.5 overflow-x-auto">
-              {[
-                { id:'dashboard', label:'대시보드' },
-                { id:'diary', label:'훈련일지' },
-                { id:'records', label:'기록입력/분석' },
-                { id:'growth', label:'마이페이지' },
-                ...(isCoachOrAdmin ? [{ id:'roster', label: myRole==='admin'?'회원 관리':'내 선수' }] : []),
-              ].map(tab=>{
-                const active=view===tab.id;
-                return (
-                  <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`whitespace-nowrap h-8 px-4 rounded-full text-[12px] font-[700] border transition-all ${active?'gold-gradient text-[var(--c-on-accent)] border-[var(--c-D4AF37)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-101012)] border-[var(--c-2A2A2E)] text-[var(--c-9A9A93)]'}`}>{tab.label}</button>
-                );
-              })}
-            </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[96px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
-            {view==='roster' && isCoachOrAdmin && <CoachAdminView role={myRole} />}
+          <main className="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+            {view==='roster' && hasRoster && <CoachAdminView role={myRole as 'coach'|'admin'|'parent'} />}
             {view==='dashboard' && (
               <>
                 {hasNewComment && latestComment && (
@@ -655,7 +692,7 @@ export default function App() {
                   >
                     <div className="w-12 h-12 rounded-full bg-[var(--c-on-accent)]/15 flex items-center justify-center shrink-0"><MessageSquare size={22}/></div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {latestComment.authorName} 코치님의 피드백이 도착했어요</div>
+                      <div className="text-[11px] font-[800] tracking-[0.12em]">NEW · {latestComment.authorName}님의 피드백이 도착했어요</div>
                       <div className="mt-1 text-[15px] lg:text-[16px] font-[800] truncate">"{latestComment.text}"</div>
                     </div>
                     <ChevronRight size={22} className="shrink-0"/>
@@ -695,6 +732,28 @@ export default function App() {
                       </>
                     )}
                   </div>
+                ) : isParent ? (
+                  <div className="card p-5 lg:p-6">
+                    <div className="flex items-center justify-between">
+                      <span className="label-caps flex items-center gap-1.5"><Users size={12}/> 내 아이</span>
+                      <span className="text-[10px] font-[700] px-2 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">{myChildren.length}명</span>
+                    </div>
+                    {myChildren.length===0 ? (
+                      <div className="mt-4 text-center py-6 text-[11px] text-[var(--c-6A6A66)]">아직 연결된 아이가 없어요 · 자녀 계정에서 마이페이지에 등록해달라고 해주세요</div>
+                    ) : (
+                      <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {myChildren.map(p=>(
+                          <button key={p.uid} onClick={()=>{ setView('roster'); }} className="flex items-center gap-3 rounded-[14px] subcard p-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
+                            <Avatar avatarId={p.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[15px] shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[12px] font-[700] truncate">{p.displayName || p.email}</div>
+                              <div className="text-[10px] text-[var(--c-6A6A66)] truncate">{p.email}</div>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="card p-5 lg:p-6">
                     {myProfile?.startYearMonth && (
@@ -720,6 +779,28 @@ export default function App() {
                       </div>
                     ) : (
                       <button onClick={()=>setView('growth')} className="mt-4 w-full text-center py-6 text-[11px] text-[var(--c-6A6A66)] hover:text-[var(--c-D4AF37)] transition-colors">아직 담당 코치가 없어요 · 마이페이지에서 등록해보세요</button>
+                    )}
+                    {(myProfile?.parentName || myProfile?.rinkAddress || myProfile?.teamName || myProfile?.skateInfo || myProfile?.bladeInfo) && (
+                      <>
+                        <div className="mt-4 h-[1px] bg-[var(--c-2A2A20)]" />
+                        <div className="mt-4 space-y-2.5">
+                          {myProfile?.parentName && (
+                            <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">부모님</span><span className="font-[700] text-[var(--c-F5F1E8)]">{myProfile.parentName}</span></div>
+                          )}
+                          {myProfile?.rinkAddress && (
+                            <div className="flex items-center justify-between gap-3 text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600] shrink-0">소속 링크장</span><span className="font-[700] text-[var(--c-F5F1E8)] text-right truncate">{myProfile.rinkAddress}</span></div>
+                          )}
+                          {myProfile?.teamName && (
+                            <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">소속팀</span><span className="font-[700] text-[var(--c-F5F1E8)]">{myProfile.teamName}</span></div>
+                          )}
+                          {myProfile?.skateInfo && (
+                            <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">스케이트화</span><span className="font-[700] text-[var(--c-F5F1E8)]">{myProfile.skateInfo}</span></div>
+                          )}
+                          {myProfile?.bladeInfo && (
+                            <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">날 정보</span><span className="font-[700] text-[var(--c-F5F1E8)]">{myProfile.bladeInfo}</span></div>
+                          )}
+                        </div>
+                      </>
                     )}
                   </div>
                 )}
@@ -753,7 +834,7 @@ export default function App() {
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-[1.25fr_0.75fr] gap-5 lg:gap-6 items-start">
                   {/* Recent trainings */}
-                  <div className="card p-5 lg:p-6">
+                  <div className="card p-5 lg:p-6 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="font-[700] text-[14px]">최근 훈련</div>
                       <div className="flex gap-1.5">
@@ -786,11 +867,11 @@ export default function App() {
                     </div>
                   </div>
                   {/* Goal card */}
-                  <div className="space-y-4">
+                  <div className="space-y-4 min-w-0">
                     <div className="card p-5 lg:p-6 bg-[var(--c-0E0E10)] border-[var(--c-2C2A20)] overflow-hidden">
                       <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-[radial-gradient(60%_60%_at_50%_50%,rgba(var(--c-D4AF37-rgb),0.14),transparent)] pointer-events-none" />
                       <div className="flex items-center justify-between relative">
-                        <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[var(--c-D4AF37)]"/> 시즌 목표</div>
+                        <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[var(--c-D4AF37)]"/> 나의 목표</div>
                         <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">{goals.length} GOALS</span>
                       </div>
                       <div className="mt-5 space-y-4 relative">
@@ -804,7 +885,7 @@ export default function App() {
                             <div className="mt-2 flex justify-between text-[10px] font-[600] text-[var(--c-9A9A93)]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
                           </div>
                         ))}
-                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[var(--c-6A6A66)]">마이페이지 탭에서 시즌 목표를 등록해보세요</div>}
+                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[var(--c-6A6A66)]">마이페이지 탭에서 나의 목표를 등록해보세요</div>}
                       </div>
                     </div>
                     <div className="card p-5 lg:p-6">
@@ -1228,7 +1309,7 @@ export default function App() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
-                  <div className="card p-5 lg:p-6">
+                  <div className="card p-5 lg:p-6 min-w-0">
                     <div className="flex items-center justify-between">
                       <div className="font-[700] text-[14px] flex items-center gap-2"><TrendingUp size={16} className="text-[var(--c-D4AF37)]"/> 거리별 기록 흐름 · 성장 추적</div>
                       <span className="text-[10px] font-[700] px-2.5 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">최근 20회</span>
@@ -1259,7 +1340,7 @@ export default function App() {
                     )}
                     <div className="mt-2 text-[10px] font-[600] text-[var(--c-6A6A66)] text-center">첫 기록 대비 속도 지수 · 높을수록 빨라진 거예요</div>
                   </div>
-                  <div className="space-y-4">
+                  <div className="space-y-4 min-w-0">
                     <div className="card p-5">
                       <div className="font-[700] text-[13px]">훈련 분포 · Donut</div>
                       <div className="mt-3 h-[140px] flex items-center">
@@ -1335,8 +1416,8 @@ export default function App() {
                   </div>
                   <div>
                     <label className="label-caps">회원 분류</label>
-                    <div className="mt-1.5 grid grid-cols-2 gap-2">
-                      {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
+                    <div className="mt-1.5 grid grid-cols-3 gap-2">
+                      {([['athlete','선수'],['coach','코치'],['parent','부모']] as const).map(([val,label])=>(
                         <button
                           key={val} onClick={()=>saveProfile(user!.uid, { role: val })}
                           className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${myProfile?.role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}
@@ -1353,6 +1434,102 @@ export default function App() {
                       className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)]"
                     />
                   </div>
+                  {myRole==='athlete' && (
+                    <>
+                      <div>
+                        <label className="label-caps">담당 코치</label>
+                        {myProfile?.coachName ? (
+                          <div className="mt-1.5 flex items-center justify-between rounded-[12px] subcard px-4 h-11">
+                            <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{myProfile.coachName} 코치님</span>
+                            <button onClick={()=>saveProfile(user!.uid, { coachId:'', coachName:'' })} className="text-[11px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">지정 해제</button>
+                          </div>
+                        ) : (
+                          <div className="mt-1.5">
+                            <div className="relative">
+                              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--c-6A6A66)]"/>
+                              <input value={coachSearch} onChange={e=>setCoachSearch(e.target.value)} placeholder="코치 이름 검색" className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                            </div>
+                            {coachSearch.trim() && (
+                              <div className="mt-2 space-y-1.5">
+                                {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).map(p=>(
+                                  <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { coachId:p.uid, coachName:p.displayName }); setCoachSearch(''); }} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                                    <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{p.displayName}</span>
+                                    <span className="text-[11px] font-[600] text-[var(--c-D4AF37)]">선택</span>
+                                  </button>
+                                ))}
+                                {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).length===0 && (
+                                  <div className="text-[12px] text-[var(--c-6A6A66)] py-2">일치하는 코치가 없어요</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="label-caps">부모님</label>
+                        {myProfile?.parentName ? (
+                          <div className="mt-1.5 flex items-center justify-between rounded-[12px] subcard px-4 h-11">
+                            <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{myProfile.parentName}</span>
+                            <button onClick={()=>saveProfile(user!.uid, { parentId:'', parentName:'' })} className="text-[11px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">지정 해제</button>
+                          </div>
+                        ) : (
+                          <div className="mt-1.5">
+                            <div className="relative">
+                              <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--c-6A6A66)]"/>
+                              <input value={parentSearch} onChange={e=>setParentSearch(e.target.value)} placeholder="부모님 이름 검색" className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+                            </div>
+                            {parentSearch.trim() && (
+                              <div className="mt-2 space-y-1.5">
+                                {allProfiles.filter(p=>p.role==='parent' && p.displayName.toLowerCase().includes(parentSearch.trim().toLowerCase())).map(p=>(
+                                  <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { parentId:p.uid, parentName:p.displayName }); setParentSearch(''); }} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                                    <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{p.displayName}</span>
+                                    <span className="text-[11px] font-[600] text-[var(--c-D4AF37)]">선택</span>
+                                  </button>
+                                ))}
+                                {allProfiles.filter(p=>p.role==='parent' && p.displayName.toLowerCase().includes(parentSearch.trim().toLowerCase())).length===0 && (
+                                  <div className="text-[12px] text-[var(--c-6A6A66)] py-2">일치하는 부모님 계정이 없어요</div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <label className="label-caps">소속 링크장</label>
+                        <button onClick={()=>openAddressSearch(addr=>saveProfile(user!.uid, { rinkAddress: addr }))} className="mt-1.5 w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
+                          <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)] truncate">{myProfile?.rinkAddress || '주소 검색으로 등록'}</span>
+                          <span className="text-[11px] font-[600] text-[var(--c-D4AF37)] shrink-0 ml-2">검색</span>
+                        </button>
+                      </div>
+                      <div>
+                        <label className="label-caps">소속팀</label>
+                        <input
+                          key={`team-${myProfile?.teamName}`} defaultValue={myProfile?.teamName || ''} autoComplete="off"
+                          onBlur={e=>{ const v=e.target.value.trim(); if(v!==(myProfile?.teamName||'')) saveProfile(user!.uid, { teamName: v }); }}
+                          placeholder="예: OO 스피드스케이팅팀"
+                          className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="label-caps">현재 스케이트화</label>
+                        <input
+                          key={`skate-${myProfile?.skateInfo}`} defaultValue={myProfile?.skateInfo || ''} autoComplete="off"
+                          onBlur={e=>{ const v=e.target.value.trim(); if(v!==(myProfile?.skateInfo||'')) saveProfile(user!.uid, { skateInfo: v }); }}
+                          placeholder="예: 봉트 슈퍼스피드"
+                          className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                        />
+                      </div>
+                      <div>
+                        <label className="label-caps">날 정보</label>
+                        <input
+                          key={`blade-${myProfile?.bladeInfo}`} defaultValue={myProfile?.bladeInfo || ''} autoComplete="off"
+                          onBlur={e=>{ const v=e.target.value.trim(); if(v!==(myProfile?.bladeInfo||'')) saveProfile(user!.uid, { bladeInfo: v }); }}
+                          placeholder="예: MK 마하 43.5"
+                          className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                        />
+                      </div>
+                    </>
+                  )}
                   <div>
                     <label className="label-caps">디자인 테마</label>
                     <div className="mt-1.5 grid grid-cols-2 gap-2">
@@ -1368,38 +1545,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-
-            {view==='growth' && myRole==='athlete' && (
-              <div className="card p-5 lg:p-6">
-                <div className="font-[700] text-[14px]">담당 코치</div>
-                {myProfile?.coachName ? (
-                  <div className="mt-3 flex items-center justify-between rounded-[14px] subcard px-4 h-12">
-                    <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{myProfile.coachName} 코치님</span>
-                    <button onClick={()=>saveProfile(user!.uid, { coachId:'', coachName:'' })} className="text-[11px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">지정 해제</button>
-                  </div>
-                ) : (
-                  <div className="mt-3">
-                    <div className="relative">
-                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--c-6A6A66)]"/>
-                      <input value={coachSearch} onChange={e=>setCoachSearch(e.target.value)} placeholder="코치 이름 검색" className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] pl-9 pr-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
-                    </div>
-                    {coachSearch.trim() && (
-                      <div className="mt-2 space-y-1.5">
-                        {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).map(p=>(
-                          <button key={p.uid} onClick={()=>{ saveProfile(user!.uid, { coachId:p.uid, coachName:p.displayName }); setCoachSearch(''); }} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
-                            <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">{p.displayName}</span>
-                            <span className="text-[11px] font-[600] text-[var(--c-D4AF37)]">선택</span>
-                          </button>
-                        ))}
-                        {allProfiles.filter(p=>p.role==='coach' && p.displayName.toLowerCase().includes(coachSearch.trim().toLowerCase())).length===0 && (
-                          <div className="text-[12px] text-[var(--c-6A6A66)] py-2">일치하는 코치가 없어요</div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             )}
 
@@ -1456,7 +1601,7 @@ export default function App() {
             {view==='growth' && (
               <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
-                  <div className="font-[700] text-[14px]">시즌 목표 · Season Goals</div>
+                  <div className="font-[700] text-[14px]">나의 목표 · My Goals</div>
                   <button onClick={()=>setGoalForm({ id: crypto.randomUUID(), title:'', target:'', current:'', progress:0, icon:'🏆' })} className="h-8 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] text-[11px] font-[800]">+ 목표 추가</button>
                 </div>
                 <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -1543,8 +1688,22 @@ export default function App() {
         </div>
       </div>
 
-      {/* Floating action mobile */}
-      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[18px] right-4 z-20 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
+      {/* Floating action mobile - sits just above the bottom tab bar */}
+      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[80px] right-4 z-30 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
+
+      {/* Mobile bottom tab bar - app-style primary navigation */}
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--c-0C0C0E)]/90 backdrop-blur-2xl border-t border-[var(--c-1C1A12)] flex items-stretch h-[64px] pb-[env(safe-area-inset-bottom)]">
+        {navTabs.map(tab=>{
+          const active = view===tab.id;
+          const Icon = tab.icon;
+          return (
+            <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`flex-1 flex flex-col items-center justify-center gap-1 transition-colors ${active?'text-[var(--c-D4AF37)]':'text-[var(--c-6A6A66)]'}`}>
+              <Icon size={20} strokeWidth={active?2.4:1.8}/>
+              <span className="text-[10px] font-[700] leading-none">{tab.label}</span>
+            </button>
+          );
+        })}
+      </nav>
 
       {toast && (
         <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[rgba(var(--c-D4AF37-rgb),0.22)] backdrop-blur-xl text-[var(--c-F5F1E8)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/60">

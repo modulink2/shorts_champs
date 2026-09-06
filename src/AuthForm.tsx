@@ -19,7 +19,7 @@ export default function AuthForm() {
   const { signUp, logIn } = useAuth();
   const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'athlete'|'coach'>('athlete');
+  const [role, setRole] = useState<'athlete'|'coach'|'parent'>('athlete');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -53,12 +53,8 @@ export default function AuthForm() {
       </div>
 
       <div className="relative z-10 w-full max-w-[380px]">
-        <div className="flex flex-col items-center gap-3 mb-8">
-          <div className="w-12 h-12 rounded-[14px] gold-gradient flex items-center justify-center text-[var(--c-on-accent)] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)]"><Logo size={48}/></div>
-          <div className="text-center">
-            <div className="font-[800] text-[16px] tracking-[-0.02em] leading-none">SHORT TRACK</div>
-            <div className="text-[10px] font-[700] tracking-[0.18em] text-[var(--c-D4AF37)] mt-1.5">CHAMPION EDITION</div>
-          </div>
+        <div className="flex flex-col items-center mb-8">
+          <Logo size={56}/>
         </div>
 
         <div className="card p-6">
@@ -88,8 +84,8 @@ export default function AuthForm() {
                 </div>
                 <div>
                   <label className="label-caps">회원 분류</label>
-                  <div className="mt-1.5 grid grid-cols-2 gap-2">
-                    {([['athlete','선수'],['coach','코치']] as const).map(([val,label])=>(
+                  <div className="mt-1.5 grid grid-cols-3 gap-2">
+                    {([['athlete','선수'],['coach','코치'],['parent','부모']] as const).map(([val,label])=>(
                       <button
                         key={val} type="button" onClick={()=>setRole(val)}
                         className={`h-11 rounded-[12px] border text-[13px] font-[700] transition-all ${role===val? 'gold-gradient border-[var(--c-D4AF37)] text-[var(--c-on-accent)]' : 'bg-[var(--c-0E0E10)] border-[var(--c-1E1E22)] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)]'}`}

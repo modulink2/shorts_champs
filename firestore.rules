@@ -8,13 +8,21 @@ service cloud.firestore {
       return request.auth != null &&
         get(/databases/$(database)/documents/profiles/$(athleteUid)).data.coachId == request.auth.uid;
     }
+    function isLinkedParent(athleteUid) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/profiles/$(athleteUid)).data.parentId == request.auth.uid;
+    }
 
     // Profile docs (name/email/role/coachId) — readable by any signed-in user
     // so athletes can search coaches and coaches/admin can see rosters, but
-    // only the owner or the admin account can write one.
+    // only the owner or the admin account can write one. Exception: an
+    // assigned coach or linked parent may update ONLY the focusGoal field
+    // (the goal-message feature) on their athlete/child's profile.
     match /profiles/{uid} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow update: if request.auth != null && (isAssignedCoach(uid) || isLinkedParent(uid)) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['focusGoal']);
     }
 
     // Coach/admin can leave comments on an athlete's log without otherwise

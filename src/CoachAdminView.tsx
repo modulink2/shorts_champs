@@ -1,9 +1,75 @@
 import React, { useMemo, useState } from 'react';
-import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight, Target } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useAllProfiles, saveProfile, useComments } from './useProfile';
 import { useTrainingLogs } from './useTrainingLogs';
 import { TYPE_META, logTypes, toLocalDateStr, Avatar, type UserProfile, type UserRole } from './App';
+
+const FOCUS_EMOJIS = ['💪','🔥','⭐️','👍','🎯','🏆','❄️','👏'];
+
+// Coach/parent: set or edit the goal message shown on the athlete's own
+// dashboard (replaces the default motivational quote there).
+function FocusGoalEditor({ athlete, authorName }: { athlete: UserProfile; authorName: string }) {
+  // Local mirror of the goal so the UI updates immediately after a save,
+  // independent of the parent's `athlete` prop (a point-in-time snapshot
+  // from the roster list that won't itself refresh after this write).
+  const [goal, setGoal] = useState(athlete.focusGoal);
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(goal?.text || '');
+  const [emoji, setEmoji] = useState(goal?.emoji || FOCUS_EMOJIS[0]);
+
+  const startEdit = () => { setText(goal?.text || ''); setEmoji(goal?.emoji || FOCUS_EMOJIS[0]); setEditing(true); };
+  const save = () => {
+    if (!text.trim()) return;
+    const next = { text: text.trim(), emoji, authorName, done: false, updatedAt: Date.now() };
+    saveProfile(athlete.uid, { focusGoal: next });
+    setGoal(next);
+    setEditing(false);
+  };
+  const toggleDone = () => {
+    if (!goal) return;
+    const next = { ...goal, done: !goal.done };
+    saveProfile(athlete.uid, { focusGoal: next });
+    setGoal(next);
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="font-[700] text-[13px] flex items-center gap-2"><Target size={14} className="text-[var(--c-D4AF37)]"/> 목표 메시지</div>
+      {editing ? (
+        <div className="mt-3 space-y-2.5">
+          <div className="flex flex-wrap gap-1.5">
+            {FOCUS_EMOJIS.map(e=>(
+              <button key={e} onClick={()=>setEmoji(e)} className={`w-9 h-9 rounded-[10px] border text-[16px] flex items-center justify-center ${emoji===e?'gold-gradient border-[var(--c-D4AF37)]':'bg-[var(--c-18181B)] border-[var(--c-232326)]'}`}>{e}</button>
+            ))}
+          </div>
+          <textarea
+            autoFocus value={text} onChange={e=>setText(e.target.value)}
+            placeholder="예: 화이팅! 코너 진입만 더 신경 쓰면 돼"
+            className="field w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"
+          />
+          <div className="flex gap-2">
+            <button onClick={save} disabled={!text.trim()} className="flex-1 h-10 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] disabled:opacity-40">저장</button>
+            <button onClick={()=>setEditing(false)} className="h-10 px-4 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] text-[var(--c-9A9A93)]">취소</button>
+          </div>
+        </div>
+      ) : goal ? (
+        <div className="mt-3 rounded-[14px] subcard p-3.5">
+          <div className={`text-[13px] font-[600] leading-[1.5] ${goal.done?'text-[var(--c-6A6A66)] line-through':'text-[var(--c-E8E2D2)]'}`}>{goal.emoji} {goal.text}</div>
+          <div className="mt-2.5 flex items-center justify-between">
+            <span className="text-[10px] text-[var(--c-6A6A66)]">{goal.authorName}</span>
+            <div className="flex gap-2">
+              <button onClick={toggleDone} className={`text-[11px] font-[700] ${goal.done?'text-[var(--c-D4AF37)]':'text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]'}`}>{goal.done?'완료 취소':'완료로 표시'}</button>
+              <button onClick={startEdit} className="text-[11px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">수정</button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <button onClick={startEdit} className="mt-3 w-full text-center py-6 text-[11px] text-[var(--c-6A6A66)] hover:text-[var(--c-D4AF37)] transition-colors rounded-[14px] subcard">아직 등록한 목표 메시지가 없어요 · 눌러서 등록해보세요</button>
+      )}
+    </div>
+  );
+}
 
 // Admin-only: list every account, edit their display name and 선수/코치 role.
 function MemberManagement() {
@@ -21,7 +87,7 @@ function MemberManagement() {
       <div className="mt-5 space-y-2">
         {sorted.map(p=>(
           <div key={p.uid} className="subcard rounded-[14px] p-3.5 flex items-center gap-3">
-            <Avatar avatarId={p.avatarId} fallback={p.role==='coach' ? '🧑‍🏫' : '⛸️'} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px] shrink-0" />
+            <Avatar avatarId={p.avatarId} fallback={p.role==='coach' ? '🧑‍🏫' : p.role==='parent' ? '👪' : '⛸️'} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px] shrink-0" />
             <div className="flex-1 min-w-0">
               {editingUid===p.uid ? (
                 <input
@@ -36,11 +102,12 @@ function MemberManagement() {
               <div className="text-[11px] text-[var(--c-6A6A66)] truncate">{p.email}</div>
             </div>
             <select
-              value={p.role} onChange={e=>saveProfile(p.uid, { role: e.target.value as 'athlete'|'coach' })}
+              value={p.role} onChange={e=>saveProfile(p.uid, { role: e.target.value as 'athlete'|'coach'|'parent' })}
               className="field h-8 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[11px] font-[700] text-[var(--c-F5F1E8)] px-2 outline-none shrink-0"
             >
               <option value="athlete">선수</option>
               <option value="coach">코치</option>
+              <option value="parent">부모</option>
             </select>
           </div>
         ))}
@@ -104,6 +171,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
       </div>
 
       <div className="space-y-4">
+        <FocusGoalEditor athlete={athlete} authorName={user?.displayName || user?.email || '코치'} />
         <div className="card p-5">
           <div className="flex items-center justify-between">
             <div className="font-[800] text-[15px]">{selectedDate}</div>
@@ -187,19 +255,22 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
   );
 }
 
-// Coach: athletes with coachId == my uid. Admin: every athlete.
+// Coach: athletes with coachId == my uid. Parent: athletes with parentId ==
+// my uid. Admin: every athlete.
 function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSelect:(p:UserProfile)=>void }) {
   const profiles = useAllProfiles(true);
   const [query, setQuery] = useState('');
   const athletes = useMemo(()=>{
-    const base = profiles.filter(p=>p.role==='athlete' && (role==='admin' || p.coachId===myUid));
+    const base = profiles.filter(p=>p.role==='athlete' && (role==='admin' || (role==='parent' ? p.parentId===myUid : p.coachId===myUid)));
     return query.trim() ? base.filter(p=>(p.displayName||'').includes(query.trim())) : base;
   }, [profiles, role, myUid, query]);
+  const title = role==='admin' ? '전체 선수' : role==='parent' ? '내 아이' : '내 선수';
+  const emptyLabel = role==='admin' ? '등록된 선수가 없어요' : role==='parent' ? '아직 연결된 아이가 없어요' : '아직 배정된 선수가 없어요';
 
   return (
     <div className="card p-5 lg:p-6">
       <div className="flex items-center justify-between gap-3">
-        <div className="font-[700] text-[14px] flex items-center gap-2"><Users size={16} className="text-[var(--c-D4AF37)]"/> {role==='admin' ? '전체 선수' : '내 선수'}</div>
+        <div className="font-[700] text-[14px] flex items-center gap-2"><Users size={16} className="text-[var(--c-D4AF37)]"/> {title}</div>
         <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="이름 검색" className="field h-8 w-[140px] rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] px-3 text-[12px] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
       </div>
       <div className="mt-5 grid sm:grid-cols-2 gap-3">
@@ -212,13 +283,13 @@ function Roster({ role, myUid, onSelect }: { role: UserRole; myUid: string; onSe
             </div>
           </button>
         ))}
-        {athletes.length===0 && <div className="sm:col-span-2 text-center py-10 text-[12px] text-[var(--c-6A6A66)]">{role==='admin' ? '등록된 선수가 없어요' : '아직 배정된 선수가 없어요'}</div>}
+        {athletes.length===0 && <div className="sm:col-span-2 text-center py-10 text-[12px] text-[var(--c-6A6A66)]">{emptyLabel}</div>}
       </div>
     </div>
   );
 }
 
-export default function CoachAdminView({ role }: { role: 'coach' | 'admin' }) {
+export default function CoachAdminView({ role }: { role: 'coach' | 'admin' | 'parent' }) {
   const { user } = useAuth();
   const [tab, setTab] = useState<'roster'|'members'>(role==='admin' ? 'members' : 'roster');
   const [selectedAthlete, setSelectedAthlete] = useState<UserProfile|null>(null);

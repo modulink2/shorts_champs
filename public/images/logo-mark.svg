@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- IceDream mark: a minimal ice-crystal snowflake with a small dream sparkle at its core. -->
+  <g stroke="currentColor" stroke-width="3.2" stroke-linecap="round">
+    <path d="M24 4 V44" />
+    <path d="M7.2 13 L40.8 35" />
+    <path d="M40.8 13 L7.2 35" />
+    <path d="M24 4 L19 9 M24 4 L29 9" />
+    <path d="M24 44 L19 39 M24 44 L29 39" />
+    <path d="M7.2 13 L13 12.2 M7.2 13 L9.2 18.4" />
+    <path d="M40.8 35 L35 35.8 M40.8 35 L38.8 29.6" />
+    <path d="M40.8 13 L35 12.2 M40.8 13 L38.8 18.4" />
+    <path d="M7.2 35 L13 35.8 M7.2 35 L9.2 29.6" />
+  </g>
+  <circle cx="24" cy="24" r="5.5" fill="currentColor" />
+  <path d="M24 20.3 L25.1 22.9 L27.7 24 L25.1 25.1 L24 27.7 L22.9 25.1 L20.3 24 L22.9 22.9 Z" fill="#0B0F14" />
+</svg>

@@ -81,7 +81,7 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
   return `
     <div style="background:linear-gradient(135deg,#0b0e14 0%,#1a1d29 100%);border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-size:11px;letter-spacing:3px;color:#D4AF37;font-weight:800;">SHORT TRACK · CHAMPION EDITION</div>
+        <div style="font-size:11px;letter-spacing:3px;color:#D4AF37;font-weight:800;">ICEDREAM · SHORT TRACK EDITION</div>
         <div style="font-size:30px;font-weight:800;margin-top:8px;color:#ffffff;letter-spacing:-0.5px;">훈련 보고서</div>
       </div>
       <div style="text-align:right;">
@@ -109,7 +109,7 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     ${itemSections}
 
     <div style="margin-top:44px;padding-top:18px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:11px;letter-spacing:1px;color:#a9925a;font-weight:700;">SHORT TRACK · CHAMPION EDITION</span>
+      <span style="font-size:11px;letter-spacing:1px;color:#a9925a;font-weight:700;">ICEDREAM · SHORT TRACK EDITION</span>
       <span style="font-size:11px;color:#999;">생성일: ${new Date().toLocaleDateString('ko-KR')}</span>
     </div>
   `;

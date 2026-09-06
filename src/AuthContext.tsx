@@ -13,7 +13,7 @@ import { auth, db, isFirebaseConfigured } from './firebase';
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  signUp: (email: string, password: string, name: string, role: 'athlete'|'coach') => Promise<void>;
+  signUp: (email: string, password: string, name: string, role: 'athlete'|'coach'|'parent') => Promise<void>;
   logIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
 }
@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return onAuthStateChanged(auth, (u) => { setUser(u); setLoading(false); });
   }, []);
 
-  const signUp = async (email: string, password: string, name: string, role: 'athlete'|'coach') => {
+  const signUp = async (email: string, password: string, name: string, role: 'athlete'|'coach'|'parent') => {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     const displayName = name.trim() || email;
     if (name.trim()) await updateProfile(cred.user, { displayName });
