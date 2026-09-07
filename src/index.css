@@ -105,6 +105,16 @@ button[class*="bg-[var(--c-"]:not(.card):not(.card-gold) {
 }
 
 * { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
+/* Every surface here is dark, so tell the browser to render native form
+   chrome (select dropdown popups, checkboxes, date pickers) with dark
+   colors too — without this, a <select>'s option list falls back to the
+   OS light theme and becomes unreadable (light text on a light popup). */
+html { color-scheme: dark; }
+/* Belt-and-suspenders on top of color-scheme: some browsers still render
+   a <select>'s popup list with a light background regardless, so force it
+   explicitly — a solid (non-translucent) color, since the popup can't
+   composite with the page behind it. */
+select option { background-color: #16161a; color: #F5F1E8; }
 html, body { overflow-x: hidden; background: var(--c-060608); }
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-thumb { background: var(--c-2A2A2E); border-radius: 999px; }

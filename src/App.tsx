@@ -1045,7 +1045,7 @@ export default function App() {
 
                         <div className="mt-8 space-y-10">
                           <div>
-                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                               <span className="text-[22px] leading-none">🌑</span>
                               <span className="text-[14px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                               <span className={`w-11 h-6 rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editing.isRest? 'left-[22px]' : 'left-0.5'}`}/></span>
@@ -1749,7 +1749,7 @@ export default function App() {
             </div>
 
             <div className="p-6 space-y-6">
-              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-on-accent)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                 <span className="text-[18px] leading-none">🌑</span>
                 <span className="text-[13px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                 <span className={`w-10 h-[22px] rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all ${editing.isRest? 'left-[20px]' : 'left-0.5'}`}/></span>
