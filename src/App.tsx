@@ -562,78 +562,43 @@ export default function App() {
   return (
     <div className="no-auto-blur h-dvh w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* animated track-ring canvas background + subtle radial gold vignette */}
-      <div className="pointer-events-none fixed inset-0 z-0" style={{background:'radial-gradient(120% 120% at 50% 30%, #0f172a 0%, #1e293b 40%, #0f172a 100%)'}}>
-        <TrackBackground />
+      <div className="pointer-events-none fixed inset-0 z-0" style={{background:'radial-gradient(120% 120% at 50% 30%, var(--hero-1) 0%, var(--hero-2) 40%, var(--hero-1) 100%)'}}>
         <div className="absolute inset-0 bg-[radial-gradient(80%_60%_at_50%_-10%,rgba(var(--c-D4AF37-rgb),var(--glow-1)),transparent_60%),radial-gradient(60%_40%_at_90%_10%,rgba(var(--c-C9A86A-rgb),var(--glow-2)),transparent_50%),radial-gradient(50%_45%_at_5%_60%,rgba(var(--c-D4AF37-rgb),var(--glow-3)),transparent_55%),radial-gradient(45%_40%_at_85%_90%,rgba(var(--c-C9A86A-rgb),var(--glow-4)),transparent_55%)]" />
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex h-full overflow-hidden">
-        {/* Sidebar - desktop */}
-        <aside className="hidden lg:flex w-[256px] shrink-0 flex-col bg-[var(--c-08080A)]/35 backdrop-blur-2xl border-r border-[var(--c-1C1A12)] h-full">
-          <div className="h-[72px] px-6 flex items-center justify-center border-b border-[var(--c-1C1A12)]">
-            <Logo size={40}/>
-          </div>
-          <div className="p-3 space-y-1.5 flex-1">
-            {navTabs.map(tab=>{
-              const active=view===tab.id;
-              const Icon=tab.icon;
-              return (
-                <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`group w-full h-[56px] rounded-[14px] flex items-center gap-3 px-3.5 text-left transition-all border ${active?'bg-[var(--c-121214)] border-[var(--c-3A3520)] shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.12)]':'bg-transparent border-transparent hover:bg-[var(--c-121214)] hover:border-[var(--c-2A2A2E)]'}`}>
-                  <div className={`w-[1.5px] self-stretch rounded-full -ml-3.5 mr-1 transition-all ${active?'bg-[var(--c-D4AF37)] shadow-[0_0_8px_var(--c-D4AF37)]':'bg-transparent group-hover:bg-[var(--c-2A2A2E)]'}`} />
-                  <div className={`w-9 h-9 rounded-[10px] flex items-center justify-center border transition-all ${active?'gold-gradient text-[var(--c-on-accent)] border-[var(--c-D4AF37)]/30 shadow-[0_0_12px_rgba(var(--c-D4AF37-rgb),0.3)]':'bg-[var(--c-151519)] border-[var(--c-232326)] text-[var(--c-9A9A93)] group-hover:text-[var(--c-F5F1E8)]'}`}>
-                    <Icon size={18} strokeWidth={active?2.5:1.8}/>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className={`text-[13px] font-[700] tracking-[-0.01em] leading-none ${active?'text-[var(--c-F5F1E8)]':'text-[var(--c-CFCFC8)]'}`}>{tab.label}</div>
-                    <div className={`text-[10px] font-[600] tracking-[0.12em] mt-1 ${active?'text-[var(--c-D4AF37)]':'text-[var(--c-6A6A66)]'}`}>{tab.desc}</div>
-                  </div>
-                  {active && <div className="w-1.5 h-1.5 rounded-full bg-[var(--c-D4AF37)] shadow-[0_0_8px_var(--c-D4AF37)]" />}
-                </button>
-              );
-            })}
-            <div className="pt-6 px-3">
-              <div className="card-gold rounded-[16px] p-4 overflow-hidden">
-                <div className="flex items-center gap-2">
-                  <Crown size={14} className="text-[var(--c-D4AF37)]" />
-                  <span className="label-caps text-[var(--c-D4AF37)]">목표달성</span>
-                </div>
-                {myProfile?.focusGoal ? (
-                  <>
-                    <div className={`mt-2.5 text-[12px] font-[600] leading-[1.4] whitespace-pre-wrap ${myProfile.focusGoal.done ? 'text-[var(--c-6A6A66)] line-through' : 'text-[var(--c-E8E2D2)]'}`}>{myProfile.focusGoal.emoji} {myProfile.focusGoal.text}</div>
-                    <div className="mt-3 h-[1px] bg-[var(--c-2A2A20)]" />
-                    <div className="mt-3 flex items-center justify-between">
-                      <span className="text-[11px] font-[500] text-[var(--c-9A9A93)]">{myProfile.focusGoal.authorName}</span>
-                      <span className={`text-[11px] font-[700] ${myProfile.focusGoal.done ? 'text-[var(--c-D4AF37)]' : 'text-[var(--c-6A6A66)]'}`}>{myProfile.focusGoal.done ? '완료 ✓' : '응원 중'}</span>
-                    </div>
-                  </>
-                ) : (
-                  <div className="mt-2.5 text-[12px] font-[600] leading-[1.4] text-[var(--c-E8E2D2)] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
-                )}
-              </div>
-            </div>
-          </div>
-          <div className="p-4 border-t border-[var(--c-1C1A12)]">
-            <div className="flex flex-col items-center text-center gap-2">
-              <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-16 h-16 rounded-full bg-[var(--c-18181B)] border border-[var(--c-2A2A2E)] text-[28px]" />
+      <div className="relative z-10 flex flex-col h-full overflow-hidden">
+        {/* Top bar: desktop nav row + mobile logo row + page-title row */}
+        <header className="shrink-0 z-20 bg-[var(--chrome-header-bg)] border-b border-[var(--chrome-border)]">
+          {/* Desktop: logo, nav tabs and account all in one top bar */}
+          <div className="hidden lg:flex items-center h-[68px] px-6 gap-2 border-b border-[var(--chrome-border)]">
+            <Logo size={32}/>
+            <nav className="flex items-center gap-1 flex-1 ml-6">
+              {navTabs.map(tab=>{
+                const active=view===tab.id;
+                const Icon=tab.icon;
+                return (
+                  <button key={tab.id} onClick={()=>setView(tab.id as ViewType)} className={`h-10 px-4 rounded-full flex items-center gap-2 text-[13px] font-[700] tracking-[-0.01em] transition-all ${active?'gold-gradient text-[var(--c-on-accent)]':'text-[var(--chrome-text-dim)] hover:text-[var(--chrome-text)] hover:bg-[var(--chrome-hover-bg)]'}`}>
+                    <Icon size={16} strokeWidth={active?2.4:1.8}/>
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+            <span className="text-[10px] font-[700] tracking-[0.1em] px-2.5 h-6 rounded-full bg-[var(--chrome-active-bg)] text-[var(--c-D4AF37)] inline-flex items-center shrink-0">{themeLabel}</span>
+            <div className="flex items-center gap-2.5 pl-4 ml-2 border-l border-[var(--chrome-border)] shrink-0">
+              <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--chrome-hover-bg)] border border-[var(--chrome-border)] text-[16px]" />
               <div className="min-w-0">
-                <div className="text-[12px] font-[700] truncate">{myProfile?.displayName || user?.displayName || '챔피언'}</div>
-                <div className="text-[10px] font-[500] text-[var(--c-9A9A93)] truncate">{user?.email}</div>
+                <div className="text-[12px] font-[700] text-[var(--chrome-text)] truncate max-w-[120px]">{myProfile?.displayName || user?.displayName || '챔피언'}</div>
+                <button onClick={logOut} className="text-[10px] font-[600] text-[var(--chrome-text-faint)] hover:text-[var(--c-D4AF37)] transition-colors">로그아웃</button>
               </div>
-              <button onClick={logOut} className="text-[10px] font-[700] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] transition-colors">로그아웃</button>
             </div>
           </div>
-        </aside>
-
-        {/* Main */}
-        <div className="flex-1 min-w-0 flex flex-col h-full overflow-hidden">
-          {/* Top bar mobile + desktop header */}
-          <header className="shrink-0 z-20 backdrop-blur-[20px] bg-[var(--c-0C0C0E)]/45 border-b border-[var(--c-1C1A12)]">
-            {/* Mobile: logo alone on its own row */}
-            <div className="lg:hidden h-[48px] flex items-center justify-center border-b border-[var(--c-1C1A12)]">
-              <Logo size={24}/>
-            </div>
-            <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
+          {/* Mobile: logo alone on its own row */}
+          <div className="lg:hidden h-[48px] flex items-center justify-center border-b border-[var(--c-1C1A12)]">
+            <Logo size={24}/>
+          </div>
+          <div className="h-[64px] lg:h-[72px] px-4 lg:px-8 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div>
                   <div className="flex items-center gap-2.5">
@@ -666,7 +631,10 @@ export default function App() {
             </div>
           </header>
 
-          <main className="flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+          <main className="content-scope relative isolate bg-[var(--c-0E0E10)] flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+            <div className="pointer-events-none fixed inset-0 -z-10">
+              <TrackBackground />
+            </div>
             {view==='roster' && hasRoster && <CoachAdminView role={myRole as 'coach'|'admin'|'parent'} />}
             {view==='friends' && <FriendsView />}
             {view==='lounge' && <LoungeView />}
@@ -698,6 +666,24 @@ export default function App() {
                     <ChevronRight size={22} className="shrink-0"/>
                   </button>
                 )}
+                <div className="card-gold rounded-[20px] p-5 lg:p-6 overflow-hidden">
+                  <div className="flex items-center gap-2">
+                    <Crown size={14} className="text-[var(--c-D4AF37)]" />
+                    <span className="label-caps text-[var(--c-D4AF37)]">목표달성</span>
+                  </div>
+                  {myProfile?.focusGoal ? (
+                    <>
+                      <div className={`mt-2.5 text-[13px] font-[600] leading-[1.4] whitespace-pre-wrap ${myProfile.focusGoal.done ? 'text-[var(--c-6A6A66)] line-through' : 'text-[var(--c-E8E2D2)]'}`}>{myProfile.focusGoal.emoji} {myProfile.focusGoal.text}</div>
+                      <div className="mt-3 h-[1px] bg-[var(--c-2A2A20)]" />
+                      <div className="mt-3 flex items-center justify-between">
+                        <span className="text-[11px] font-[500] text-[var(--c-9A9A93)]">{myProfile.focusGoal.authorName}</span>
+                        <span className={`text-[11px] font-[700] ${myProfile.focusGoal.done ? 'text-[var(--c-D4AF37)]' : 'text-[var(--c-6A6A66)]'}`}>{myProfile.focusGoal.done ? '완료 ✓' : '응원 중'}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="mt-2.5 text-[13px] font-[600] leading-[1.4] text-[var(--c-E8E2D2)] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
+                  )}
+                </div>
                 {isCoachOrAdmin ? (
                   <div className="card p-5 lg:p-6">
                     <div className="flex items-center justify-between">
@@ -868,8 +854,7 @@ export default function App() {
                   </div>
                   {/* Goal card */}
                   <div className="space-y-4 min-w-0">
-                    <div className="card p-5 lg:p-6 bg-[var(--c-0E0E10)] border-[var(--c-2C2A20)] overflow-hidden">
-                      <div className="absolute top-0 right-0 w-[120px] h-[120px] bg-[radial-gradient(60%_60%_at_50%_50%,rgba(var(--c-D4AF37-rgb),0.14),transparent)] pointer-events-none" />
+                    <div className="card p-5 lg:p-6 overflow-hidden">
                       <div className="flex items-center justify-between relative">
                         <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[var(--c-D4AF37)]"/> 나의 목표</div>
                         <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">{goals.length} GOALS</span>
@@ -958,7 +943,7 @@ export default function App() {
                         const isSel=ds===selectedDate;
                         return (
                           <div key={i} className="h-[32px] flex items-center justify-center">
-                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[rgba(var(--c-D4AF37-rgb),0.22)] backdrop-blur-xl text-[var(--c-F5F1E8)] border-[var(--c-D4AF37)]/60 shadow-[0_2px_10px_rgba(var(--c-D4AF37-rgb),0.25)]' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
+                            <button onClick={()=>{setSelectedDate(ds); setDiaryEditMode(false);}} className={`w-[28px] h-[28px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] transition-all relative ${isSel? 'bg-[rgba(var(--c-D4AF37-rgb),0.22)] text-[var(--c-F5F1E8)] border-[var(--c-D4AF37)]/60' : isToday? 'bg-[var(--c-121214)] border-[var(--c-D4AF37)] text-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-151519)]'}`}>
                               <span className="leading-none">{d.getDate()}</span>
                               {log && (
                                 <span className="mt-[1px] flex gap-[2px]">
@@ -1003,13 +988,13 @@ export default function App() {
                   </div>
 
                   {/* Recent logs */}
-                  <div className="card p-4 bg-[var(--c-0E0E10)] border-[var(--c-1E1C14)]">
+                  <div className="card p-4">
                     <div className="font-[700] text-[12px] flex items-center gap-1.5"><Flame size={12} className="text-[var(--c-D4AF37)]"/> 훈련 기록이 있는 날</div>
                     <div className="mt-3 space-y-1.5">
                       {recentLogsWithRecord.map(l=>{
                         const isActive=l.date===selectedDate;
                         return (
-                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[rgba(var(--c-D4AF37-rgb),0.18)] backdrop-blur-xl border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] shadow-[0_2px_12px_rgba(var(--c-D4AF37-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
+                          <button key={l.id} onClick={()=>{setSelectedDate(l.date); setDiaryEditMode(false);}} className={`w-full text-left h-[44px] rounded-[12px] border px-3 flex items-center gap-2 transition-all ${isActive?'bg-[rgba(var(--c-D4AF37-rgb),0.18)] border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] shadow-[0_2px_12px_rgba(var(--c-D4AF37-rgb),0.2)]':'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)]'}`}>
                             <span className="text-[11px] font-[700] text-[var(--c-6A6A66)] w-[36px]">{l.date.slice(5)}</span>
                             <span className="text-[14px]">{logTypes(l).map(t=>TYPE_META[t].emoji).join('') || '📝'}</span>
                             <span className="text-[12px] font-[700] flex-1 truncate">{logSummary(l) || logTypes(l).map(t=>TYPE_META[t].label).join(', ')}</span>
@@ -1045,7 +1030,7 @@ export default function App() {
 
                         <div className="mt-8 space-y-10">
                           <div>
-                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+                            <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[64px] rounded-[18px] border flex items-center gap-3 px-5 transition-all ${editing.isRest? 'bg-[var(--selected-bg)] border-[var(--selected-bg)] text-[var(--selected-text)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                               <span className="text-[22px] leading-none">🌑</span>
                               <span className="text-[14px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                               <span className={`w-11 h-6 rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-all ${editing.isRest? 'left-[22px]' : 'left-0.5'}`}/></span>
@@ -1224,7 +1209,7 @@ export default function App() {
                                         <span className="truncate">{selectedLog.instaUrl}</span>
                                       </div>
                                     </div>
-                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors">
+                                    <a href={selectedLog.instaUrl} target="_blank" rel="noopener noreferrer" className="mt-4 w-full h-11 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[13px] flex items-center justify-center gap-2 hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors">
                                       <Link2 size={14}/> 인스타그램 열기 <ExternalLink size={12}/>
                                     </a>
                                     <div className="mt-3 text-[10px] font-[500] text-[var(--c-6A6A66)] text-center">외부 링크 · 새 탭에서 열립니다</div>
@@ -1255,7 +1240,7 @@ export default function App() {
                           <button onClick={()=>{
                             setEditing({...selectedLog});
                             setDiaryEditMode(true);
-                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] backdrop-blur-xl border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors shrink-0 whitespace-nowrap">수정하기</button>
+                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors shrink-0 whitespace-nowrap">수정하기</button>
                           <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)] shrink-0 whitespace-nowrap">삭제</button>
                           <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50 shrink-0 whitespace-nowrap"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)] shrink-0">{themeLabel} · {selectedLog.date}</span>
@@ -1378,6 +1363,7 @@ export default function App() {
             )}
 
             {view==='growth' && (
+              <>
               <div className="card p-5 lg:p-6">
                 <div className="font-[700] text-[14px]">내 정보</div>
                 <div className="mt-3 space-y-3">
@@ -1414,6 +1400,7 @@ export default function App() {
                       ))}
                     </div>
                   </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="label-caps">회원 분류</label>
                     <div className="mt-1.5 grid grid-cols-3 gap-2">
@@ -1532,6 +1519,7 @@ export default function App() {
                       </div>
                     </>
                   )}
+                  </div>
                   <div>
                     <label className="label-caps">디자인 테마</label>
                     <div className="mt-1.5 grid grid-cols-3 gap-2">
@@ -1540,12 +1528,12 @@ export default function App() {
                         return (
                           <button
                             key={t.key} onClick={()=>saveProfile(user!.uid, { theme: t.key })}
-                            style={{ background: `radial-gradient(120% 140% at 50% 120%, ${t.accent} 0%, ${t.dark} 65%)` }}
-                            className={`relative aspect-square rounded-[14px] border flex flex-col items-center justify-center gap-1.5 transition-all overflow-hidden ${active? 'border-[2px] border-[var(--c-F5F1E8)]' : 'border-[var(--c-1E1E22)] opacity-60 hover:opacity-90'}`}
+                            style={active ? { borderColor: t.accent, background: `${t.accent}14` } : undefined}
+                            className={`h-9 rounded-full border flex items-center justify-center gap-1.5 transition-all ${active ? 'border-[1.5px]' : 'border-[var(--field-border)] bg-[var(--field-bg)] opacity-70 hover:opacity-100'}`}
                           >
-                            <span className="w-5 h-5 rounded-full" style={{ background: t.accent, boxShadow: `0 0 12px ${t.accent}` }} />
-                            <span className="text-[11px] font-[800] text-[var(--c-F5F1E8)]">{t.label}</span>
-                            {active && <Check size={14} strokeWidth={3} className="absolute top-1.5 right-1.5 text-[var(--c-F5F1E8)]" />}
+                            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: t.accent }} />
+                            <span className="text-[11px] font-[700]" style={active ? { color: t.accent } : undefined}>{t.label}</span>
+                            {active && <Check size={12} strokeWidth={3} style={{ color: t.accent }} />}
                           </button>
                         );
                       })}
@@ -1570,9 +1558,8 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            )}
 
-            {view==='growth' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
               <div className="card p-5 lg:p-6">
                 <div className="font-[700] text-[14px]">주별 훈련 계획서</div>
                 <div className="mt-4 space-y-2">
@@ -1620,9 +1607,8 @@ export default function App() {
                   })}
                 </div>
               </div>
-            )}
 
-            {view==='growth' && (
+              <div className="space-y-5 lg:space-y-6">
               <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="font-[700] text-[14px]">나의 목표 · My Goals</div>
@@ -1666,9 +1652,7 @@ export default function App() {
                   </div>
                 )}
               </div>
-            )}
 
-            {view==='growth' && (
               <div className="card p-5 lg:p-6">
                 <div className="flex items-center justify-between">
                   <div className="font-[700] text-[14px]">수상이력</div>
@@ -1707,16 +1691,18 @@ export default function App() {
                   </div>
                 )}
               </div>
+              </div>
+              </div>
+              </>
             )}
           </main>
-        </div>
       </div>
 
       {/* Floating action mobile - sits just above the bottom tab bar */}
       <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[80px] right-4 z-30 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
 
       {/* Mobile bottom tab bar - app-style primary navigation */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--c-0C0C0E)]/90 backdrop-blur-2xl border-t border-[var(--c-1C1A12)] flex items-stretch h-[64px] pb-[env(safe-area-inset-bottom)]">
+      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--chrome-bg)] border-t border-[var(--chrome-border)] flex items-stretch h-[64px] pb-[env(safe-area-inset-bottom)]">
         {navTabs.map(tab=>{
           const active = view===tab.id;
           const Icon = tab.icon;
@@ -1730,7 +1716,7 @@ export default function App() {
       </nav>
 
       {toast && (
-        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[rgba(var(--c-D4AF37-rgb),0.22)] backdrop-blur-xl text-[var(--c-F5F1E8)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/60">
+        <div className="fixed left-1/2 -translate-x-1/2 bottom-[24px] z-[90] bg-[rgba(var(--c-D4AF37-rgb),0.22)] text-[var(--c-F5F1E8)] px-5 h-11 rounded-full flex items-center gap-2 text-[12px] font-[800] shadow-[0_8px_32px_rgba(0,0,0,0.5),0_0_20px_rgba(var(--c-D4AF37-rgb),0.3)] border border-[var(--c-D4AF37)]/60">
           <span className="w-5 h-5 rounded-full gold-gradient flex items-center justify-center text-[12px]">👑</span>{toast}
         </div>
       )}
@@ -1738,9 +1724,9 @@ export default function App() {
       {/* Modal - pro form */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-[12px]" onClick={()=>setShowModal(false)}/>
-          <div className="relative w-full lg:max-w-[640px] max-h-[92dvh] lg:max-h-[88dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
-            <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)]/90 backdrop-blur-xl border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
+          <div className="absolute inset-0 bg-black/70" onClick={()=>setShowModal(false)}/>
+          <div className="relative w-full lg:max-w-[640px] max-h-[92dvh] lg:max-h-[88dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)] border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
+            <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)] border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
               <div>
                 <div className="font-[800] text-[15px] tracking-[-0.02em] flex items-center gap-2"><span className="w-6 h-6 rounded-full gold-gradient flex items-center justify-center text-[var(--c-on-accent)] text-[12px]">✦</span>{editing.date} 훈련 기록</div>
                 <div className="text-[11px] font-[500] text-[var(--c-9A9A93)] mt-1">챔피언은 기록한다 · 디테일이 차이를 만든다</div>
@@ -1749,7 +1735,7 @@ export default function App() {
             </div>
 
             <div className="p-6 space-y-6">
-              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--c-F5F1E8)] border-[var(--c-F5F1E8)] text-[var(--c-060608)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
+              <button onClick={()=>setEditing({...editing, isRest: !editing.isRest})} className={`w-full h-[56px] rounded-[16px] border flex items-center gap-3 px-4 transition-all ${editing.isRest? 'bg-[var(--selected-bg)] border-[var(--selected-bg)] text-[var(--selected-text)]' : 'bg-[var(--c-121214)] border-[var(--c-232326)] text-[var(--c-CFCFC8)] hover:border-[var(--c-3A3520)]'}`}>
                 <span className="text-[18px] leading-none">🌑</span>
                 <span className="text-[13px] font-[800] flex-1 text-left">오늘은 리커버리(휴식) 데이예요</span>
                 <span className={`w-10 h-[22px] rounded-full relative transition-all ${editing.isRest? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-232326)]'}`}><span className={`absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all ${editing.isRest? 'left-[20px]' : 'left-0.5'}`}/></span>

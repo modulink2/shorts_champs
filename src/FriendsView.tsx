@@ -65,7 +65,7 @@ function FriendTrainingCalendar({ uid }: { uid: string }) {
             const isSel = ds === selectedDate;
             return (
               <div key={i} className="h-[30px] flex items-center justify-center">
-                <button onClick={() => setSelectedDate(ds)} className={`w-[26px] h-[26px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] ${isSel ? 'bg-[var(--c-F5F1E8)] text-[var(--c-on-accent)] border-[var(--c-F5F1E8)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)]'}`}>
+                <button onClick={() => setSelectedDate(ds)} className={`w-[26px] h-[26px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] ${isSel ? 'bg-[var(--selected-bg)] text-[var(--selected-text)] border-[var(--selected-bg)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)]'}`}>
                   <span className="leading-none">{d.getDate()}</span>
                   {log && <span className={`mt-[1px] w-1 h-1 rounded-full ${isSel ? 'bg-[var(--c-on-accent)]' : 'bg-[var(--c-D4AF37)]'}`} />}
                 </button>

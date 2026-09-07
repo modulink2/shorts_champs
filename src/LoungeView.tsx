@@ -184,9 +184,9 @@ export default function LoungeView() {
 
       {composerOpen && (
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-[12px]" onClick={()=>setComposerOpen(false)}/>
-          <div className="relative w-full lg:max-w-[560px] max-h-[92dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
-            <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)]/90 backdrop-blur-xl border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
+          <div className="absolute inset-0 bg-black/70" onClick={()=>setComposerOpen(false)}/>
+          <div className="relative w-full lg:max-w-[560px] max-h-[92dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)] border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
+            <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)] border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
               <div className="font-[800] text-[15px] tracking-[-0.02em]">글쓰기</div>
               <button onClick={()=>setComposerOpen(false)} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center hover:border-[var(--c-3A3520)]"><X size={16}/></button>
             </div>

@@ -30,6 +30,17 @@
   --c-FFD700-rgb: 124,232,255; --c-FFC700-rgb: 87,220,245;
   --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
   --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
+  --hero-1: #0f172a; --hero-2: #1e293b;
+  /* Fixed regardless of theme or light/dark content scope (below): the
+     sidebar/header chrome is always this dark navy, and a "selected/on"
+     highlight (calendar day, recovery-day toggle) always uses this same
+     light-chip-with-dark-text pair so it doesn't invert when the token
+     it used to borrow (--c-F5F1E8) becomes a dark *text* color inside
+     .content-scope. */
+  --chrome-bg: #0A0E1A; --chrome-header-bg: #0D1322; --chrome-border: rgba(255,255,255,0.08);
+  --chrome-text: #F1F3F7; --chrome-text-dim: #A6AFBF; --chrome-text-faint: #6D7686;
+  --chrome-hover-bg: rgba(255,255,255,0.05); --chrome-active-bg: rgba(255,255,255,0.07);
+  --selected-bg: #F5F1E8; --selected-text: #14181D;
 }
 /* Crystal Blue / Glass Pink — identical base (background, cards, glass,
    glow) to Black Gold; only the accent tokens (buttons, logo, highlights)
@@ -51,6 +62,7 @@
   --c-FFD700-rgb: 79,195,247; --c-FFC700-rgb: 41,182,246;
   --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
   --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
+  --hero-1: #0f172a; --hero-2: #1e293b;
 }
 :root[data-theme="glasspink"] {
   --c-060608: #060608; --c-on-accent: #FFFFFF;
@@ -69,6 +81,7 @@
   --c-FFD700-rgb: 232,131,172; --c-FFC700-rgb: 221,107,156;
   --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
   --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
+  --hero-1: #0f172a; --hero-2: #1e293b;
 }
 :root[data-theme="blackgold"] {
   --c-060608: #060608; --c-on-accent: #060608;
@@ -87,21 +100,61 @@
   --c-FFD700-rgb: 255,215,0; --c-FFC700-rgb: 255,199,0;
   --glow-1: 0.14; --glow-2: 0.09; --glow-3: 0.07; --glow-4: 0.06;
   --card-alpha: 0.42; --subcard-alpha: 0.5; --shadow-rgb: 0,0,0; --card-sheen: 0.07; --card-haze: 0.10;
+  --hero-1: #020202; --hero-2: #0c0a06;
 }
-/* Every element whose background or border comes from a theme token gets
-   the frosted-glass backdrop blur — covers badges, inputs, icon circles,
-   list rows, nav items and buttons alike, with zero JSX changes needed
-   whenever a new one is added. .card/.card-gold set their own (stronger). */
-[class*="bg-[var(--c-"]:not(.card):not(.card-gold):not(.no-auto-blur) {
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+
+/* The content area (everything inside <main>, wrapped in .content-scope)
+   is deliberately light — a light, low-saturation tint of each theme's own
+   hue — while the sidebar/header chrome outside it stays the fixed dark
+   navy above. Overriding the SAME --c-* tokens here (rather than inventing
+   new ones) means every card/text/border in the app repaints for free:
+   nothing in App.tsx/CoachAdminView.tsx/FriendsView.tsx/LoungeView.tsx
+   needs to change, since it already reads colors through these variables.
+   The explicit `color` here matters: the app root sets `color:
+   var(--c-F5F1E8)` once and everything without its own text-color class
+   just inherits that COMPUTED (light) value — redeclaring the variable
+   inside .content-scope doesn't reach already-inherited text, only new
+   var() lookups. Setting `color` again here gives inheritance a new,
+   dark, starting point for this subtree. */
+.content-scope { color: var(--c-F5F1E8); --field-bg: #F2F3F5; --field-border: #E3E5E8; }
+[data-theme="crystalblue"] .content-scope {
+  --c-08080A: #FFFFFF; --c-0C0C0E: #FAFCFE; --c-0E0E10: #F4F7FA;
+  --c-101012: #EEF2F6; --c-121214: #E8EDF2; --c-151519: #E1E7ED;
+  --c-151518: #E1E7ED; --c-15151A: #E1E7ED; --c-18181B: #D9E0E7;
+  --c-1A1A1E: #D1D9E1; --c-1C1C20: #C8D1DA;
+  --c-1A1912: #EDEFF3; --c-1E1C14: #E7EAEF; --c-1C1A12: #EAECF1;
+  --c-2A2A20: #D6DCE4; --c-2C2A20: #CBD3DD; --c-3A3520: #AAB8C8;
+  --c-1E1E22: #D6DCE3; --c-232326: #CBD2DA; --c-2A2A2E: #BFC8D2;
+  --c-F5F1E8: #131A22; --c-E8E2D2: #263240; --c-CFCFC8: #445261;
+  --c-9A9A93: #67788A; --c-6A6A66: #8C9CAC; --c-4A4A4E: #B2BFC9;
+  --c-2C2A20-rgb: 203,211,221; --c-121214-rgb: 232,237,242; --c-3A3520-rgb: 170,184,200; --c-F5F1E8-rgb: 19,26,34;
+  --card-alpha: 1; --subcard-alpha: 1;
 }
-/* Buttons and toggle/selection pills get an extra-visible glass pass —
-   a bit more blur/saturation than plain surfaces, so unselected/selected
-   states both read as frosted material rather than a flat fill. */
-button[class*="bg-[var(--c-"]:not(.card):not(.card-gold) {
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
+[data-theme="glasspink"] .content-scope {
+  --c-08080A: #FFFFFF; --c-0C0C0E: #FDFAFB; --c-0E0E10: #FAF3F6;
+  --c-101012: #F6EDF1; --c-121214: #F2E7EC; --c-151519: #EDE0E6;
+  --c-151518: #EDE0E6; --c-15151A: #EDE0E6; --c-18181B: #E6D6DE;
+  --c-1A1A1E: #DECCD5; --c-1C1C20: #D5C0CB;
+  --c-1A1912: #F3E9EE; --c-1E1C14: #EFE1E8; --c-1C1A12: #F1E5EB;
+  --c-2A2A20: #E7D3DD; --c-2C2A20: #DFC5D2; --c-3A3520: #C88CA8;
+  --c-1E1E22: #E7D5DE; --c-232326: #DEC7D3; --c-2A2A2E: #D3B8C7;
+  --c-F5F1E8: #22131A; --c-E8E2D2: #392030; --c-CFCFC8: #5C3A4C;
+  --c-9A9A93: #7F5A6C; --c-6A6A66: #A47E8F; --c-4A4A4E: #C6A9B7;
+  --c-2C2A20-rgb: 223,197,210; --c-121214-rgb: 242,231,236; --c-3A3520-rgb: 200,140,168; --c-F5F1E8-rgb: 34,19,26;
+  --card-alpha: 1; --subcard-alpha: 1;
+}
+[data-theme="blackgold"] .content-scope {
+  --c-08080A: #FFFFFF; --c-0C0C0E: #FDFBF6; --c-0E0E10: #F8F4EA;
+  --c-101012: #F3EFE3; --c-121214: #EEE8D8; --c-151519: #E9E2CE;
+  --c-151518: #E9E2CE; --c-15151A: #E9E2CE; --c-18181B: #E1D9C0;
+  --c-1A1A1E: #D9CFB2; --c-1C1C20: #D0C4A3;
+  --c-1A1912: #F2ECD9; --c-1E1C14: #EEE6CE; --c-1C1A12: #F0E9D3;
+  --c-2A2A20: #E2D6AE; --c-2C2A20: #D9CB98; --c-3A3520: #C2AE68;
+  --c-1E1E22: #E2D8BE; --c-232326: #D9CCAA; --c-2A2A2E: #CFC095;
+  --c-F5F1E8: #241D0E; --c-E8E2D2: #3B301A; --c-CFCFC8: #5E4F2C;
+  --c-9A9A93: #82713F; --c-6A6A66: #A6935B; --c-4A4A4E: #C6B583;
+  --c-2C2A20-rgb: 217,203,152; --c-121214-rgb: 238,232,216; --c-3A3520-rgb: 194,174,104; --c-F5F1E8-rgb: 36,29,14;
+  --card-alpha: 1; --subcard-alpha: 1;
 }
 
 * { font-family: 'Paperlogy', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif !important; overflow-wrap: break-word; }
@@ -125,9 +178,6 @@ html, body { overflow-x: hidden; background: var(--c-060608); }
 
 .gold-gradient {
   background: linear-gradient(135deg, rgba(var(--c-D4AF37-rgb),0.94) 0%, rgba(var(--c-FFD700-rgb),0.94) 50%, rgba(var(--c-FFC700-rgb),0.94) 100%);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), inset 0 -1px 0 rgba(0,0,0,0.08);
 }
 .gold-text {
   background: linear-gradient(135deg, var(--c-D4AF37) 0%, var(--c-FFD700) 50%, var(--c-FFE55C) 100%);
@@ -135,56 +185,32 @@ html, body { overflow-x: hidden; background: var(--c-060608); }
 }
 .gold-border { border-color: var(--c-3A3520); }
 .card {
-  background: radial-gradient(140% 140% at 10% -10%, rgba(var(--c-D4AF37-rgb),0.13) 0%, transparent 60%), rgba(var(--c-121214-rgb),var(--card-alpha));
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(var(--c-2C2A20-rgb),0.55);
+  background: #FFFFFF;
+  border: 1px solid rgba(0,0,0,0.06);
   border-radius: 20px;
   position: relative;
-  transition: all 0.3s ease;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,var(--card-sheen)),
-    inset 0 -1px 0 rgba(255,255,255,calc(var(--card-sheen) * 0.2)),
-    inset 0 0 20px 6px rgba(255,255,255,var(--card-haze)),
-    0 8px 32px rgba(var(--shadow-rgb),0.4),
-    0 0 40px rgba(var(--c-D4AF37-rgb),0.05);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s ease;
 }
-.card:hover { border-color: rgba(var(--c-3A3520-rgb),0.9); box-shadow: inset 0 1px 0 rgba(255,255,255,calc(var(--card-sheen) + 0.05)), inset 0 0 20px 6px rgba(255,255,255,var(--card-haze)), 0 0 0 1px rgba(var(--c-D4AF37-rgb),0.16) inset, 0 8px 36px rgba(var(--shadow-rgb),0.5), 0 0 32px rgba(var(--c-D4AF37-rgb),0.12); }
-.card::before, .card-gold::before {
-  content: ''; position: absolute; pointer-events: none;
-  top: 0; left: 18px; right: 18px; height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.8), transparent);
-}
-.card::after, .card-gold::after {
-  content: ''; position: absolute; pointer-events: none;
-  top: 18px; left: 0; bottom: 18px; width: 1px;
-  background: linear-gradient(180deg, rgba(255,255,255,0.7), transparent, rgba(255,255,255,0.25));
-}
+.card:hover { box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 10px 28px rgba(0,0,0,0.08); }
 .card-gold {
-  background: radial-gradient(120% 120% at 0% 0%, rgba(var(--c-D4AF37-rgb),0.14) 0%, transparent 50%), rgba(var(--c-121214-rgb),var(--card-alpha));
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(var(--c-2C2A20-rgb),0.55);
+  background: #FFFFFF;
+  border: 1px solid rgba(var(--c-D4AF37-rgb),0.22);
+  border-radius: 20px;
   position: relative;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,var(--card-sheen)), inset 0 0 20px 6px rgba(255,255,255,var(--card-haze));
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04), 0 6px 20px rgba(0,0,0,0.06);
 }
-/* A nested glass surface for boxes that sit INSIDE a .card (roster rows,
-   member rows, log-detail note blocks, comment bubbles) — same frosted-glass
-   family as .card, one step quieter, so it reads as a distinct floating
-   layer instead of a flat block matching the parent's own tint. */
+/* A plain, flat surface for boxes that sit INSIDE a .card (roster rows,
+   member rows, log-detail note blocks, comment bubbles, stat tiles) — a
+   light neutral gray, so it reads as a nested region purely through the
+   white/gray contrast with its parent .card, no border needed. */
 .subcard {
-  background: radial-gradient(130% 130% at 10% -10%, rgba(var(--c-D4AF37-rgb),0.10) 0%, transparent 55%), rgba(var(--c-121214-rgb),var(--subcard-alpha));
-  backdrop-filter: blur(20px) saturate(170%);
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid rgba(var(--c-2C2A20-rgb),0.45);
+  background: #F2F3F5;
   position: relative;
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,var(--card-sheen)), inset 0 0 14px 4px rgba(255,255,255,calc(var(--card-haze) * 0.7)), 0 1px 2px rgba(var(--shadow-rgb),0.08), 0 8px 20px rgba(var(--shadow-rgb),0.16);
+  transition: background-color 0.2s ease;
 }
 button.subcard:hover, a.subcard:hover {
-  border-color: rgba(var(--c-3A3520-rgb),0.7);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,calc(var(--card-sheen) + 0.04)), inset 0 0 14px 4px rgba(255,255,255,calc(var(--card-haze) * 0.7)), 0 2px 6px rgba(var(--shadow-rgb),0.1), 0 14px 30px rgba(var(--shadow-rgb),0.2);
-  transform: translateY(-1px);
+  background-color: #E9EBEE;
 }
 /* Text inputs/textareas/selects reuse the dark surface tokens elsewhere in
    the UI, which makes them nearly indistinguishable from their surroundings.
@@ -192,7 +218,7 @@ button.subcard:hover, a.subcard:hover {
    whatever bg/border utility classes it also carries (unlayered CSS beats
    Tailwind's layered utilities, so this wins without touching each call site's
    existing classes). */
-.field { background: rgba(255,255,255,0.09); border: 1px solid rgba(255,255,255,0.22); }
+.field { background: var(--field-bg, rgba(255,255,255,0.09)); border: 1px solid var(--field-border, rgba(255,255,255,0.22)); }
 .field:focus { border-color: var(--c-3A3520); }
 .soft-glow { box-shadow: 0 0 20px rgba(var(--c-D4AF37-rgb),0.12); }
 .big-num { font-weight: 800; letter-spacing: -0.05em; line-height: 0.9; }
