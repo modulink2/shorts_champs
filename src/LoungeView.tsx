@@ -1,9 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { MessageSquare, Trash2 } from 'lucide-react';
+import { MessageSquare, Trash2, Plus, X, Check, Clock } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { useFriendships, useProfile } from './useProfile';
+import { useFriendships, useProfile, sendFriendRequest } from './useProfile';
 import { useRecentPosts, useReplies, createPost, deletePost, addReply, deleteReply, type LoungePost } from './useLounge';
 import { Avatar } from './App';
+
+type Relation = 'none' | 'pending' | 'friend';
 
 function timeAgo(ts: number): string {
   const diffMin = Math.floor((Date.now() - ts) / 60000);
@@ -14,7 +16,37 @@ function timeAgo(ts: number): string {
   return `${Math.floor(diffHr / 24)}일 전`;
 }
 
-function PostCard({ post, myUid, expanded, onToggle }: { post: LoungePost; myUid: string; expanded: boolean; onToggle: () => void }) {
+// The author's avatar doubles as a quick "add friend" button — a badge shows
+// the current relation, and only the 'none' state is clickable.
+function AuthorAvatar({ authorUid, avatarId, myUid, relation, onRequest }: {
+  authorUid: string; avatarId?: string; myUid: string; relation: Relation; onRequest: () => void;
+}) {
+  const isSelf = authorUid === myUid;
+  const clickable = !isSelf && relation === 'none';
+  return (
+    <button
+      type="button" onClick={clickable ? onRequest : undefined}
+      className={`relative shrink-0 rounded-full ${clickable ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
+      title={clickable ? '친구 신청' : undefined}
+    >
+      <Avatar avatarId={avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px]" />
+      {!isSelf && relation === 'pending' && (
+        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[var(--c-121214)] border border-[var(--c-232326)] flex items-center justify-center"><Clock size={9} className="text-[var(--c-9A9A93)]"/></span>
+      )}
+      {!isSelf && relation === 'friend' && (
+        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[var(--c-D4AF37)] flex items-center justify-center"><Check size={9} strokeWidth={3} className="text-[var(--c-060608)]"/></span>
+      )}
+      {!isSelf && relation === 'none' && (
+        <span className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full gold-gradient flex items-center justify-center"><Plus size={10} strokeWidth={3} className="text-[var(--c-on-accent)]"/></span>
+      )}
+    </button>
+  );
+}
+
+function PostCard({ post, myUid, relation, onFriendRequest, expanded, onToggle }: {
+  post: LoungePost; myUid: string; relation: Relation; onFriendRequest: (uid: string) => void;
+  expanded: boolean; onToggle: () => void;
+}) {
   const { user } = useAuth();
   const replies = useReplies(expanded ? post.id : undefined);
   const [replyText, setReplyText] = useState('');
@@ -28,7 +60,7 @@ function PostCard({ post, myUid, expanded, onToggle }: { post: LoungePost; myUid
   return (
     <div className="subcard rounded-[16px] p-4">
       <div className="flex items-start gap-3">
-        <Avatar avatarId={post.authorAvatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[14px] shrink-0" />
+        <AuthorAvatar authorUid={post.authorUid} avatarId={post.authorAvatarId} myUid={myUid} relation={relation} onRequest={()=>onFriendRequest(post.authorUid)} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
             <span className="text-[13px] font-[800]">{post.authorName}</span>
@@ -71,15 +103,26 @@ function PostCard({ post, myUid, expanded, onToggle }: { post: LoungePost; myUid
   );
 }
 
+const PAGE_SIZE = 20;
+
 export default function LoungeView() {
   const { user } = useAuth();
   const { profile: myProfile } = useProfile(user?.uid);
-  const { friends } = useFriendships(user?.uid);
-  const posts = useRecentPosts(50);
+  const { friends, incoming, outgoing } = useFriendships(user?.uid);
+  const [limitCount, setLimitCount] = useState(PAGE_SIZE);
+  const posts = useRecentPosts(limitCount);
   const [text, setText] = useState('');
+  const [composerOpen, setComposerOpen] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const friendSet = useMemo(() => new Set(friends), [friends]);
+  const pendingSet = useMemo(() => new Set([...incoming, ...outgoing]), [incoming, outgoing]);
+  const relationOf = (uid: string): Relation => {
+    if (friendSet.has(uid)) return 'friend';
+    if (pendingSet.has(uid)) return 'pending';
+    return 'none';
+  };
+
   // My own posts show alongside friends' — otherwise a post I just wrote
   // would appear in neither section (not a friend of myself, and excluded
   // from "everyone else" below).
@@ -96,31 +139,26 @@ export default function LoungeView() {
     return arr;
   }, [posts, friendSet, user?.uid]);
 
+  // A fetch that comes back shorter than what we asked for means there's
+  // nothing older left in the collection.
+  const hasMore = posts.length >= limitCount;
+
   const submitPost = () => {
     if (!user || !text.trim()) return;
     createPost(user.uid, myProfile?.displayName || user.displayName || user.email || '', myProfile?.avatarId, text);
     setText('');
+    setComposerOpen(false);
   };
 
   if (!user) return null;
 
   return (
     <div className="space-y-5">
-      <div className="card p-5 lg:p-6">
-        <div className="font-[700] text-[14px]">글쓰기</div>
-        <textarea
-          value={text} onChange={e=>setText(e.target.value)}
-          placeholder="오늘 하루 어땠나요? 편하게 남겨보세요"
-          className="field mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"
-        />
-        <button onClick={submitPost} disabled={!text.trim()} className="mt-2.5 h-10 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] disabled:opacity-40">등록</button>
-      </div>
-
       {friendPosts.length > 0 && (
         <div className="card p-5 lg:p-6">
           <div className="font-[700] text-[14px]">내 글 · 친구</div>
           <div className="mt-3 space-y-2.5">
-            {friendPosts.map(p => <PostCard key={p.id} post={p} myUid={user.uid} expanded={expandedId===p.id} onToggle={()=>setExpandedId(id=>id===p.id?null:p.id)} />)}
+            {friendPosts.map(p => <PostCard key={p.id} post={p} myUid={user.uid} relation={relationOf(p.authorUid)} onFriendRequest={(uid)=>sendFriendRequest(user.uid, uid)} expanded={expandedId===p.id} onToggle={()=>setExpandedId(id=>id===p.id?null:p.id)} />)}
           </div>
         </div>
       )}
@@ -128,10 +166,41 @@ export default function LoungeView() {
       <div className="card p-5 lg:p-6">
         <div className="font-[700] text-[14px]">모두의 이야기</div>
         <div className="mt-3 space-y-2.5">
-          {otherPosts.map(p => <PostCard key={p.id} post={p} myUid={user.uid} expanded={expandedId===p.id} onToggle={()=>setExpandedId(id=>id===p.id?null:p.id)} />)}
+          {otherPosts.map(p => <PostCard key={p.id} post={p} myUid={user.uid} relation={relationOf(p.authorUid)} onFriendRequest={(uid)=>sendFriendRequest(user.uid, uid)} expanded={expandedId===p.id} onToggle={()=>setExpandedId(id=>id===p.id?null:p.id)} />)}
           {otherPosts.length===0 && friendPosts.length===0 && <div className="text-center py-8 text-[12px] text-[var(--c-6A6A66)]">아직 글이 없어요 · 첫 글을 남겨보세요</div>}
         </div>
+        {hasMore && (
+          <button onClick={()=>setLimitCount(c=>c+PAGE_SIZE)} className="mt-4 w-full h-10 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)]">더보기</button>
+        )}
       </div>
+
+      <button
+        onClick={()=>setComposerOpen(true)}
+        title="글쓰기"
+        className="fixed bottom-[144px] lg:bottom-8 right-4 lg:right-8 z-30 w-14 h-14 rounded-full gold-gradient text-[var(--c-on-accent)] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center justify-center active:scale-95 transition-all"
+      >
+        <Plus size={26} strokeWidth={2.5}/>
+      </button>
+
+      {composerOpen && (
+        <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-[12px]" onClick={()=>setComposerOpen(false)}/>
+          <div className="relative w-full lg:max-w-[560px] max-h-[92dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)]/80 backdrop-blur-2xl border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
+            <div className="sticky top-0 z-10 bg-[var(--c-0C0C0E)]/90 backdrop-blur-xl border-b border-[var(--c-1E1C14)] px-6 h-[68px] flex items-center justify-between">
+              <div className="font-[800] text-[15px] tracking-[-0.02em]">글쓰기</div>
+              <button onClick={()=>setComposerOpen(false)} className="w-9 h-9 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center hover:border-[var(--c-3A3520)]"><X size={16}/></button>
+            </div>
+            <div className="p-6 space-y-4">
+              <textarea
+                autoFocus value={text} onChange={e=>setText(e.target.value)}
+                placeholder="오늘 하루 어땠나요? 편하게 남겨보세요"
+                className="field w-full min-h-[140px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"
+              />
+              <button onClick={submitPost} disabled={!text.trim()} className="w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[14px] disabled:opacity-40 active:scale-[0.98] transition-all">등록</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
