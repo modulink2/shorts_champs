@@ -631,10 +631,11 @@ export default function App() {
             </div>
           </header>
 
-          <main className="content-scope relative isolate bg-[var(--c-0E0E10)] flex-1 overflow-y-auto no-scrollbar px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8 max-w-[1280px]">
+          <main className="content-scope relative isolate bg-[var(--c-0E0E10)] flex-1 overflow-y-auto no-scrollbar">
             <div className="pointer-events-none fixed inset-0 -z-10">
               <TrackBackground />
             </div>
+            <div className="mx-auto max-w-[1280px] px-4 lg:px-10 py-6 lg:py-8 pb-[160px] lg:pb-10 space-y-6 lg:space-y-8">
             {view==='roster' && hasRoster && <CoachAdminView role={myRole as 'coach'|'admin'|'parent'} />}
             {view==='friends' && <FriendsView />}
             {view==='lounge' && <LoungeView />}
@@ -1695,6 +1696,7 @@ export default function App() {
               </div>
               </>
             )}
+            </div>
           </main>
       </div>
 
