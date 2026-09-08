@@ -669,6 +669,7 @@ export default function App() {
                   </button>
                 )}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
+                <div className="space-y-4">
                 <div className="card-gold rounded-[20px] p-5 lg:p-6 overflow-hidden">
                   <div className="flex items-center gap-2">
                     <Crown size={14} className="text-[var(--c-D4AF37)]" />
@@ -686,6 +687,26 @@ export default function App() {
                   ) : (
                     <div className="mt-2.5 text-[13px] font-[600] leading-[1.4] text-[var(--c-E8E2D2)] whitespace-pre-wrap">"코너에서 더 낮게, 더 빠르게. 챔피언은 디테일에서 갈린다."</div>
                   )}
+                </div>
+                <div className="card p-5 lg:p-6 overflow-hidden">
+                  <div className="flex items-center justify-between relative">
+                    <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[var(--c-D4AF37)]"/> 나의 목표</div>
+                    <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">{goals.length} GOALS</span>
+                  </div>
+                  <div className="mt-5 space-y-4 relative">
+                    {goals.slice(0,3).map(g=>(
+                      <div key={g.id} className="rounded-[14px] subcard p-3.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words min-w-0">{g.title}</span></div>
+                          <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-on-accent)] inline-flex items-center">{g.progress}%</span>
+                        </div>
+                        <div className="mt-3 h-1.5 rounded-full bg-[var(--c-1E1E22)] overflow-hidden"><div className="h-full rounded-full gold-gradient" style={{width:`${g.progress}%`}}/></div>
+                        <div className="mt-2 flex justify-between text-[10px] font-[600] text-[var(--c-9A9A93)]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
+                      </div>
+                    ))}
+                    {goals.length===0 && <div className="text-center py-6 text-[11px] text-[var(--c-6A6A66)]">마이페이지 탭에서 나의 목표를 등록해보세요</div>}
+                  </div>
+                </div>
                 </div>
                 {isCoachOrAdmin ? (
                   <div className="card p-5 lg:p-6">
@@ -856,27 +877,8 @@ export default function App() {
                       })}
                     </div>
                   </div>
-                  {/* Goal card */}
+                  {/* Records & awards */}
                   <div className="space-y-4 min-w-0">
-                    <div className="card p-5 lg:p-6 overflow-hidden">
-                      <div className="flex items-center justify-between relative">
-                        <div className="font-[700] text-[14px] flex items-center gap-2"><Crown size={16} className="text-[var(--c-D4AF37)]"/> 나의 목표</div>
-                        <span className="text-[10px] font-[700] tracking-[0.12em] px-2 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">{goals.length} GOALS</span>
-                      </div>
-                      <div className="mt-5 space-y-4 relative">
-                        {goals.slice(0,3).map(g=>(
-                          <div key={g.id} className="rounded-[14px] subcard p-3.5">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex items-start gap-2 min-w-0"><span className="shrink-0">{g.icon}</span><span className="text-[12px] font-[700] break-words min-w-0">{g.title}</span></div>
-                              <span className="shrink-0 text-[11px] font-[800] px-2 h-5 rounded-full gold-gradient text-[var(--c-on-accent)] inline-flex items-center">{g.progress}%</span>
-                            </div>
-                            <div className="mt-3 h-1.5 rounded-full bg-[var(--c-1E1E22)] overflow-hidden"><div className="h-full rounded-full gold-gradient" style={{width:`${g.progress}%`}}/></div>
-                            <div className="mt-2 flex justify-between text-[10px] font-[600] text-[var(--c-9A9A93)]"><span>현재 {g.current}</span><span>목표 {g.target}</span></div>
-                          </div>
-                        ))}
-                        {goals.length===0 && <div className="text-center py-6 text-[11px] text-[var(--c-6A6A66)]">마이페이지 탭에서 나의 목표를 등록해보세요</div>}
-                      </div>
-                    </div>
                     <div className="card p-5 lg:p-6">
                       <div className="flex items-center justify-between">
                         <div className="font-[700] text-[14px] flex items-center gap-2"><Trophy size={16} className="text-[var(--c-D4AF37)]"/> 베스트 기록</div>
