@@ -668,6 +668,7 @@ export default function App() {
                     <ChevronRight size={22} className="shrink-0"/>
                   </button>
                 )}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6 items-start">
                 <div className="card-gold rounded-[20px] p-5 lg:p-6 overflow-hidden">
                   <div className="flex items-center gap-2">
                     <Crown size={14} className="text-[var(--c-D4AF37)]" />
@@ -792,6 +793,7 @@ export default function App() {
                     )}
                   </div>
                 )}
+                </div>
                 {/* Weekly plan */}
                 <div className="card p-5 lg:p-6">
                   <div className="flex items-center justify-between">
