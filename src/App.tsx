@@ -467,7 +467,7 @@ export default function App() {
   const selectedLog = useMemo(()=> logs.find(l=>l.date===selectedDate), [logs, selectedDate]);
   const { comments: myLogComments } = useComments(user?.uid, selectedDate);
 
- const openLog = (dateStr:string)=>{
+ const openLog = (dateStr:string, forceDiaryView=false)=>{
    const existing = logs.find(l=>l.date===dateStr);
    if(existing){
       setEditing({ ...existing, youtubeUrl: existing.youtubeUrl||'', instaUrl: existing.instaUrl||'' });
@@ -475,7 +475,8 @@ export default function App() {
       setEditing({ date:dateStr, isRest:false, noteIce:'', noteDry:'', iceItems:[], dryItems:[], sleepHours:8, youtubeUrl:'', instaUrl:'' });
     }
     setSelectedDate(dateStr);
-    if(view==='diary'){
+    if(view==='diary' || forceDiaryView){
+      if(forceDiaryView) setView('diary');
       setDiaryEditMode(true);
     }else{
       setShowModal(true);
@@ -621,8 +622,8 @@ export default function App() {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <button onClick={()=>openLog(todayStr)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
-                  <span className="hidden sm:inline">✦</span> 기록하기
+                <button onClick={()=>openLog(todayStr, true)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
+                  <span className="hidden sm:inline">✦</span> 훈련기록하기
                 </button>
                 <button onClick={logOut} title="로그아웃" className="lg:hidden w-9 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] flex items-center justify-center text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] transition-colors">
                   <LogOut size={15} />
@@ -1699,9 +1700,6 @@ export default function App() {
             </div>
           </main>
       </div>
-
-      {/* Floating action mobile - sits just above the bottom tab bar */}
-      <button onClick={()=>openLog(todayStr)} className="lg:hidden fixed bottom-[80px] right-4 z-30 h-12 px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] shadow-[0_0_24px_rgba(var(--c-D4AF37-rgb),0.4)] flex items-center gap-1.5 active:scale-[0.98]">✦ 기록</button>
 
       {/* Mobile bottom tab bar - app-style primary navigation */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--chrome-bg)] border-t border-[var(--chrome-border)] flex items-stretch h-[64px] pb-[env(safe-area-inset-bottom)]">
