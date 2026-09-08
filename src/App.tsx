@@ -67,7 +67,7 @@ export interface UserProfile {
   startYearMonth?: string; // "YYYY-MM" — when this athlete started short track
   rinkAddress?: string; teamName?: string; skateInfo?: string; bladeInfo?: string;
   focusGoal?: FocusGoal;
-  infoPublic?: boolean; trainingPublic?: boolean;
+  infoPublic?: boolean;
 }
 // "YYYY-MM" -> "3년 2개월째" / "5개월째" / "이번 달 시작"
 export function formatCareer(startYearMonth: string): string {
@@ -1548,12 +1548,6 @@ export default function App() {
                         <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">친구에게 내 정보 공개</span>
                         <span className={`w-9 h-5 rounded-full relative transition-colors ${myProfile?.infoPublic ? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-2A2A2E)]'}`}>
                           <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${myProfile?.infoPublic ? 'left-[18px]' : 'left-0.5'}`}/>
-                        </span>
-                      </button>
-                      <button onClick={()=>saveProfile(user!.uid, { trainingPublic: !myProfile?.trainingPublic })} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
-                        <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">친구에게 내 훈련정보 공개</span>
-                        <span className={`w-9 h-5 rounded-full relative transition-colors ${myProfile?.trainingPublic ? 'bg-[var(--c-D4AF37)]' : 'bg-[var(--c-2A2A2E)]'}`}>
-                          <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-all ${myProfile?.trainingPublic ? 'left-[18px]' : 'left-0.5'}`}/>
                         </span>
                       </button>
                     </div>

@@ -1,9 +1,8 @@
 import React, { useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Search, UserPlus, Check } from 'lucide-react';
+import { ChevronLeft, Search, UserPlus, Check } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useAllProfiles, useFriendships, sendFriendRequest, acceptFriendRequest, removeFriendship } from './useProfile';
-import { useTrainingLogs } from './useTrainingLogs';
-import { Avatar, toLocalDateStr, formatCareer, type UserProfile } from './App';
+import { Avatar, formatCareer, type UserProfile } from './App';
 
 type Relation = 'none' | 'outgoing' | 'incoming' | 'friend';
 
@@ -33,94 +32,9 @@ function FriendCard({ profile, relation, onRequest, onAccept, onDecline, onOpen 
   );
 }
 
-// Read-only calendar + selected-day log — no comments/goal editing (friend view, not coach view).
-function FriendTrainingCalendar({ uid }: { uid: string }) {
-  const { logs } = useTrainingLogs(uid);
-  const [calendarMonth, setCalendarMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(() => toLocalDateStr(new Date()));
-  const selectedLog = logs.find(l => l.date === selectedDate);
-  const calendarDays = useMemo(() => {
-    const y = calendarMonth.getFullYear(), m = calendarMonth.getMonth();
-    const first = new Date(y, m, 1); const last = new Date(y, m + 1, 0);
-    const start = (first.getDay() + 6) % 7; const days = last.getDate();
-    const cells: (Date | null)[] = []; for (let i = 0; i < start; i++) cells.push(null); for (let d = 1; d <= days; d++) cells.push(new Date(y, m, d)); while (cells.length % 7 !== 0) cells.push(null); return cells;
-  }, [calendarMonth]);
-
-  return (
-    <div className="grid lg:grid-cols-[300px_1fr] gap-5">
-      <div className="card p-4 h-fit">
-        <div className="flex items-center justify-between">
-          <div className="font-[800] text-[13px]">{calendarMonth.getFullYear()}년 {calendarMonth.getMonth() + 1}월</div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => setCalendarMonth(d => { const nd = new Date(d); nd.setMonth(d.getMonth() - 1); return nd; })} className="w-7 h-7 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center hover:border-[var(--c-3A3520)]"><ChevronLeft size={12} /></button>
-            <button onClick={() => setCalendarMonth(d => { const nd = new Date(d); nd.setMonth(d.getMonth() + 1); return nd; })} className="w-7 h-7 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center hover:border-[var(--c-3A3520)]"><ChevronRight size={12} /></button>
-          </div>
-        </div>
-        <div className="mt-3 grid grid-cols-7 gap-0 text-center">
-          {['월','화','수','목','금','토','일'].map(d => <div key={d} className="h-[22px] flex items-center justify-center text-[10px] font-[700] text-[var(--c-6A6A66)]">{d}</div>)}
-          {calendarDays.map((d, i) => {
-            if (!d) return <div key={i} className="h-[30px]" />;
-            const ds = toLocalDateStr(d);
-            const log = logs.find(l => l.date === ds);
-            const isSel = ds === selectedDate;
-            return (
-              <div key={i} className="h-[30px] flex items-center justify-center">
-                <button onClick={() => setSelectedDate(ds)} className={`w-[26px] h-[26px] rounded-[8px] flex flex-col items-center justify-center border text-[11px] font-[700] ${isSel ? 'bg-[var(--selected-bg)] text-[var(--selected-text)] border-[var(--selected-bg)]' : 'bg-[var(--c-101012)] border-[var(--c-1E1E22)] text-[var(--c-CFCFC8)] hover:border-[var(--c-2C2A20)]'}`}>
-                  <span className="leading-none">{d.getDate()}</span>
-                  {log && <span className={`mt-[1px] w-1 h-1 rounded-full ${isSel ? 'bg-[var(--c-on-accent)]' : 'bg-[var(--c-D4AF37)]'}`} />}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <div className="card p-5">
-        <div className="font-[800] text-[15px]">{selectedDate}</div>
-        {!selectedLog ? (
-          <div className="mt-4 py-8 text-center text-[13px] text-[var(--c-6A6A66)]">이 날짜엔 기록이 없어요</div>
-        ) : (
-          <div className="mt-4 space-y-4">
-            {selectedLog.noteIce || (selectedLog.iceItems && selectedLog.iceItems.length > 0) ? (
-              <div className="subcard rounded-[14px] p-4">
-                <div className="label-caps text-[var(--c-D4AF37)]">⛸️ 빙상 훈련</div>
-                {selectedLog.noteIce && <p className="mt-2 text-[13px] leading-[1.6] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteIce}</p>}
-                {selectedLog.iceItems && selectedLog.iceItems.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {selectedLog.iceItems.map(it => <span key={it.id} className="px-3 h-7 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-2C2A20)] text-[12px] font-[600] text-[var(--c-D4AF37)] inline-flex items-center">{it.type} {it.value}{it.unit}</span>)}
-                  </div>
-                )}
-              </div>
-            ) : null}
-            {selectedLog.noteDry || (selectedLog.dryItems && selectedLog.dryItems.length > 0) ? (
-              <div className="subcard rounded-[14px] p-4">
-                <div className="label-caps text-[var(--c-D4AF37)]">🏋️ 육상 훈련</div>
-                {selectedLog.noteDry && <p className="mt-2 text-[13px] leading-[1.6] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteDry}</p>}
-                {selectedLog.dryItems && selectedLog.dryItems.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {selectedLog.dryItems.map(it => <span key={it.id} className="px-3 h-7 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-2C2A20)] text-[12px] font-[600] text-[var(--c-C9A86A)] inline-flex items-center">{it.type} {it.value}{it.unit}</span>)}
-                  </div>
-                )}
-              </div>
-            ) : null}
-            {selectedLog.isRest && (
-              <div className="subcard rounded-[14px] p-4 text-center text-[13px] text-[var(--c-9A9A93)]">🌑 리커버리 데이{selectedLog.sleepHours != null && ` · 수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
-            )}
-            {selectedLog.laps || (selectedLog.timeRecords && selectedLog.timeRecords.length > 0) ? (
-              <div className="subcard rounded-[14px] p-4 flex flex-wrap gap-4">
-                {selectedLog.laps && <div><div className="label-caps">바퀴수</div><div className="mt-1 font-[800] text-[16px]">{selectedLog.laps}바퀴</div></div>}
-                {selectedLog.timeRecords?.map((r, i) => (
-                  <div key={i}><div className="label-caps">{r.distance}m</div><div className="mt-1 font-[800] text-[16px] text-[var(--c-D4AF37)]">{r.time}</div></div>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// Read-only detail: friend's public profile card + (if trainingPublic) their training calendar.
+// Read-only detail: friend's public profile card. Training info is never
+// shown here — only the athlete, their assigned coach, and a linked parent
+// can see it (see firestore.rules).
 function FriendDetail({ profile }: { profile: UserProfile }) {
   return (
     <div className="space-y-5">
@@ -139,11 +53,7 @@ function FriendDetail({ profile }: { profile: UserProfile }) {
       ) : (
         <div className="card p-5 lg:p-6 text-center text-[13px] text-[var(--c-6A6A66)]">비공개 정보예요</div>
       )}
-      {profile.trainingPublic ? (
-        <FriendTrainingCalendar uid={profile.uid} />
-      ) : (
-        <div className="card p-5 lg:p-6 text-center text-[13px] text-[var(--c-6A6A66)]">훈련정보가 비공개예요</div>
-      )}
+      <div className="card p-5 lg:p-6 text-center text-[13px] text-[var(--c-6A6A66)]">훈련정보는 본인과 담당 코치·부모 계정만 확인할 수 있어요</div>
     </div>
   );
 }

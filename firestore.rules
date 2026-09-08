@@ -12,14 +12,6 @@ service cloud.firestore {
       return request.auth != null &&
         get(/databases/$(database)/documents/profiles/$(athleteUid)).data.parentId == request.auth.uid;
     }
-    function friendPairId(otherUid) {
-      return otherUid < request.auth.uid ? otherUid + '_' + request.auth.uid : request.auth.uid + '_' + otherUid;
-    }
-    function isFriend(otherUid) {
-      return request.auth != null &&
-        exists(/databases/$(database)/documents/friendships/$(friendPairId(otherUid))) &&
-        get(/databases/$(database)/documents/friendships/$(friendPairId(otherUid))).data.status == 'accepted';
-    }
 
     // One document per friend pair (id = sorted "uidA_uidB"). create = send
     // request, update pending->accepted = the non-requester accepting,
@@ -89,8 +81,7 @@ service cloud.firestore {
 
     match /users/{userId}/{document=**} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
-      allow read: if isAdmin() || isAssignedCoach(userId) || isLinkedParent(userId)
-        || (isFriend(userId) && get(/databases/$(database)/documents/profiles/$(userId)).data.trainingPublic == true);
+      allow read: if isAdmin() || isAssignedCoach(userId) || isLinkedParent(userId);
     }
   }
 }
