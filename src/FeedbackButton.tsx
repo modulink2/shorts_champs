@@ -10,7 +10,7 @@ const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY as string | undefined
 // Small header button that opens a feature/bug report form and emails it via
 // EmailJS (client-only app, so a third-party mail relay stands in for a
 // backend) — see .env.example for the three IDs this needs.
-export default function FeedbackButton({ onToast, className }: { onToast: (msg: string) => void; className?: string }) {
+export default function FeedbackButton({ onToast, className, label = '제안하기' }: { onToast: (msg: string) => void; className?: string; label?: string }) {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<'feature' | 'bug'>('feature');
@@ -48,9 +48,10 @@ export default function FeedbackButton({ onToast, className }: { onToast: (msg: 
     <>
       <button
         onClick={() => setOpen(true)} title="기능/버그 제안"
-        className={className || 'w-9 h-9 rounded-full flex items-center justify-center text-[var(--chrome-text-dim)] hover:text-[var(--c-D4AF37)] hover:bg-[var(--chrome-hover-bg)] transition-colors shrink-0'}
+        className={className || 'h-9 px-3 rounded-full flex items-center gap-1.5 text-[var(--chrome-text-dim)] hover:text-[var(--c-D4AF37)] hover:bg-[var(--chrome-hover-bg)] transition-colors shrink-0'}
       >
-        <MessageSquarePlus size={17} />
+        <MessageSquarePlus size={16} />
+        <span className="text-[11px] font-[700] whitespace-nowrap">{label}</span>
       </button>
 
       {open && (
