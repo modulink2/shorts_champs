@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
-import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight, Target } from 'lucide-react';
+import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight, Target, Trash2 } from 'lucide-react';
 import { useAuth } from './AuthContext';
-import { useAllProfiles, saveProfile, useComments } from './useProfile';
+import { useAllProfiles, saveProfile, deleteProfile, useComments } from './useProfile';
 import { useTrainingLogs } from './useTrainingLogs';
 import { TYPE_META, logTypes, toLocalDateStr, Avatar, type UserProfile, type UserRole } from './App';
 
@@ -109,6 +109,11 @@ function MemberManagement() {
               <option value="coach">코치</option>
               <option value="parent">부모</option>
             </select>
+            <button
+              onClick={()=>{ if(window.confirm(`${p.displayName || p.email} 회원을 삭제할까요? 되돌릴 수 없어요.`)) deleteProfile(p.uid); }}
+              title="회원 삭제"
+              className="w-8 h-8 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[var(--c-9A9A93)] hover:text-red-400 hover:border-red-400/40 transition-colors shrink-0"
+            ><Trash2 size={14}/></button>
           </div>
         ))}
         {profiles.length===0 && <div className="text-center py-8 text-[12px] text-[var(--c-6A6A66)]">회원이 없어요</div>}

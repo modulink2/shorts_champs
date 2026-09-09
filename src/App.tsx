@@ -1399,9 +1399,10 @@ export default function App() {
                       {AVATAR_FILES.map(f=>(
                         <button
                           key={f} onClick={()=>saveProfile(user!.uid, { avatarId: f })}
-                          className={`aspect-square rounded-full overflow-hidden border-2 transition-all ${myProfile?.avatarId===f ? 'border-[var(--c-D4AF37)] shadow-[0_0_0_2px_rgba(var(--c-D4AF37-rgb),0.3)]' : 'border-[var(--c-232326)] hover:border-[var(--c-3A3520)]'}`}
+                          style={{ paddingTop: '100%' }}
+                          className={`relative w-full rounded-full overflow-hidden border-2 transition-all ${myProfile?.avatarId===f ? 'border-[var(--c-D4AF37)] shadow-[0_0_0_2px_rgba(var(--c-D4AF37-rgb),0.3)]' : 'border-[var(--c-232326)] hover:border-[var(--c-3A3520)]'}`}
                         >
-                          <img src={`/images/avatar/${f}`} alt="" className="w-full h-full object-cover" />
+                          <img src={`/images/avatar/${f}`} alt="" className="absolute inset-0 w-full h-full object-cover" />
                         </button>
                       ))}
                     </div>

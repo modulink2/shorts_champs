@@ -9,6 +9,13 @@ export function saveProfile(targetUid: string, patch: Partial<UserProfile>) {
   return setDoc(doc(db, 'profiles', targetUid), patch, { merge: true });
 }
 
+// Admin-only: remove a member's profile doc (drops them from search, rosters,
+// and the member list). Their auth account and own training data are
+// untouched — deleting those requires the Admin SDK, not available client-side.
+export function deleteProfile(targetUid: string) {
+  return deleteDoc(doc(db, 'profiles', targetUid));
+}
+
 // The signed-in user's own profile (role, assigned coach, etc). `loaded`
 // distinguishes "still fetching" from "confirmed no doc" so callers can
 // safely decide whether to backfill defaults.

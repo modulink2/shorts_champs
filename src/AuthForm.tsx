@@ -57,7 +57,15 @@ export default function AuthForm() {
           <Logo size={56}/>
         </div>
 
-        <div className="card p-6">
+        <div
+          className="card p-6"
+          style={{
+            '--c-0E0E10': '#F4F7FA', '--c-1E1E22': '#D6DCE3', '--c-9A9A93': '#67788A',
+            '--c-4A4A4E': '#B2BFC9', '--c-3A3520': '#AAB8C8',
+            '--field-bg': '#F2F3F5', '--field-border': '#E3E5E8',
+            color: '#131A22',
+          } as React.CSSProperties}
+        >
           <div className="flex gap-1.5 p-1 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] mb-6">
             {(['login', 'signup'] as const).map((m) => (
               <button
