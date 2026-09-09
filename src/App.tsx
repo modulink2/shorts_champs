@@ -9,6 +9,7 @@ import { useWeeklyPlan } from './useWeeklyPlan';
 import { useAwards } from './useAwards';
 import { useRecordTypes } from './useRecordTypes';
 import Logo from './Logo';
+import FeedbackButton from './FeedbackButton';
 import TrackBackground from './TrackBackground';
 import { useProfile, useAllProfiles, saveProfile, useComments, useLatestComment } from './useProfile';
 import { useLastLoungeReply } from './useLounge';
@@ -587,6 +588,7 @@ export default function App() {
               })}
             </nav>
             <span className="text-[10px] font-[700] tracking-[0.1em] px-2.5 h-6 rounded-full bg-[var(--chrome-active-bg)] text-[var(--c-D4AF37)] inline-flex items-center shrink-0">{themeLabel}</span>
+            <FeedbackButton onToast={setToast} className="w-9 h-9 rounded-full flex items-center justify-center text-[var(--chrome-text-dim)] hover:text-[var(--c-D4AF37)] hover:bg-[var(--chrome-hover-bg)] transition-colors shrink-0" />
             <div className="flex items-center gap-2.5 pl-4 ml-2 border-l border-[var(--chrome-border)] shrink-0">
               <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-9 h-9 rounded-full bg-[var(--chrome-hover-bg)] border border-[var(--chrome-border)] text-[16px]" />
               <div className="min-w-0">
@@ -625,6 +627,7 @@ export default function App() {
                 <button onClick={()=>openLog(todayStr, true)} className="h-9 lg:h-10 px-4 lg:px-5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] lg:text-[13px] flex items-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all">
                   <span className="hidden sm:inline">✦</span> 훈련기록하기
                 </button>
+                <FeedbackButton onToast={setToast} className="lg:hidden w-9 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] flex items-center justify-center text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] transition-colors" />
                 <button onClick={logOut} title="로그아웃" className="lg:hidden w-9 h-9 rounded-full bg-[var(--c-101012)] border border-[var(--c-2A2A2E)] flex items-center justify-center text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] transition-colors">
                   <LogOut size={15} />
                 </button>
