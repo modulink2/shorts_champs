@@ -54,17 +54,24 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
   const types = logTypes(log);
   const typeLabel = types.length ? types.map(t => TYPE_META[t].label).join(' + ') : '기록 없음';
 
+  // Training content lives mainly in the free-text note (iceItems/dryItems
+  // are legacy structured chips) — render both so nothing goes missing.
+  const typeSection = (title: string, note: string | undefined, itemsHtml: string) => {
+    if (!note && !itemsHtml) return '';
+    const noteHtml = note
+      ? `<div style="margin-top:12px;padding:16px 18px;background:#faf9f6;border-radius:12px;font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap;">${escapeHtml(note)}</div>`
+      : '';
+    const itemsWrap = itemsHtml ? `<div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${itemsHtml}</div>` : '';
+    return `
+      <div style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">${title}</div>
+        ${noteHtml}${itemsWrap}
+      </div>`;
+  };
+
   const itemSections = [
-    iceItemsHtml ? `
-      <div style="margin-top:20px;">
-        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">⛸️ 빙상 훈련 항목</div>
-        <div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${iceItemsHtml}</div>
-      </div>` : '',
-    dryItemsHtml ? `
-      <div style="margin-top:20px;">
-        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">🏋️ 육상 훈련 항목</div>
-        <div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${dryItemsHtml}</div>
-      </div>` : '',
+    typeSection('⛸️ 빙상 훈련', log.noteIce, iceItemsHtml),
+    typeSection('🏋️ 육상 훈련', log.noteDry, dryItemsHtml),
   ].join('');
 
   const heroStats = [
