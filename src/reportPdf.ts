@@ -6,24 +6,40 @@ function escapeHtml(s: string) {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+// Mix a hex color toward black/white by `amount` (0-1) — used to derive a
+// light tint (card backgrounds), a light border, and a darker readable
+// text shade from whatever accent color the athlete's current theme uses.
+function mixHex(hex: string, target: string, amount: number): string {
+  const c = parseInt(hex.slice(1), 16), t = parseInt(target.slice(1), 16);
+  const [r1, g1, b1] = [(c >> 16) & 255, (c >> 8) & 255, c & 255];
+  const [r2, g2, b2] = [(t >> 16) & 255, (t >> 8) & 255, t & 255];
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * amount);
+  return `#${[mix(r1, r2), mix(g1, g2), mix(b1, b2)].map(x => x.toString(16).padStart(2, '0')).join('')}`;
+}
+
 export interface ReportExtras {
   bestByDistance: Record<number, { time: string; date: string }>;
   careerLabel?: string;
   coachName?: string;
+  accent?: string; // current theme's accent color — defaults to gold
 }
 
 function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: ReportExtras): string {
+  const accent = extras.accent || '#D4AF37';
+  const accentLight = mixHex(accent, '#ffffff', 0.93);
+  const accentLighter = mixHex(accent, '#ffffff', 0.97);
+  const accentBorder = mixHex(accent, '#ffffff', 0.78);
+  const accentDeep = mixHex(accent, '#000000', 0.35);
+
   const bestRows = Object.entries(extras.bestByDistance)
     .map(([distance, r]) => ({ distance: Number(distance), ...r }))
     .sort((a, b) => a.distance - b.distance);
-  const timeRows = bestRows.length
-    ? bestRows.map((r, i) => `
-      <tr style="background:${i % 2 === 0 ? '#ffffff' : '#faf7ee'};">
-        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;color:#333;font-weight:600;">${r.distance}m</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;font-weight:800;color:#8a6d1c;font-size:15px;">${escapeHtml(r.time)}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid #eee2c0;color:#999;">${escapeHtml(r.date)}</td>
-      </tr>`).join('')
-    : `<tr><td colspan="3" style="padding:16px;color:#999;text-align:center;">기록 없음</td></tr>`;
+  const timeRows = bestRows.map((r, i) => `
+      <tr style="background:${i % 2 === 0 ? '#ffffff' : accentLighter};">
+        <td style="padding:12px 16px;border-bottom:1px solid ${accentBorder};color:#333;font-weight:600;">${r.distance}m</td>
+        <td style="padding:12px 16px;border-bottom:1px solid ${accentBorder};font-weight:800;color:${accentDeep};font-size:15px;">${escapeHtml(r.time)}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid ${accentBorder};color:#999;">${escapeHtml(r.date)}</td>
+      </tr>`).join('');
 
   // Plain <table> grid instead of inline pills — html2canvas rasterizes
   // flex/inline-block vertical-centering unreliably, but table cells
@@ -34,9 +50,9 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     if (!valid.length) return '';
     const cell = (it: typeof valid[number]) => `
       <td style="width:${100/COLS}%;padding:4px;">
-        <div style="border:1px solid #D4AF37;border-radius:10px;padding:10px 12px;background:#fffdf6;text-align:center;">
+        <div style="border:1px solid ${accent};border-radius:10px;padding:10px 12px;background:${accentLighter};text-align:center;">
           <div style="font-size:13px;font-weight:700;color:#333;">${escapeHtml(it.type)}</div>
-          <div style="margin-top:2px;font-size:13px;font-weight:800;color:#8a6d1c;">${it.value}${escapeHtml(it.unit)}</div>
+          <div style="margin-top:2px;font-size:13px;font-weight:800;color:${accentDeep};">${it.value}${escapeHtml(it.unit)}</div>
         </div>
       </td>`;
     const emptyCell = `<td style="width:${100/COLS}%;"></td>`;
@@ -64,7 +80,7 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     const itemsWrap = itemsHtml ? `<div style="margin-top:12px;padding:20px 22px;background:#faf9f6;border-radius:14px;">${itemsHtml}</div>` : '';
     return `
       <div style="margin-top:20px;">
-        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">${title}</div>
+        <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid ${accent};padding-left:10px;">${title}</div>
         ${noteHtml}${itemsWrap}
       </div>`;
   };
@@ -80,43 +96,46 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     { label: '쇼트트랙 경력', value: extras.careerLabel || '-' },
     { label: '담당 코치', value: extras.coachName || '-' },
   ].map(s => `
-    <div style="flex:1;background:linear-gradient(180deg,#fffdf6 0%,#faf5e6 100%);border:1px solid #e9dfb8;border-radius:14px;padding:18px 16px;">
-      <div style="font-size:11px;letter-spacing:0.5px;color:#a9925a;font-weight:700;">${s.label}</div>
+    <div style="flex:1;background:linear-gradient(180deg,#ffffff 0%,${accentLight} 100%);border:1px solid ${accentBorder};border-radius:14px;padding:18px 16px;">
+      <div style="font-size:11px;letter-spacing:0.5px;color:${accentDeep};font-weight:700;">${s.label}</div>
       <div style="font-size:17px;font-weight:800;margin-top:6px;color:#1a1a1a;">${escapeHtml(s.value)}</div>
     </div>`).join('');
+
+  const bestRecordSection = bestRows.length ? `
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid ${accent};padding-left:10px;">🏆 거리별 베스트 기록</div>
+      <table style="width:100%;margin-top:12px;border-collapse:collapse;font-size:14px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px ${accentBorder};">
+        <thead>
+          <tr style="background:#0b0e14;">
+            <th style="padding:10px 16px;text-align:left;color:${accent};font-size:12px;letter-spacing:0.5px;">거리</th>
+            <th style="padding:10px 16px;text-align:left;color:${accent};font-size:12px;letter-spacing:0.5px;">기록</th>
+            <th style="padding:10px 16px;text-align:left;color:${accent};font-size:12px;letter-spacing:0.5px;">날짜</th>
+          </tr>
+        </thead>
+        <tbody>${timeRows}</tbody>
+      </table>
+    </div>` : '';
 
   return `
     <div style="background:linear-gradient(135deg,#0b0e14 0%,#1a1d29 100%);border-radius:18px;padding:32px 36px;display:flex;align-items:center;justify-content:space-between;">
       <div>
-        <div style="font-size:11px;letter-spacing:3px;color:#D4AF37;font-weight:800;">ICEDREAM · SHORT TRACK EDITION</div>
+        <div style="font-size:11px;letter-spacing:3px;color:${accent};font-weight:800;">ICEDREAM · SHORT TRACK EDITION</div>
         <div style="font-size:30px;font-weight:800;margin-top:8px;color:#ffffff;letter-spacing:-0.5px;">훈련 보고서</div>
       </div>
       <div style="text-align:right;">
         <div style="font-size:12px;color:#9a9a93;">선수</div>
-        <div style="font-size:19px;font-weight:800;margin-top:4px;color:#ffd700;">${escapeHtml(athleteName)}</div>
+        <div style="font-size:19px;font-weight:800;margin-top:4px;color:${accent};">${escapeHtml(athleteName)}</div>
       </div>
     </div>
 
     <div style="margin-top:24px;display:flex;gap:14px;">${heroStats}</div>
 
-    <div style="margin-top:28px;">
-      <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid #D4AF37;padding-left:10px;">🏆 거리별 베스트 기록</div>
-      <table style="width:100%;margin-top:12px;border-collapse:collapse;font-size:14px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px #eee2c0;">
-        <thead>
-          <tr style="background:#0b0e14;">
-            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">거리</th>
-            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">기록</th>
-            <th style="padding:10px 16px;text-align:left;color:#D4AF37;font-size:12px;letter-spacing:0.5px;">날짜</th>
-          </tr>
-        </thead>
-        <tbody>${timeRows}</tbody>
-      </table>
-    </div>
-
     ${itemSections}
 
+    ${bestRecordSection}
+
     <div style="margin-top:44px;padding-top:18px;border-top:1px solid #eee;display:flex;justify-content:space-between;align-items:center;">
-      <span style="font-size:11px;letter-spacing:1px;color:#a9925a;font-weight:700;">ICEDREAM · SHORT TRACK EDITION</span>
+      <span style="font-size:11px;letter-spacing:1px;color:${accentDeep};font-weight:700;">ICEDREAM · SHORT TRACK EDITION</span>
       <span style="font-size:11px;color:#999;">생성일: ${new Date().toLocaleDateString('ko-KR')}</span>
     </div>
   `;

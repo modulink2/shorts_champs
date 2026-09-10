@@ -575,6 +575,7 @@ export default function App() {
         bestByDistance,
         careerLabel: myProfile?.startYearMonth ? formatCareer(myProfile.startYearMonth) : undefined,
         coachName: myProfile?.coachName,
+        accent: THEMES.find(t=>t.key===myTheme)?.accent,
       });
     } catch (err) {
       console.error('PDF export failed:', err);
