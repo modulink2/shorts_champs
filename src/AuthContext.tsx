@@ -5,6 +5,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   updateProfile,
+  updatePassword,
+  reauthenticateWithCredential,
+  sendPasswordResetEmail,
+  EmailAuthProvider,
   type User,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -16,6 +20,8 @@ interface AuthCtx {
   signUp: (email: string, password: string, name: string, role: 'athlete'|'coach'|'parent') => Promise<void>;
   logIn: (email: string, password: string) => Promise<void>;
   logOut: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -41,7 +47,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logIn = async (email: string, password: string) => { await signInWithEmailAndPassword(auth, email, password); };
   const logOut = () => signOut(auth);
 
-  return <Ctx.Provider value={{ user, loading, signUp, logIn, logOut }}>{children}</Ctx.Provider>;
+  // Firebase requires a recent login for a password change — re-authenticate
+  // with the current password first so a stale session doesn't 400 on update.
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!auth.currentUser || !auth.currentUser.email) throw new Error('not signed in');
+    const cred = EmailAuthProvider.credential(auth.currentUser.email, currentPassword);
+    await reauthenticateWithCredential(auth.currentUser, cred);
+    await updatePassword(auth.currentUser, newPassword);
+  };
+  const resetPassword = (email: string) => sendPasswordResetEmail(auth, email);
+
+  return <Ctx.Provider value={{ user, loading, signUp, logIn, logOut, changePassword, resetPassword }}>{children}</Ctx.Provider>;
 }
 
 export function useAuth() {

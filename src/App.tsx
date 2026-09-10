@@ -335,7 +335,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRe
 }
 
 export default function App() {
-  const { user, logOut } = useAuth();
+  const { user, logOut, changePassword } = useAuth();
   const { profile: myProfile, loaded: myProfileLoaded } = useProfile(user?.uid);
   const myRole = effectiveRole(user?.email, myProfile);
   const isCoachOrAdmin = myRole==='coach' || myRole==='admin';
@@ -350,6 +350,27 @@ export default function App() {
   const [nameDraft, setNameDraft] = useState('');
   const [bioEditing, setBioEditing] = useState(false);
   const [bioDraft, setBioDraft] = useState('');
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ text:string; error?:boolean }|null>(null);
+
+  const submitPasswordChange = async ()=>{
+    setPwMsg(null);
+    if(pwNew.length<6){ setPwMsg({text:'새 비밀번호는 6자 이상이어야 해요', error:true}); return; }
+    if(pwNew!==pwConfirm){ setPwMsg({text:'새 비밀번호가 서로 달라요', error:true}); return; }
+    setPwBusy(true);
+    try{
+      await changePassword(pwCurrent, pwNew);
+      setPwMsg({text:'비밀번호가 변경됐어요'});
+      setPwCurrent(''); setPwNew(''); setPwConfirm('');
+    }catch(err:any){
+      setPwMsg({text: err?.code==='auth/invalid-credential' || err?.code==='auth/wrong-password' ? '현재 비밀번호가 올바르지 않아요' : '비밀번호 변경에 실패했어요 · 잠시 후 다시 시도해주세요', error:true});
+    }finally{
+      setPwBusy(false);
+    }
+  };
 
   // Crystal Blue is the default look (no attribute = crystalblue per CSS);
   // the other themes need the attribute set explicitly.
@@ -1588,6 +1609,36 @@ export default function App() {
                       </button>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              <div className="card p-5 lg:p-6">
+                <div className="font-[700] text-[14px]">비밀번호 변경</div>
+                <div className="mt-3 space-y-3">
+                  <input
+                    type="password" value={pwCurrent} onChange={e=>setPwCurrent(e.target.value)}
+                    placeholder="현재 비밀번호" autoComplete="current-password"
+                    className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input
+                      type="password" value={pwNew} onChange={e=>setPwNew(e.target.value)}
+                      placeholder="새 비밀번호 · 6자 이상" minLength={6} autoComplete="new-password"
+                      className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                    />
+                    <input
+                      type="password" value={pwConfirm} onChange={e=>setPwConfirm(e.target.value)}
+                      placeholder="새 비밀번호 확인" minLength={6} autoComplete="new-password"
+                      className="field w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                    />
+                  </div>
+                  {pwMsg && (
+                    <div className={`text-[12px] font-[600] ${pwMsg.error ? 'text-red-400' : 'text-[var(--c-D4AF37)]'}`}>{pwMsg.text}</div>
+                  )}
+                  <button
+                    onClick={submitPasswordChange} disabled={pwBusy || !pwCurrent || !pwNew || !pwConfirm}
+                    className="h-11 px-6 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] disabled:opacity-40"
+                  >{pwBusy ? '변경 중...' : '비밀번호 변경'}</button>
                 </div>
               </div>
 

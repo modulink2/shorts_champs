@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown } from 'lucide-react';
+import { Crown, Send } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import Logo from './Logo';
 
@@ -16,14 +16,15 @@ function mapError(code: string): string {
 }
 
 export default function AuthForm() {
-  const { signUp, logIn } = useAuth();
-  const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const { signUp, logIn, resetPassword } = useAuth();
+  const [mode, setMode] = useState<'login' | 'signup' | 'reset'>('login');
   const [name, setName] = useState('');
   const [role, setRole] = useState<'athlete'|'coach'|'parent'>('athlete');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +32,7 @@ export default function AuthForm() {
     setBusy(true);
     try {
       if (mode === 'signup') await signUp(email, password, name, role);
+      else if (mode === 'reset') { await resetPassword(email); setResetSent(true); }
       else await logIn(email, password);
     } catch (err: any) {
       setError(mapError(err?.code || ''));
@@ -66,19 +68,31 @@ export default function AuthForm() {
             color: '#131A22',
           } as React.CSSProperties}
         >
-          <div className="flex gap-1.5 p-1 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] mb-6">
-            {(['login', 'signup'] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => { setMode(m); setError(''); }}
-                className={`flex-1 h-9 rounded-full text-[12px] font-[700] transition-all ${mode === m ? 'gold-gradient text-[var(--c-on-accent)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.25)]' : 'text-[var(--c-9A9A93)]'}`}
-              >
-                {m === 'login' ? '로그인' : '회원가입'}
-              </button>
-            ))}
-          </div>
+          {mode === 'reset' ? (
+            <div className="mb-6">
+              <div className="font-[800] text-[16px]">비밀번호 재설정</div>
+              <div className="mt-1 text-[12px] font-[500] text-[var(--c-6A6A66)]">가입한 이메일로 재설정 링크를 보내드려요</div>
+            </div>
+          ) : (
+            <div className="flex gap-1.5 p-1 rounded-full bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] mb-6">
+              {(['login', 'signup'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => { setMode(m); setError(''); }}
+                  className={`flex-1 h-9 rounded-full text-[12px] font-[700] transition-all ${mode === m ? 'gold-gradient text-[var(--c-on-accent)] shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.25)]' : 'text-[var(--c-9A9A93)]'}`}
+                >
+                  {m === 'login' ? '로그인' : '회원가입'}
+                </button>
+              ))}
+            </div>
+          )}
 
+          {mode === 'reset' && resetSent ? (
+            <div className="rounded-[12px] bg-[rgba(var(--c-D4AF37-rgb),0.1)] border border-[var(--c-D4AF37)]/30 px-4 py-3.5 text-[13px] font-[600] text-[#8a6d1c]">
+              {email}로 재설정 링크를 보냈어요. 메일함을 확인해주세요.
+            </div>
+          ) : (
           <form onSubmit={submit} className="space-y-3.5">
             {mode === 'signup' && (
               <>
@@ -111,15 +125,22 @@ export default function AuthForm() {
                 className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
               />
             </div>
-            <div>
-              <label className="label-caps">비밀번호</label>
-              <input
-                required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                placeholder="6자 이상" minLength={6}
-                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
-              />
-            </div>
+            {mode !== 'reset' && (
+              <div>
+                <div className="flex items-center justify-between">
+                  <label className="label-caps">비밀번호</label>
+                  {mode === 'login' && (
+                    <button type="button" onClick={() => { setMode('reset'); setError(''); setResetSent(false); }} className="text-[11px] font-[600] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)]">비밀번호를 잊으셨나요?</button>
+                  )}
+                </div>
+                <input
+                  required type="password" value={password} onChange={(e) => setPassword(e.target.value)}
+                  placeholder="6자 이상" minLength={6}
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                  className="field mt-1.5 w-full h-11 rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 text-[13px] font-[500] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="rounded-[10px] bg-[#1A0E0E] border border-[#3A2020] px-3.5 py-2.5 text-[12px] font-[600] text-[#E8A0A0]">{error}</div>
@@ -129,20 +150,29 @@ export default function AuthForm() {
               type="submit" disabled={busy}
               className="w-full h-[48px] rounded-[14px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[13px] flex items-center justify-center gap-1.5 shadow-[0_0_20px_rgba(var(--c-D4AF37-rgb),0.25)] hover:shadow-[0_0_28px_rgba(var(--c-D4AF37-rgb),0.35)] active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              <Crown size={14} /> {busy ? '처리 중...' : mode === 'login' ? '로그인' : '가입하고 시작하기'}
+              {mode === 'reset'
+                ? <><Send size={14} /> {busy ? '전송 중...' : '재설정 링크 보내기'}</>
+                : <><Crown size={14} /> {busy ? '처리 중...' : mode === 'login' ? '로그인' : '가입하고 시작하기'}</>}
             </button>
           </form>
+          )}
         </div>
 
         <div className="mt-5 text-center text-[11px] font-[500] text-[var(--c-6A6A66)]">
-          {mode === 'login' ? '아직 계정이 없나요? ' : '이미 계정이 있나요? '}
-          <button
-            type="button"
-            onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}
-            className="text-[var(--c-D4AF37)] font-[700] hover:underline"
-          >
-            {mode === 'login' ? '회원가입' : '로그인'}
-          </button>
+          {mode === 'reset' ? (
+            <button type="button" onClick={() => { setMode('login'); setError(''); setResetSent(false); }} className="text-[var(--c-D4AF37)] font-[700] hover:underline">로그인으로 돌아가기</button>
+          ) : (
+            <>
+              {mode === 'login' ? '아직 계정이 없나요? ' : '이미 계정이 있나요? '}
+              <button
+                type="button"
+                onClick={() => { setMode(mode === 'login' ? 'signup' : 'login'); setError(''); }}
+                className="text-[var(--c-D4AF37)] font-[700] hover:underline"
+              >
+                {mode === 'login' ? '회원가입' : '로그인'}
+              </button>
+            </>
+          )}
         </div>
       </div>
     </div>
