@@ -3,7 +3,7 @@ import { collection, doc, getDoc, setDoc, deleteDoc, writeBatch, onSnapshot } fr
 import { db } from './firebase';
 import { DEFAULT_RECORD_DISTANCES, type RecordType } from './App';
 
-export function useRecordTypes(uid: string | undefined) {
+export function useRecordTypes(uid: string | undefined, canSeed: boolean = true) {
   const [recordTypes, setRecordTypes] = useState<RecordType[]>([]);
   const seeding = useRef(false);
 
@@ -19,7 +19,7 @@ export function useRecordTypes(uid: string | undefined) {
   // A settings flag (not "collection is empty") gates this so deleting them
   // all later doesn't bring them back.
   useEffect(() => {
-    if (!uid || seeding.current) return;
+    if (!uid || !canSeed || seeding.current) return;
     seeding.current = true;
     (async () => {
       const flagRef = doc(db, 'users', uid, 'meta', 'settings');

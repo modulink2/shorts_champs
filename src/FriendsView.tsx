@@ -41,6 +41,7 @@ function FriendDetail({ profile }: { profile: UserProfile }) {
       {profile.infoPublic ? (
         <div className="card p-5 lg:p-6">
           <div className="font-[700] text-[14px]">{profile.displayName} 정보</div>
+          {profile.bio && <p className="mt-2.5 text-[13px] leading-[1.5] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{profile.bio}</p>}
           <div className="mt-3 space-y-2.5">
             {profile.startYearMonth && <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">쇼트트랙 시작</span><span className="font-[700] text-[var(--c-F5F1E8)]">{formatCareer(profile.startYearMonth)}</span></div>}
             {profile.coachName && <div className="flex items-center justify-between text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600]">담당 코치</span><span className="font-[700] text-[var(--c-F5F1E8)]">{profile.coachName}</span></div>}

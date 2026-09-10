@@ -1,9 +1,118 @@
 import React, { useMemo, useState } from 'react';
-import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight, Target, Trash2 } from 'lucide-react';
+import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import { Users, UserCog, MessageSquare, ChevronLeft, ChevronRight, Target, Trash2, Trophy, TrendingUp } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useAllProfiles, saveProfile, deleteProfile, useComments } from './useProfile';
 import { useTrainingLogs } from './useTrainingLogs';
-import { TYPE_META, logTypes, toLocalDateStr, Avatar, type UserProfile, type UserRole } from './App';
+import { useRecordTypes } from './useRecordTypes';
+import { TYPE_META, logTypes, toLocalDateStr, formatCareer, computeBestByDistance, computeDistanceGrowthData, computeTypeDist, DISTANCE_COLORS, Avatar, type UserProfile, type UserRole, type TrainingLog } from './App';
+
+// Coach/parent read-only view of an athlete's basic profile info — always
+// visible to them regardless of the athlete's friend-facing infoPublic flag,
+// since that toggle only governs what friends (not the assigned coach/parent)
+// can see.
+function AthleteInfoCard({ profile }: { profile: UserProfile }) {
+  const rows: [string, string | undefined][] = [
+    ['쇼트트랙 시작', profile.startYearMonth ? formatCareer(profile.startYearMonth) : undefined],
+    ['소속 링크장', profile.rinkAddress],
+    ['소속팀', profile.teamName],
+    ['스케이트화', profile.skateInfo],
+    ['날 정보', profile.bladeInfo],
+  ];
+  const visible = rows.filter(([, v]) => v);
+  return (
+    <div className="card p-5 lg:p-6">
+      <div className="font-[700] text-[14px]">{profile.displayName} 기본정보</div>
+      {profile.bio && <p className="mt-2.5 text-[13px] leading-[1.5] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{profile.bio}</p>}
+      {visible.length > 0 ? (
+        <div className="mt-3 space-y-2.5">
+          {visible.map(([label, value]) => (
+            <div key={label} className="flex items-center justify-between gap-3 text-[12px]"><span className="text-[var(--c-6A6A66)] font-[600] shrink-0">{label}</span><span className="font-[700] text-[var(--c-F5F1E8)] text-right truncate">{value}</span></div>
+          ))}
+        </div>
+      ) : (
+        <div className="mt-3 text-center py-4 text-[12px] text-[var(--c-6A6A66)]">등록된 기본정보가 없어요</div>
+      )}
+    </div>
+  );
+}
+
+// Coach/parent read-only view of an athlete's distance records + growth
+// chart — same data/derivation the athlete sees on their own 기록입력/분석
+// tab, minus the input form (coach/parent shouldn't be entering it for them).
+function AthleteRecordsCard({ uid, logs }: { uid: string; logs: TrainingLog[] }) {
+  const { recordTypes } = useRecordTypes(uid, false);
+  const bestByDistance = useMemo(() => computeBestByDistance(logs), [logs]);
+  const distanceGrowthData = useMemo(() => computeDistanceGrowthData(logs), [logs]);
+  const typeDist = useMemo(() => computeTypeDist(logs), [logs]);
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.6fr] gap-4 lg:gap-5">
+      <div className="card p-5 lg:p-6 min-w-0">
+        <div className="flex items-center justify-between">
+          <div className="font-[700] text-[14px] flex items-center gap-2"><TrendingUp size={16} className="text-[var(--c-D4AF37)]"/> 거리별 기록 흐름</div>
+          <span className="text-[10px] font-[700] px-2.5 h-5 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[var(--c-D4AF37)] inline-flex items-center">최근 20회</span>
+        </div>
+        {distanceGrowthData.length === 0 ? (
+          <div className="mt-6 py-10 text-center text-[12px] text-[var(--c-6A6A66)]">아직 기록이 없어요</div>
+        ) : (
+          <div className="mt-6 h-[220px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={distanceGrowthData}>
+                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} tickFormatter={(v:string)=>v.slice(5)} />
+                <YAxis domain={['dataMin - 3','dataMax + 3']} axisLine={false} tickLine={false} tick={{ fontSize:10, fill:'var(--c-6A6A66)' }} width={40} tickFormatter={(v:number)=>`${v.toFixed(0)}%`} />
+                <Tooltip
+                  contentStyle={{ background:'var(--c-121214)', border:'1px solid var(--c-2C2A20)', borderRadius:12, fontSize:11 }}
+                  formatter={(value:any, name:any, entry:any)=>{
+                    const dist = String(name).replace('m','');
+                    const t = entry?.payload?.[`t${dist}`];
+                    return [t ? `${t} (${Number(value).toFixed(1)}%)` : `${Number(value).toFixed(1)}%`, name];
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize:11 }} />
+                {recordTypes.map((rt,i)=>(
+                  <Line key={rt.id} type="monotone" dataKey={String(rt.distance)} name={`${rt.distance}m`} stroke={DISTANCE_COLORS[i%DISTANCE_COLORS.length]} strokeWidth={2} dot={{ r:3 }} connectNulls />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
+      <div className="space-y-4 min-w-0">
+        <div className="card p-5">
+          <div className="font-[700] text-[13px]">훈련 분포</div>
+          <div className="mt-3 h-[140px] flex items-center">
+            <ResponsiveContainer width="60%" height="100%">
+              <PieChart>
+                <Pie data={typeDist} dataKey="value" innerRadius={36} outerRadius={54} paddingAngle={4} stroke="none">
+                  {typeDist.map((e,i)=> <Cell key={i} fill={e.color} />)}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex-1 space-y-2">
+              {typeDist.map(d=>(
+                <div key={d.name} className="flex items-center gap-2 text-[11px] font-[600]"><span className="w-2 h-2 rounded-full" style={{background:d.color}}/><span className="text-[var(--c-9A9A93)]">{d.name}</span><span className="ml-auto font-[800] text-[var(--c-F5F1E8)]">{d.value}</span></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="lg:col-span-2 card p-5 lg:p-6">
+        <div className="font-[700] text-[13px] flex items-center gap-2"><Trophy size={14} className="text-[var(--c-D4AF37)]"/> 거리별 베스트 기록</div>
+        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+          {recordTypes.map(rt=>(
+            <div key={rt.id} className="rounded-[12px] subcard p-3">
+              <div className="label-caps">Best {rt.distance}m</div>
+              <div className="mt-1 font-[800] text-[16px] text-[var(--c-F5F1E8)]">{bestByDistance[rt.distance]?.time || '-'}</div>
+              {bestByDistance[rt.distance] && <div className="mt-0.5 text-[10px] font-[600] text-[var(--c-6A6A66)]">{bestByDistance[rt.distance].date.slice(5).replace('-','/')}</div>}
+            </div>
+          ))}
+          {recordTypes.length===0 && <div className="col-span-full text-center py-4 text-[11px] text-[var(--c-6A6A66)]">등록된 거리 항목이 없어요</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const FOCUS_EMOJIS = ['💪','🔥','⭐️','👍','🎯','🏆','❄️','👏'];
 
@@ -147,6 +256,9 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
   };
 
   return (
+    <div className="space-y-5">
+    <AthleteInfoCard profile={athlete} />
+    <AthleteRecordsCard uid={athlete.uid} logs={logs} />
     <div className="grid lg:grid-cols-[300px_1fr] gap-5">
       <div className="card p-4 h-fit">
         <div className="flex items-center justify-between">
@@ -256,6 +368,7 @@ function AthleteLogDetail({ athlete }: { athlete: UserProfile }) {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

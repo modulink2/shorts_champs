@@ -68,7 +68,7 @@ export interface UserProfile {
   startYearMonth?: string; // "YYYY-MM" — when this athlete started short track
   rinkAddress?: string; teamName?: string; skateInfo?: string; bladeInfo?: string;
   focusGoal?: FocusGoal;
-  infoPublic?: boolean;
+  infoPublic?: boolean; bio?: string;
 }
 // "YYYY-MM" -> "3년 2개월째" / "5개월째" / "이번 달 시작"
 export function formatCareer(startYearMonth: string): string {
@@ -122,6 +122,42 @@ const GOLD_GRAD = 'linear-gradient(135deg, var(--c-D4AF37) 0%, var(--c-FFD700) 5
 // short-track standard distances so existing PB data stays visible.
 export interface RecordType { id: string; distance: number; }
 export const DEFAULT_RECORD_DISTANCES = [111, 222, 333, 500, 1000, 1500];
+
+// Fixed, theme-independent hues so distances stay visually distinct even in
+// themes where the accent-tinted tokens are all close in hue.
+export const DISTANCE_COLORS = ['#F5A623','#4FC3F7','#FF6B9D','#66D9A0','#B388FF','#FFD54F','#FF7043','#4DD0E1'];
+
+// Fastest time recorded per distance, across all of a user's logs — shared by
+// the athlete's own 기록입력/분석 view and the coach/parent read-only view.
+export function computeBestByDistance(logs: TrainingLog[]) {
+  const map: Record<number, { time: string; sec: number; date: string }> = {};
+  logs.forEach(l => l.timeRecords?.forEach(r => { if (!map[r.distance] || r.seconds < map[r.distance].sec) { map[r.distance] = { time: r.time, sec: r.seconds, date: l.date }; } }));
+  return map;
+}
+
+// One row per date with every distance's time as % of that distance's own
+// first recorded time, so distances with very different absolute times
+// (111m vs 1500m) can share one y-axis and still show growth trend.
+export function computeDistanceGrowthData(logs: TrainingLog[]) {
+  const baseline: Record<number, number> = {};
+  const rows: Record<string, any> = {};
+  logs.slice().sort((a, b) => a.date.localeCompare(b.date)).forEach(l => l.timeRecords?.forEach(r => {
+    if (baseline[r.distance] === undefined) baseline[r.distance] = r.seconds;
+    if (!rows[l.date]) rows[l.date] = { date: l.date };
+    // Speed index: baseline/seconds so faster times (smaller seconds) plot
+    // higher on the chart, matching "shorter time = better" intuitively.
+    rows[l.date][r.distance] = (baseline[r.distance] / r.seconds) * 100;
+    rows[l.date][`t${r.distance}`] = r.time;
+  }));
+  return Object.values(rows).sort((a: any, b: any) => a.date.localeCompare(b.date)).slice(-20);
+}
+
+export function computeTypeDist(logs: TrainingLog[]) {
+  const ice = logs.filter(l => l.noteIce && l.noteIce.trim()).length;
+  const dry = logs.filter(l => l.noteDry && l.noteDry.trim()).length;
+  const rest = logs.filter(l => l.isRest).length;
+  return [{ name: '빙상', value: ice, color: 'var(--c-D4AF37)' }, { name: '육상', value: dry, color: 'var(--c-C9A86A)' }, { name: '휴식', value: rest, color: 'var(--c-2A2A2E)' }];
+}
 // Units selectable when defining a custom ice/dry item type.
 export const ITEM_UNITS = ['시간', '분', '바퀴', '셋트', '개', '회'];
 // Seeded once per new user (see useItemTypes) so 육상 starts with familiar items.
@@ -239,10 +275,10 @@ function TimeInputsEditor({ recordTypes, timeInputs, onChange, onDelete }: { rec
 
 // User-managed item picker: add/delete custom item types (name+unit) per
 // category, click a type to reveal a value input, register it onto the log.
-function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRemoveItem, compact }: {
+function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRemoveItem, compact }: {
   itemTypes: ItemType[]; items: TrainingItem[];
   onAddType:(name:string, unit:string)=>void; onDeleteType:(id:string)=>void;
-  onAddItem:(item:Omit<TrainingItem,'id'>)=>void; onRemoveItem:(id:string)=>void;
+  onAddText:(text:string)=>void; onRemoveItem:(id:string)=>void;
   compact?: boolean;
 }) {
   const [activeTypeId, setActiveTypeId] = useState<string|null>(null);
@@ -280,7 +316,7 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddItem, onRe
           <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">{activeType.name}</span>
           <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="field w-20 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center font-[700] outline-none"/>
           <span className="text-[12px] font-[600] text-[var(--c-6A6A66)]">{activeType.unit}</span>
-          <button type="button" onClick={()=>{ const n=parseFloat(value); if(n>0){ onAddItem({type:activeType.name, value:n, unit:activeType.unit}); setActiveTypeId(null); setValue(''); } }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
+          <button type="button" onClick={()=>{ const n=parseFloat(value); onAddText(n>0 ? `${activeType.name} ${value}${activeType.unit}` : activeType.name); setActiveTypeId(null); setValue(''); }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
         </div>
       )}
 
@@ -312,6 +348,8 @@ export default function App() {
   const [parentSearch, setParentSearch] = useState('');
   const [nameEditing, setNameEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
+  const [bioEditing, setBioEditing] = useState(false);
+  const [bioDraft, setBioDraft] = useState('');
 
   // Crystal Blue is the default look (no attribute = crystalblue per CSS);
   // the other themes need the attribute set explicitly.
@@ -415,38 +453,9 @@ export default function App() {
 
   const filteredLogs = useMemo(()=> searchType==='all' ? logs : logs.filter(l=> logTypes(l).includes(searchType)), [logs, searchType]);
 
-  const bestByDistance = useMemo(()=>{
-    const map: Record<number, { time:string; sec:number; date:string }> = {};
-    logs.forEach(l=> l.timeRecords?.forEach(r=>{ if(!map[r.distance] || r.seconds<map[r.distance].sec){ map[r.distance] = { time:r.time, sec:r.seconds, date:l.date }; } }));
-    return map;
-  },[logs]);
-
-  // One row per date with every distance's time as % of that distance's own
-  // first recorded time, so distances with very different absolute times
-  // (111m vs 1500m) can share one y-axis and still show growth trend.
-  const distanceGrowthData = useMemo(()=>{
-    const baseline: Record<number, number> = {};
-    const rows: Record<string, any> = {};
-    logs.slice().sort((a,b)=>a.date.localeCompare(b.date)).forEach(l=> l.timeRecords?.forEach(r=>{
-      if (baseline[r.distance] === undefined) baseline[r.distance] = r.seconds;
-      if (!rows[l.date]) rows[l.date] = { date: l.date };
-      // Speed index: baseline/seconds so faster times (smaller seconds) plot
-      // higher on the chart, matching "shorter time = better" intuitively.
-      rows[l.date][r.distance] = (baseline[r.distance] / r.seconds) * 100;
-      rows[l.date][`t${r.distance}`] = r.time;
-    }));
-    return Object.values(rows).sort((a:any,b:any)=> a.date.localeCompare(b.date)).slice(-20);
-  },[logs]);
-  // Fixed, theme-independent hues so distances stay visually distinct even
-  // in themes where the accent-tinted tokens above are all close in hue.
-  const DISTANCE_COLORS = ['#F5A623','#4FC3F7','#FF6B9D','#66D9A0','#B388FF','#FFD54F','#FF7043','#4DD0E1'];
-
-  const typeDist = useMemo(()=>{
-    const ice = logs.filter(l=>l.noteIce && l.noteIce.trim()).length;
-    const dry = logs.filter(l=>l.noteDry && l.noteDry.trim()).length;
-    const rest = logs.filter(l=>l.isRest).length;
-    return [{ name:'빙상', value:ice, color:'var(--c-D4AF37)' }, { name:'육상', value:dry, color:'var(--c-C9A86A)' }, { name:'휴식', value:rest, color:'var(--c-2A2A2E)' }];
-  },[logs]);
+  const bestByDistance = useMemo(()=>computeBestByDistance(logs),[logs]);
+  const distanceGrowthData = useMemo(()=>computeDistanceGrowthData(logs),[logs]);
+  const typeDist = useMemo(()=>computeTypeDist(logs),[logs]);
 
   const calendarDays = useMemo(()=>{
     const y=calendarMonth.getFullYear(), m=calendarMonth.getMonth();
@@ -516,9 +525,12 @@ export default function App() {
     setToast('기록이 삭제되었어요');
   };
 
-  const addIceItem = (item:Omit<TrainingItem,'id'>)=> setEditing({...editing, iceItems:[...(editing.iceItems||[]), {...item, id: crypto.randomUUID()}]});
+  // Item picker adds go straight into the free-text note (joined with " · ")
+  // rather than a separate structured list — removeIceItem/removeDryItem stay
+  // only to let old logs (from before this change) clean up their chips.
+  const appendIceNote = (text:string)=> setEditing({...editing, noteIce: [editing.noteIce, text].filter(Boolean).join(' · ')});
   const removeIceItem = (id:string)=> setEditing({...editing, iceItems:(editing.iceItems||[]).filter(it=>it.id!==id)});
-  const addDryItem = (item:Omit<TrainingItem,'id'>)=> setEditing({...editing, dryItems:[...(editing.dryItems||[]), {...item, id: crypto.randomUUID()}]});
+  const appendDryNote = (text:string)=> setEditing({...editing, noteDry: [editing.noteDry, text].filter(Boolean).join(' · ')});
   const removeDryItem = (id:string)=> setEditing({...editing, dryItems:(editing.dryItems||[]).filter(it=>it.id!==id)});
 
   const saveRecordEntry = ()=>{
@@ -1057,7 +1069,7 @@ export default function App() {
                               <div className="h-[1px] bg-gradient-to-r from-[var(--c-D4AF37)]/20 via-[var(--c-2A2A20)] to-transparent"/>
                               <div>
                                 <div className="label-caps text-[var(--c-D4AF37)] text-[11px]">⛸️ 빙상 훈련 · 오늘의 디테일</div>
-                                <div className="mt-4"><ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} /></div>
+                                <div className="mt-4"><ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddText={appendIceNote} onRemoveItem={removeIceItem} /></div>
                                 <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요? 코너 진입 각도, 스타트 느낌 등을 자유롭게 적어보세요." className="field mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                                 <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)]">{(editing.noteIce||'').length}/200 · 훈련이 없었다면 비워두세요</div>
                               </div>
@@ -1065,7 +1077,7 @@ export default function App() {
                               <div className="h-[1px] bg-gradient-to-r from-[var(--c-D4AF37)]/20 via-[var(--c-2A2A20)] to-transparent"/>
                               <div>
                                 <div className="label-caps text-[var(--c-D4AF37)] text-[11px]">🏋️ 육상 훈련 · 오늘의 디테일</div>
-                                <div className="mt-4"><ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} /></div>
+                                <div className="mt-4"><ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddText={appendDryNote} onRemoveItem={removeDryItem} /></div>
                                 <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="field mt-4 w-full min-h-[120px] rounded-[16px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-5 py-4 text-[16px] font-[500] leading-[1.7] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                                 <div className="mt-3 text-[11px] font-[600] text-[var(--c-6A6A66)]">{(editing.noteDry||'').length}/200 · 훈련이 없었다면 비워두세요</div>
                               </div>
@@ -1120,7 +1132,7 @@ export default function App() {
                             <div className="w-[72px] h-[72px] rounded-[18px] bg-[var(--c-18181B)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[36px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">{logTypes(selectedLog).map(t=>TYPE_META[t].emoji).join(' ') || '📝'}</div>
                             <div>
                               <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]">{logTypes(selectedLog).map(t=>TYPE_META[t].label).join(' + ') || '기록'} · {selectedLog.date}</div>
-                              <div className="mt-3 font-[800] text-[20px] leading-[1.2]">오늘의 챔피언 로그</div>
+                              <div className="mt-3 font-[800] text-[20px] leading-[1.2]">꿈을 위한 한 발자국</div>
                               {(selectedLog.focus!=null || selectedLog.sleepHours!=null) && (
                                 <div className="mt-1 text-[13px] font-[500] text-[var(--c-9A9A93)]">{selectedLog.focus!=null && `집중 ${selectedLog.focus}/5`}{selectedLog.focus!=null && selectedLog.sleepHours!=null && ' · '}{selectedLog.sleepHours!=null && `수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
                               )}
@@ -1393,12 +1405,28 @@ export default function App() {
                     )}
                   </div>
                   <div>
+                    <label className="label-caps">내 소개</label>
+                    {bioEditing ? (
+                      <textarea
+                        autoFocus value={bioDraft} onChange={e=>setBioDraft(e.target.value)}
+                        onBlur={()=>{ saveProfile(user!.uid, { bio: bioDraft.trim() }); setBioEditing(false); }}
+                        placeholder="친구들에게 나를 소개해보세요" maxLength={80}
+                        className="field mt-1.5 w-full min-h-[64px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-3A3520)] px-4 py-2.5 text-[13px] font-[600] outline-none resize-none placeholder:text-[var(--c-4A4A4E)]"
+                      />
+                    ) : (
+                      <button onClick={()=>{ setBioEditing(true); setBioDraft(myProfile?.bio || ''); }} className="mt-1.5 w-full min-h-[44px] rounded-[12px] subcard px-4 py-2.5 flex items-center justify-between gap-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
+                        <span className={`text-[13px] font-[600] ${myProfile?.bio ? 'text-[var(--c-F5F1E8)]' : 'text-[var(--c-6A6A66)]'}`}>{myProfile?.bio || '친구들에게 나를 소개해보세요'}</span>
+                        <span className="text-[11px] font-[600] text-[var(--c-9A9A93)] shrink-0">수정</span>
+                      </button>
+                    )}
+                  </div>
+                  <div>
                     <label className="label-caps">아바타</label>
                     <div className="mt-1.5 flex items-center gap-3">
                       <Avatar avatarId={myProfile?.avatarId} fallback="⛸️" className="w-14 h-14 rounded-full bg-[var(--c-18181B)] border border-[var(--c-3A3520)] text-[24px]" />
                       <span className="text-[11px] font-[600] text-[var(--c-9A9A93)]">아래에서 골라보세요</span>
                     </div>
-                    <div className="mt-3 grid grid-cols-6 sm:grid-cols-8 gap-2 max-h-[220px] overflow-auto pr-1">
+                    <div className="mt-3 grid grid-cols-[repeat(12,minmax(0,1fr))] sm:grid-cols-[repeat(16,minmax(0,1fr))] gap-1.5 max-h-[220px] overflow-auto pr-1">
                       {AVATAR_FILES.map(f=>(
                         <button
                           key={f} onClick={()=>saveProfile(user!.uid, { avatarId: f })}
@@ -1754,12 +1782,12 @@ export default function App() {
                 <>
                   <div className="card !p-4">
                     <div className="label-caps mb-3">⛸️ 빙상 훈련 · 오늘의 디테일</div>
-                    <ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddItem={addIceItem} onRemoveItem={removeIceItem} compact />
+                    <ItemPicker itemTypes={iceItemTypes} items={editing.iceItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'ice', name, unit})} onDeleteType={deleteItemType} onAddText={appendIceNote} onRemoveItem={removeIceItem} compact />
                     <textarea value={editing.noteIce||''} onChange={e=>setEditing({...editing, noteIce:e.target.value})} placeholder="오늘 빙상 훈련은 어땠나요?" className="field mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                   </div>
                   <div className="card !p-4">
                     <div className="label-caps mb-3">🏋️ 육상 훈련 · 오늘의 디테일</div>
-                    <ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddItem={addDryItem} onRemoveItem={removeDryItem} compact />
+                    <ItemPicker itemTypes={dryItemTypes} items={editing.dryItems||[]} onAddType={(name,unit)=>saveItemType({id:crypto.randomUUID(), category:'dry', name, unit})} onDeleteType={deleteItemType} onAddText={appendDryNote} onRemoveItem={removeDryItem} compact />
                     <textarea value={editing.noteDry||''} onChange={e=>setEditing({...editing, noteDry:e.target.value})} placeholder="오늘 육상 훈련은 어땠나요?" className="field mt-3 w-full min-h-[70px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1E22)] px-4 py-3 text-[13px] font-[500] leading-[1.5] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)] resize-none"/>
                   </div>
                 </>
