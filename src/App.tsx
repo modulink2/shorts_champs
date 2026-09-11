@@ -1148,28 +1148,13 @@ export default function App() {
                       </div>
                     ) : selectedLog ? (
                       <div className="mt-8">
-                        {/* Hero gradient */}
-                        <div className="relative overflow-hidden rounded-[20px] h-[180px] bg-[radial-gradient(120%_120%_at_0%_0%,rgba(var(--c-D4AF37-rgb),0.22),transparent_60%),linear-gradient(135deg,var(--c-121214),var(--c-0E0E10))] border border-[var(--c-2C2A20)] flex items-center justify-between px-8">
-                          <div className="flex items-center gap-5">
-                            <div className="w-[72px] h-[72px] rounded-[18px] bg-[var(--c-18181B)] border border-[var(--c-2C2A20)] flex items-center justify-center text-[36px] shadow-[0_8px_24px_rgba(0,0,0,0.5)]">{logTypes(selectedLog).map(t=>TYPE_META[t].emoji).join(' ') || '📝'}</div>
-                            <div>
-                              <div className="inline-flex h-8 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] text-[12px] font-[800] tracking-[0.06em] items-center shadow-[0_0_16px_rgba(var(--c-D4AF37-rgb),0.3)]">{logTypes(selectedLog).map(t=>TYPE_META[t].label).join(' + ') || '기록'} · {selectedLog.date}</div>
-                              <div className="mt-3 font-[800] text-[20px] leading-[1.2]">꿈을 위한 한 발자국</div>
-                              {(selectedLog.focus!=null || selectedLog.sleepHours!=null) && (
-                                <div className="mt-1 text-[13px] font-[500] text-[var(--c-9A9A93)]">{selectedLog.focus!=null && `집중 ${selectedLog.focus}/5`}{selectedLog.focus!=null && selectedLog.sleepHours!=null && ' · '}{selectedLog.sleepHours!=null && `수면 ${selectedLog.sleepHours.toFixed(1)}h`}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="hidden lg:flex w-[96px] h-[96px] rounded-full border border-[var(--c-D4AF37)]/20 bg-[radial-gradient(60%_60%_at_50%_50%,rgba(var(--c-D4AF37-rgb),0.15),transparent)] items-center justify-center text-[40px] opacity-80">⛸️</div>
-                        </div>
-
                        {/* Ice note */}
                        {(selectedLog.noteIce || (selectedLog.iceItems && selectedLog.iceItems.length>0)) && (
                          <div className="mt-10 relative rounded-[20px] bg-[var(--c-0E0E10)] border border-[var(--c-1E1C14)] p-8 lg:p-10 overflow-hidden">
                            <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[var(--c-D4AF37)]/10">“</div>
                            <div className="relative">
                              <div className="label-caps text-[var(--c-D4AF37)]">⛸️ 빙상 훈련</div>
-                             {selectedLog.noteIce && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[var(--c-E8E2D2)] whitespace-pre-wrap">“{selectedLog.noteIce}”</blockquote>}
+                             {selectedLog.noteIce && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteIce}</blockquote>}
                              {selectedLog.iceItems && selectedLog.iceItems.length>0 && (
                                <div className="mt-5 flex flex-wrap gap-1.5">
                                  {selectedLog.iceItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-2C2A20)] text-[12px] font-[600] text-[var(--c-D4AF37)]">{it.type} {it.value}{it.unit}</span>)}
@@ -1185,7 +1170,7 @@ export default function App() {
                            <div className="absolute top-4 left-6 text-[56px] font-[900] leading-none text-[var(--c-D4AF37)]/10">“</div>
                            <div className="relative">
                              <div className="label-caps text-[var(--c-D4AF37)]">🏋️ 육상 훈련</div>
-                             {selectedLog.noteDry && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[var(--c-E8E2D2)] whitespace-pre-wrap">“{selectedLog.noteDry}”</blockquote>}
+                             {selectedLog.noteDry && <blockquote className="mt-4 text-[20px] lg:text-[22px] font-[600] leading-[1.6] tracking-[-0.01em] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{selectedLog.noteDry}</blockquote>}
                              {selectedLog.dryItems && selectedLog.dryItems.length>0 && (
                                <div className="mt-5 flex flex-wrap gap-1.5">
                                  {selectedLog.dryItems.map(it=> <span key={it.id} className="px-3 h-7 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-2C2A20)] text-[12px] font-[600] text-[var(--c-C9A86A)]">{it.type} {it.value}{it.unit}</span>)}
@@ -1279,13 +1264,13 @@ export default function App() {
                         )}
 
                         {/* Edit/delete */}
-                        <div className="mt-10 flex gap-3 overflow-x-auto">
+                        <div className="mt-10 flex flex-wrap gap-2 lg:gap-3">
                           <button onClick={()=>{
                             setEditing({...selectedLog});
                             setDiaryEditMode(true);
-                          }} className="h-[48px] px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors shrink-0 whitespace-nowrap">수정하기</button>
-                          <button onClick={()=>deleteLog(selectedLog.date)} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)] shrink-0 whitespace-nowrap">삭제</button>
-                          <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[48px] px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-2 disabled:opacity-50 shrink-0 whitespace-nowrap"><FileDown size={15}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
+                          }} className="h-[44px] lg:h-[48px] px-4 lg:px-8 rounded-full bg-[rgba(var(--c-D4AF37-rgb),0.2)] border border-[var(--c-D4AF37)]/60 text-[var(--c-F5F1E8)] font-[800] text-[13px] lg:text-[14px] hover:bg-[rgba(var(--c-D4AF37-rgb),0.3)] transition-colors whitespace-nowrap">수정하기</button>
+                          <button onClick={()=>deleteLog(selectedLog.date)} className="h-[44px] lg:h-[48px] px-4 lg:px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] lg:text-[13px] font-[700] text-[var(--c-9A9A93)] hover:border-[var(--c-3A3520)] hover:text-[var(--c-F5F1E8)] whitespace-nowrap">삭제</button>
+                          <button onClick={()=>exportReport(selectedLog)} disabled={pdfBusy} className="h-[44px] lg:h-[48px] px-4 lg:px-6 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] lg:text-[13px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center gap-1.5 lg:gap-2 disabled:opacity-50 whitespace-nowrap"><FileDown size={14}/> {pdfBusy ? '생성 중...' : '보고서 출력'}</button>
                           <span className="ml-auto hidden lg:inline-flex items-center text-[11px] font-[600] text-[var(--c-6A6A66)] shrink-0">{themeLabel} · {selectedLog.date}</span>
                         </div>
                       </div>
