@@ -302,12 +302,12 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRe
       </div>
 
       {showAddType && (
-        <div className="mt-3 flex items-center gap-2">
-          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="항목 이름" className="field flex-1 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
-          <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="field h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-2 text-[12px] font-[700] outline-none">
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <input value={newName} onChange={e=>setNewName(e.target.value)} placeholder="항목 이름" className="field flex-1 min-w-0 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[12px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
+          <select value={newUnit} onChange={e=>setNewUnit(e.target.value)} className="field h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-2 text-[12px] font-[700] outline-none shrink-0">
             {ITEM_UNITS.map(u=><option key={u} value={u}>{u}</option>)}
           </select>
-          <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">추가</button>
+          <button type="button" onClick={()=>{ if(newName.trim()){ onAddType(newName.trim(), newUnit); setNewName(''); setShowAddType(false); } }} className="h-9 px-3.5 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px] shrink-0">추가</button>
         </div>
       )}
 
@@ -603,7 +603,7 @@ export default function App() {
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
 
-      <div className="relative z-40 flex flex-col h-full overflow-hidden">
+      <div className="relative z-10 flex flex-col h-full overflow-hidden">
         {/* Top bar: desktop nav row + mobile logo row + page-title row */}
         <header className="shrink-0 z-20 bg-[var(--chrome-header-bg)] border-b border-[var(--chrome-border)]">
           {/* Desktop: logo, nav tabs and account all in one top bar */}

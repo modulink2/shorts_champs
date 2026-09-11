@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MessageSquare, Trash2, Plus, X, Check, Clock } from 'lucide-react';
 import { useAuth } from './AuthContext';
 import { useFriendships, useProfile, sendFriendRequest } from './useProfile';
@@ -182,7 +183,11 @@ export default function LoungeView() {
         <Plus size={26} strokeWidth={2.5}/>
       </button>
 
-      {composerOpen && (
+      {composerOpen && createPortal(
+        // Rendered into document.body — this view sits inside <main>, which is
+        // trapped under the mobile bottom tab bar's stacking context, so a
+        // plain in-tree fixed modal would paint underneath it. A portal
+        // escapes that entirely instead of fighting z-index globally.
         <div className="fixed inset-0 z-50 flex items-end lg:items-center justify-center p-0 lg:p-6">
           <div className="absolute inset-0 bg-black/70" onClick={()=>setComposerOpen(false)}/>
           <div className="relative w-full lg:max-w-[560px] max-h-[92dvh] overflow-auto rounded-t-[28px] lg:rounded-[28px] bg-[var(--c-0C0C0E)] border border-[var(--c-2C2A20)] shadow-[0_24px_80px_rgba(0,0,0,0.8),0_0_0_1px_rgba(var(--c-D4AF37-rgb),0.15)_inset]">
@@ -199,7 +204,8 @@ export default function LoungeView() {
               <button onClick={submitPost} disabled={!text.trim()} className="w-full h-[52px] rounded-[16px] gold-gradient text-[var(--c-on-accent)] font-[800] text-[14px] disabled:opacity-40 active:scale-[0.98] transition-all">등록</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
