@@ -312,11 +312,11 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRe
       )}
 
       {activeType && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)]">{activeType.name}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-[12px] font-[700] text-[var(--c-F5F1E8)] max-w-[100px] truncate">{activeType.name}</span>
           <input type="number" value={value} onChange={e=>setValue(e.target.value)} autoFocus className="field w-20 h-9 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center font-[700] outline-none"/>
           <span className="text-[12px] font-[600] text-[var(--c-6A6A66)]">{activeType.unit}</span>
-          <button type="button" onClick={()=>{ const n=parseFloat(value); onAddText(n>0 ? `${activeType.name} ${value}${activeType.unit}` : activeType.name); setActiveTypeId(null); setValue(''); }} className="ml-auto h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
+          <button type="button" onClick={()=>{ const n=parseFloat(value); onAddText(n>0 ? `${activeType.name} ${value}${activeType.unit}` : activeType.name); setActiveTypeId(null); setValue(''); }} className="ml-auto shrink-0 h-9 px-4 rounded-full gold-gradient text-[var(--c-on-accent)] font-[800] text-[12px]">등록</button>
         </div>
       )}
 
@@ -603,7 +603,7 @@ export default function App() {
         <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--c-D4AF37)]/40 to-transparent" />
       </div>
 
-      <div className="relative z-10 flex flex-col h-full overflow-hidden">
+      <div className="relative z-40 flex flex-col h-full overflow-hidden">
         {/* Top bar: desktop nav row + mobile logo row + page-title row */}
         <header className="shrink-0 z-20 bg-[var(--chrome-header-bg)] border-b border-[var(--chrome-border)]">
           {/* Desktop: logo, nav tabs and account all in one top bar */}
@@ -1436,7 +1436,7 @@ export default function App() {
                         className="field mt-1.5 w-full min-h-[64px] rounded-[12px] bg-[var(--c-0E0E10)] border border-[var(--c-3A3520)] px-4 py-2.5 text-[13px] font-[600] outline-none resize-none placeholder:text-[var(--c-4A4A4E)]"
                       />
                     ) : (
-                      <button onClick={()=>{ setBioEditing(true); setBioDraft(myProfile?.bio || ''); }} className="mt-1.5 w-full min-h-[44px] rounded-[12px] subcard px-4 py-2.5 flex items-center justify-between gap-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
+                      <button onClick={()=>{ setBioEditing(true); setBioDraft(myProfile?.bio || ''); }} className="mt-1.5 w-full min-h-[64px] rounded-[12px] subcard px-4 py-2.5 flex items-start justify-between gap-3 text-left hover:border-[var(--c-3A3520)] transition-colors">
                         <span className={`text-[13px] font-[600] ${myProfile?.bio ? 'text-[var(--c-F5F1E8)]' : 'text-[var(--c-6A6A66)]'}`}>{myProfile?.bio || '친구들에게 나를 소개해보세요'}</span>
                         <span className="text-[11px] font-[600] text-[var(--c-9A9A93)] shrink-0">수정</span>
                       </button>
@@ -1717,7 +1717,7 @@ export default function App() {
                 </div>
                 {goalForm && (
                   <div className="mt-5 rounded-[16px] subcard p-4 space-y-3">
-                    <div className="grid grid-cols-[56px_1fr] gap-2">
+                    <div className="grid grid-cols-[56px_minmax(0,1fr)] gap-2">
                       <input value={goalForm.icon} onChange={e=>setGoalForm({...goalForm, icon:e.target.value})} maxLength={2} className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] text-center text-[18px] outline-none"/>
                       <input value={goalForm.title} onChange={e=>setGoalForm({...goalForm, title:e.target.value})} placeholder="목표 제목 (예: 500m 50초 벽 돌파)" className="field h-10 rounded-[10px] bg-[var(--c-121214)] border border-[var(--c-1E1E22)] px-3 text-[13px] font-[600] outline-none focus:border-[var(--c-3A3520)] placeholder:text-[var(--c-4A4A4E)]"/>
                     </div>
