@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare, Check, UserPlus } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { ChevronLeft, ChevronRight, X, Trophy, Calendar, BarChart3, TrendingUp, Award, Flame, Crown, ExternalLink, Link2, Play, LogOut, FileDown, Users, Search, MessageSquare, Check, UserPlus, HelpCircle } from 'lucide-react';
 import { XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import { useAuth } from './AuthContext';
 import { useTrainingLogs } from './useTrainingLogs';
@@ -290,7 +291,10 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRe
 
   return (
     <div className={compact ? 'card !p-4' : 'rounded-[16px] subcard p-5'}>
-      <div className="label-caps mb-3">항목 선택 · 클릭 후 값 입력</div>
+      <div className="mb-3 flex items-center gap-1.5">
+        <span className="label-caps">항목 선택 · 클릭 후 값 입력</span>
+        <HintTip title="항목 선택" text="자주 쓰는 훈련 항목을 '+ 새 항목'으로 등록해두면, 탭 한 번으로 오늘의 기록에 추가할 수 있어요. 값을 입력하면 '항목 값단위'로, 값 없이 등록하면 항목 이름만 자유입력란에 추가돼요." />
+      </div>
       <div className="flex flex-wrap gap-2">
         {itemTypes.map(t=>(
           <div key={t.id} className="relative group">
@@ -331,6 +335,37 @@ function ItemPicker({ itemTypes, items, onAddType, onDeleteType, onAddText, onRe
         </div>
       )}
     </div>
+  );
+}
+
+// Small "?" affordance for first-time users — tap opens a short explanation
+// in the same bottom-sheet-on-mobile/centered-on-desktop modal pattern used
+// elsewhere in the app, rendered via a portal so it's never trapped under
+// the mobile tab bar regardless of where it's placed in the tree.
+export function HintTip({ title, text }: { title: string; text: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e)=>{ e.stopPropagation(); setOpen(true); }}
+        aria-label={`${title} 설명 보기`}
+        className="w-[18px] h-[18px] rounded-full bg-[var(--c-18181B)] border border-[var(--c-2C2A20)] text-[var(--c-9A9A93)] hover:text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] inline-flex items-center justify-center shrink-0 transition-colors"
+      ><HelpCircle size={12}/></button>
+      {open && createPortal(
+        <div className="fixed inset-0 z-[70] flex items-end lg:items-center justify-center p-0 lg:p-6" onClick={()=>setOpen(false)}>
+          <div className="absolute inset-0 bg-black/60"/>
+          <div onClick={e=>e.stopPropagation()} className="relative w-full lg:max-w-[380px] rounded-t-[24px] lg:rounded-[20px] bg-[var(--c-0C0C0E)] border border-[var(--c-2C2A20)] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="font-[800] text-[14px] flex items-center gap-1.5 text-[var(--c-D4AF37)]"><HelpCircle size={15}/> {title}</div>
+              <button onClick={()=>setOpen(false)} className="w-7 h-7 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center shrink-0"><X size={13}/></button>
+            </div>
+            <p className="mt-3 text-[13px] leading-[1.7] text-[var(--c-E8E2D2)] whitespace-pre-wrap">{text}</p>
+          </div>
+        </div>,
+        document.body
+      )}
+    </>
   );
 }
 
@@ -595,6 +630,23 @@ export default function App() {
     ...(hasRoster ? [{ id:'roster', label: myRole==='admin'?'회원 관리':myRole==='parent'?'내 아이':'내 선수', icon:Users, desc: myRole==='admin'?'MEMBERS':myRole==='parent'?'MY KIDS':'ATHLETES' }] : []),
   ] as const;
 
+  const pageTitle: string = view==='dashboard' ? '대시보드'
+    : view==='diary' ? '훈련일지'
+    : view==='records' ? '기록입력/분석'
+    : view==='growth' ? '마이페이지'
+    : view==='friends' ? '내 친구'
+    : view==='lounge' ? '링크 라운지'
+    : myRole==='admin' ? '회원 관리' : myRole==='parent' ? '내 아이' : '내 선수';
+  const pageHint: string = view==='dashboard' ? '오늘의 목표, 최근 훈련, 베스트 기록을 한눈에 확인하는 공간이에요.'
+    : view==='diary' ? '캘린더에서 날짜를 골라 그날의 훈련 내용을 기록해요. 기록한 날은 캘린더에 점으로 표시돼요.'
+    : view==='records' ? '거리별 기록을 입력하면 성장 그래프와 베스트 기록으로 자동 정리돼요.'
+    : view==='growth' ? '내 정보, 아바타, 목표, 수상이력, 테마 등 내 프로필 전반을 관리하는 공간이에요.'
+    : view==='friends' ? '친구를 검색해서 신청하고, 수락하면 서로의 프로필을 볼 수 있어요. 훈련 기록은 본인과 담당 코치·부모 계정만 볼 수 있어요.'
+    : view==='lounge' ? '모든 회원이 함께 보는 공개 게시판이에요. 자유롭게 글을 남기고 서로 응원해보세요.'
+    : myRole==='admin' ? '전체 회원의 정보를 확인하고 역할을 관리해요.'
+    : myRole==='parent' ? '연결된 자녀의 훈련 기록과 성장을 확인해요.'
+    : '담당 선수의 기록을 확인하고 코멘트를 남겨요.';
+
   return (
     <div className="no-auto-blur h-dvh w-full bg-[var(--c-060608)] text-[var(--c-F5F1E8)] selection:bg-[var(--c-D4AF37)]/20 antialiased overflow-hidden">
       {/* animated track-ring canvas background + subtle radial gold vignette */}
@@ -648,6 +700,7 @@ export default function App() {
                       {view==='lounge' && '링크 라운지'}
                       {view==='roster' && (myRole==='admin' ? '회원 관리' : myRole==='parent' ? '내 아이' : '내 선수')}
                     </h1>
+                    <HintTip title={pageTitle} text={pageHint} />
                     <span className="hidden sm:inline-flex h-5 px-2 rounded-full bg-[var(--c-1A1912)] border border-[var(--c-3A3520)] text-[10px] font-[700] tracking-[0.1em] text-[var(--c-D4AF37)] items-center">{themeLabel}</span>
                   </div>
                   <div className="hidden sm:flex items-center gap-2 mt-1">
@@ -711,6 +764,7 @@ export default function App() {
                   <div className="flex items-center gap-2">
                     <Crown size={14} className="text-[var(--c-D4AF37)]" />
                     <span className="label-caps text-[var(--c-D4AF37)]">목표달성</span>
+                    <HintTip title="목표달성" text="담당 코치나 부모님이 남겨주는 응원·목표 메시지예요. 아직 등록되지 않았다면 기본 응원 문구가 대신 표시돼요." />
                   </div>
                   {myProfile?.focusGoal ? (
                     <>
@@ -896,7 +950,9 @@ export default function App() {
                         const types=logTypes(log);
                         return (
                           <div key={log.id} className="group h-[64px] rounded-[14px] subcard hover:border-[var(--c-2C2A20)] hover:bg-[var(--c-15151A)] flex items-center gap-3 px-3.5 transition-all">
-                            <div className="w-10 h-10 rounded-[12px] bg-[var(--c-18181B)] border border-[var(--c-232326)] flex items-center justify-center text-[16px]">{types.map(t=>TYPE_META[t].emoji).join('') || '📝'}</div>
+                            <div className="w-11 flex items-center gap-1 text-[18px] shrink-0">
+                              {types.length ? [0,1].map(i=> <span key={i} className="w-[18px] text-center">{types[i] ? TYPE_META[types[i]].emoji : ''}</span>) : <span className="w-[18px] text-center">📝</span>}
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-[12px] font-[700]">{log.date.slice(5).replace('-','/')}</span>
@@ -1585,7 +1641,10 @@ export default function App() {
                     </div>
                   </div>
                   <div>
-                    <label className="label-caps">공개 설정</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="label-caps">공개 설정</label>
+                      <HintTip title="공개 설정" text="켜면 친구가 내 프로필 정보(이름, 소개, 경력 등)를 볼 수 있어요. 훈련 기록은 이 설정과 상관없이 항상 비공개이며, 본인과 담당 코치·부모 계정만 볼 수 있어요." />
+                    </div>
                     <div className="mt-1.5 space-y-2">
                       <button onClick={()=>saveProfile(user!.uid, { infoPublic: !myProfile?.infoPublic })} className="w-full h-11 rounded-[12px] subcard px-4 flex items-center justify-between text-left hover:border-[var(--c-3A3520)] transition-colors">
                         <span className="text-[13px] font-[600] text-[var(--c-F5F1E8)]">친구에게 내 정보 공개</span>
