@@ -1,4 +1,13 @@
-User-agent: *
+User-agent: Googlebot
 Allow: /
+
+User-agent: Yeti
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+User-agent: *
+Disallow: /
 
 Sitemap: https://icedream.kr/sitemap.xml
