@@ -101,6 +101,25 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
       <div style="font-size:17px;font-weight:800;margin-top:6px;color:#1a1a1a;">${escapeHtml(s.value)}</div>
     </div>`).join('');
 
+  const todayRows = (log.timeRecords || []).slice().sort((a, b) => a.distance - b.distance);
+  const todayRecordSection = todayRows.length ? `
+    <div style="margin-top:20px;">
+      <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid ${accent};padding-left:10px;">⏱️ 이날의 거리별 기록</div>
+      <table style="width:100%;margin-top:12px;border-collapse:collapse;font-size:14px;border-radius:12px;overflow:hidden;box-shadow:0 0 0 1px ${accentBorder};">
+        <thead>
+          <tr style="background:#0b0e14;">
+            <th style="padding:10px 16px;text-align:left;color:${accent};font-size:12px;letter-spacing:0.5px;">거리</th>
+            <th style="padding:10px 16px;text-align:left;color:${accent};font-size:12px;letter-spacing:0.5px;">기록</th>
+          </tr>
+        </thead>
+        <tbody>${todayRows.map((r, i) => `
+          <tr style="background:${i % 2 === 0 ? '#ffffff' : accentLighter};">
+            <td style="padding:12px 16px;border-bottom:1px solid ${accentBorder};color:#333;font-weight:600;">${r.distance}m</td>
+            <td style="padding:12px 16px;border-bottom:1px solid ${accentBorder};font-weight:800;color:${accentDeep};font-size:15px;">${escapeHtml(r.time)}</td>
+          </tr>`).join('')}</tbody>
+      </table>
+    </div>` : '';
+
   const bestRecordSection = bestRows.length ? `
     <div style="margin-top:20px;">
       <div style="font-size:13px;font-weight:800;color:#1a1a1a;border-left:4px solid ${accent};padding-left:10px;">🏆 거리별 베스트 기록</div>
@@ -131,6 +150,8 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
     <div style="margin-top:24px;display:flex;gap:14px;">${heroStats}</div>
 
     ${itemSections}
+
+    ${todayRecordSection}
 
     ${bestRecordSection}
 
