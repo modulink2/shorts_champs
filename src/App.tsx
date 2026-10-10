@@ -17,7 +17,7 @@ import { useLastLoungeReply } from './useLounge';
 import CoachAdminView from './CoachAdminView';
 import FriendsView from './FriendsView';
 import LoungeView from './LoungeView';
-import { downloadTrainingReport } from './reportPdf';
+import { downloadTrainingReport, downloadMonthlyReport } from './reportPdf';
 
 // Types
 type TrainingType = 'ice' | 'dry' | 'rest';
@@ -602,18 +602,34 @@ export default function App() {
     setToast('기록이 저장됐어요 · 분석에 반영됩니다');
   };
 
+  const reportExtras = {
+    bestByDistance,
+    careerLabel: myProfile?.startYearMonth ? formatCareer(myProfile.startYearMonth) : undefined,
+    coachName: myProfile?.coachName,
+    accent: THEMES.find(t=>t.key===myTheme)?.accent,
+  };
   const exportReport = async (log: TrainingLog) => {
     if (pdfBusy) return;
     setPdfBusy(true);
     try {
-      await downloadTrainingReport(log, user?.displayName || '챔피언', {
-        bestByDistance,
-        careerLabel: myProfile?.startYearMonth ? formatCareer(myProfile.startYearMonth) : undefined,
-        coachName: myProfile?.coachName,
-        accent: THEMES.find(t=>t.key===myTheme)?.accent,
-      });
+      await downloadTrainingReport(log, user?.displayName || '챔피언', reportExtras);
     } catch (err) {
       console.error('PDF export failed:', err);
+      setToast('보고서 생성에 실패했어요');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
+
+  const monthKey = `${calendarMonth.getFullYear()}-${String(calendarMonth.getMonth()+1).padStart(2,'0')}`;
+  const monthLogs = useMemo(()=> logs.filter(l=>l.date.startsWith(monthKey)).slice().sort((a,b)=>a.date.localeCompare(b.date)), [logs, monthKey]);
+  const exportMonthlyReport = async () => {
+    if (pdfBusy || !monthLogs.length) return;
+    setPdfBusy(true);
+    try {
+      await downloadMonthlyReport(monthLogs, monthKey, user?.displayName || '챔피언', reportExtras);
+    } catch (err) {
+      console.error('Monthly PDF export failed:', err);
       setToast('보고서 생성에 실패했어요');
     } finally {
       setPdfBusy(false);
@@ -1059,6 +1075,10 @@ export default function App() {
                       <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-[var(--c-C9A86A)]"/>육상</span>
                       <span className="flex items-center gap-1"><span className="w-1 h-1 rounded-full bg-[var(--c-4A4A4E)]"/>휴식</span>
                     </div>
+                    <button
+                      onClick={exportMonthlyReport} disabled={pdfBusy || !monthLogs.length}
+                      className="mt-3 w-full h-10 rounded-full bg-[var(--c-18181B)] border border-[var(--c-232326)] text-[12px] font-[700] text-[var(--c-D4AF37)] hover:border-[var(--c-3A3520)] flex items-center justify-center gap-1.5 disabled:opacity-40 whitespace-nowrap"
+                    ><FileDown size={14}/> {pdfBusy ? '생성 중...' : monthLogs.length ? `${calendarMonth.getMonth()+1}월 보고서 출력 (${monthLogs.length}일)` : `${calendarMonth.getMonth()+1}월 기록 없음`}</button>
                   </div>
 
                   {/* Selected date summary card gold border */}

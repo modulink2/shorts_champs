@@ -162,11 +162,11 @@ function buildReportInnerHtml(log: TrainingLog, athleteName: string, extras: Rep
   `;
 }
 
-export async function downloadTrainingReport(log: TrainingLog, athleteName: string, extras: ReportExtras) {
-  // Render into an isolated iframe with its own bare document (no Tailwind/Recharts CSS).
-  // html2canvas clones the *whole* host document when given a live-app element, and chokes
-  // on modern CSS (oklch colors, backdrop-filter) it doesn't understand — an iframe keeps it
-  // away from the app entirely, on both desktop and mobile.
+// Render into an isolated iframe with its own bare document (no Tailwind/Recharts CSS).
+// html2canvas clones the *whole* host document when given a live-app element, and chokes
+// on modern CSS (oklch colors, backdrop-filter) it doesn't understand — an iframe keeps it
+// away from the app entirely, on both desktop and mobile.
+async function withReportFrame<T>(fn: (doc: Document) => Promise<T>): Promise<T> {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:100px;border:0;';
   document.body.appendChild(iframe);
@@ -176,13 +176,48 @@ export async function downloadTrainingReport(log: TrainingLog, athleteName: stri
     doc.open();
     doc.write('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0;"></body></html>');
     doc.close();
+    return await fn(doc);
+  } finally {
+    document.body.removeChild(iframe);
+  }
+}
 
-    const container = doc.createElement('div');
-    container.style.cssText = 'width:794px;padding:40px;background:#ffffff;color:#111111;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;box-sizing:border-box;';
-    container.innerHTML = buildReportInnerHtml(log, athleteName, extras);
-    doc.body.appendChild(container);
+async function renderLogCanvas(doc: Document, log: TrainingLog, athleteName: string, extras: ReportExtras, minHeightPx = 0) {
+  const container = doc.createElement('div');
+  container.style.cssText = `width:794px;${minHeightPx ? `min-height:${minHeightPx}px;` : ''}padding:40px;background:#ffffff;color:#111111;font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo",sans-serif;box-sizing:border-box;`;
+  container.innerHTML = buildReportInnerHtml(log, athleteName, extras);
+  doc.body.appendChild(container);
+  try {
+    return await html2canvas(container, { scale: 1.5, backgroundColor: '#ffffff', useCORS: true });
+  } finally {
+    doc.body.removeChild(container);
+  }
+}
 
-    const canvas = await html2canvas(container, { scale: 1.5, backgroundColor: '#ffffff', useCORS: true });
+// One A4 page per log (logs already filtered/sorted by the caller). Each day's
+// report is scaled to fit a single page rather than flowing onto a second one.
+export async function downloadMonthlyReport(logs: TrainingLog[], monthLabel: string, athleteName: string, extras: ReportExtras) {
+  if (!logs.length) throw new Error('no logs to export');
+  await withReportFrame(async (doc) => {
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    for (let i = 0; i < logs.length; i++) {
+      // 1123px = A4 height at 794px width, so every day shares the same page proportions.
+      const canvas = await renderLogCanvas(doc, logs[i], athleteName, extras, 1123);
+      const ratio = canvas.height / canvas.width;
+      let w = pageWidth, h = pageWidth * ratio;
+      if (h > pageHeight) { h = pageHeight; w = pageHeight / ratio; }
+      if (i > 0) pdf.addPage();
+      pdf.addImage(canvas.toDataURL('image/jpeg', 0.92), 'JPEG', (pageWidth - w) / 2, 0, w, h);
+    }
+    pdf.save(`훈련보고서_${monthLabel}.pdf`);
+  });
+}
+
+export async function downloadTrainingReport(log: TrainingLog, athleteName: string, extras: ReportExtras) {
+  await withReportFrame(async (doc) => {
+    const canvas = await renderLogCanvas(doc, log, athleteName, extras);
     const imgData = canvas.toDataURL('image/jpeg', 0.92);
     const pdf = new jsPDF('p', 'mm', 'a4');
     const pageWidth = pdf.internal.pageSize.getWidth();
@@ -200,7 +235,5 @@ export async function downloadTrainingReport(log: TrainingLog, athleteName: stri
       heightLeft -= pageHeight;
     }
     pdf.save(`훈련보고서_${log.date}.pdf`);
-  } finally {
-    document.body.removeChild(iframe);
-  }
+  });
 }
